@@ -21,7 +21,7 @@ export function currentSeason(now: Date = new Date()) {
 export const POINTS_PER_CHAPTER = 10;
 export const NIGHT_BONUS = 5;   // baca jam 22.00–04.59
 export const DAILY_BONUS = 10;  // chapter pertama tiap hari
-export const TARGETS = { chapter: 700, streak: 36, night: 100 };
+export const TARGETS = { chapter: 700, streak: 36, night: 720 };
 
 export const dayKey = (d: Date = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
