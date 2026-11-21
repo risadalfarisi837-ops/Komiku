@@ -307,6 +307,8 @@ export async function getDetail(url: string) {
         title: c.num ? `Chapter ${c.num}${c.title ? ` - ${c.title}` : ''}` : (c.title || 'Oneshot'),
         link: chapterLinkOf(c.id),
         date: timeAgo(c.publishAt),
+        num: c.num,
+        at: c.publishAt || '',
     }));
     if (!chapters.length) throw new Error('Belum ada chapter yang bisa dibaca untuk komik ini.');
     return {
