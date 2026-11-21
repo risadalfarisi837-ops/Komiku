@@ -6,7 +6,7 @@ const COVERS = 'https://uploads.mangadex.org/covers';
 const SITE = 'https://mangadex.org';
 
 // Bahasa chapter yang dicari, urut prioritas (id lebih dulu, lalu en). Bisa diganti lewat env MANGADEX_LANGS, mis. "id,en".
-const LANGS = (process.env.MANGADEX_LANGS || 'id,en').split(',').map((s) => s.trim()).filter(Boolean);
+const LANGS = (process.env.MANGADEX_LANGS || 'id').split(',').map((s) => s.trim()).filter(Boolean);
 const RATINGS = ['safe', 'suggestive'];
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
