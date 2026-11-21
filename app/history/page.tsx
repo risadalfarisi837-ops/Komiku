@@ -96,7 +96,7 @@ function HistoryCard({
     </div>
   );
 
-  return <Link href={`/chapter?url=${encodeURIComponent(item.chapterLink)}`}>{inner}</Link>;
+  return <Link href={`/chapter?url=${encodeURIComponent(item.chapterLink)}&thumb=${encodeURIComponent(item.mangaThumb||'')}&mangaTitle=${encodeURIComponent(item.mangaTitle||'')}`}>{inner}</Link>;
 }
 
 // ─── Favorite Grid Card ───────────────────────────────────────────────────────

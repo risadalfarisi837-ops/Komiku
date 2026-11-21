@@ -132,9 +132,12 @@ export const useHistory = create<HistoryStore>()(
         const now = Date.now();
         const existing = get().history.find(h => h.chapterLink === item.chapterLink);
         if (existing) {
+          const clean = Object.fromEntries(
+            Object.entries(item).filter(([, v]) => v !== '' && v != null)
+          ) as Partial<typeof item>;
           set({
             history: [
-              { ...existing, ...item, readAt: now },
+              { ...existing, ...clean, readAt: now },
               ...get().history.filter(h => h.chapterLink !== item.chapterLink),
             ],
           });

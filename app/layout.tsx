@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Home, Compass, Search, User } from 'lucide-react';
 
 import BottomNav from '@/components/BottomNav';
+import RegisterSW from '@/components/RegisterSW';
 
 export const metadata: Metadata = {
   title: 'Komiku',
@@ -31,6 +32,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           </main>
 
           <BottomNav />
+          <RegisterSW />
         </div>
       </body>
     </html>

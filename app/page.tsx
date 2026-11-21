@@ -190,7 +190,7 @@ function ContinueReading() {
           const pct = h.totalPages > 0 ? Math.min(100, Math.round((h.pageRead / h.totalPages) * 100)) : 0;
           const ch = (h.chapterNumber || h.chapterTitle || '').toString().replace(/^ch(apter)?\.?\s*/i, '');
           return (
-            <Link key={i} href={`/chapter?url=${encodeURIComponent(h.chapterLink)}`} style={{ flex: '0 0 82%', maxWidth: 330, display: 'flex', gap: 14, background: CARD, borderRadius: 22, padding: 12 }}>
+            <Link key={i} href={`/chapter?url=${encodeURIComponent(h.chapterLink)}&thumb=${encodeURIComponent(h.mangaThumb||'')}&mangaTitle=${encodeURIComponent(h.mangaTitle||'')}`} style={{ flex: '0 0 82%', maxWidth: 330, display: 'flex', gap: 14, background: CARD, borderRadius: 22, padding: 12 }}>
               <img src={h.mangaThumb} alt="" referrerPolicy="no-referrer" style={{ width: 62, height: 84, borderRadius: 10, objectFit: 'cover', background: '#222' }} />
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.7, ...clamp(2) }}>{h.mangaTitle}</div>
