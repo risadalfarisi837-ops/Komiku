@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useHistory, useUserStats } from '@/lib/store';
+import { pushSeasonScore } from '@/lib/leaderboard';
 
 function IconBack() {
     return (
@@ -577,7 +578,7 @@ function ChapterContent() {
     const thumbParam = searchParams.get('thumb') || '';
     const mangaTitleParam = searchParams.get('mangaTitle') || '';
     const { addHistory } = useHistory();
-    const { addExp } = useUserStats();
+    const { addExp, recordChapter } = useUserStats();
 
     const [chapter, setChapter] = useState<any>(null);
     const [loading, setLoading] = useState(!!url);
@@ -623,6 +624,7 @@ function ChapterContent() {
                         totalPages:    json.data.images?.length ?? 0,
                     });
                     addExp();
+                    if (recordChapter(url as string)) pushSeasonScore();
                 } else {
                     setError(json.message || 'Gagal memuat chapter');
                 }

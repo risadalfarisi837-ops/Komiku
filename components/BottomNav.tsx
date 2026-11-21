@@ -64,7 +64,7 @@ const PersonIcon = ({ color }: IconProps) => (
 const links = [
   { href: '/',          Icon: HomeIcon,    label: 'Beranda' },
   { href: '/schedule',  Icon: CompassIcon, label: 'Jelajah' },
-  { href: '/favorites', Icon: RankingIcon, label: 'Peringkat' },
+  { href: '/ranking',   Icon: RankingIcon, label: 'Peringkat' },
   { href: '/history',   Icon: LibraryIcon, label: 'Koleksi' },
   { href: '/profile',   Icon: PersonIcon,  label: 'Profil' },
 ];

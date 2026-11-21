@@ -1,102 +1,23 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
-import axios from 'axios';
+import { fetchHtml, parseCards } from '@/lib/scraper';
 
-const HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
-const BASE_URL = 'https://komikindo.tv';
 const PER_PAGE = 18;
 
-const FORMAT_PATHS: Record<string, string> = {
-    '/type/manga/': '/type/manga/',
-    '/type/manhwa/': '/type/manhwa/',
-    '/type/manhua/': '/type/manhua/',
-};
-
-const STATUS_PATHS: Record<string, string> = {
-    '/daftar-manga/?status=ongoing&orderby=popular': '/daftar-manga/?status=ongoing&orderby=popular',
-    '/daftar-manga/?status=completed&orderby=popular': '/daftar-manga/?status=completed&orderby=popular',
-    '/daftar-manga/?orderby=popular': '/daftar-manga/?orderby=popular',
-};
-
 async function scrapePage(path: string, page: number) {
-    // Build URL with pagination
-    let url: string;
+    let urlPath: string;
     if (path.includes('?')) {
-        // Query string path (status/orderby filters)
-        url = page === 1
-            ? `${BASE_URL}${path}`
-            : `${BASE_URL}${path}&page=${page}`;
+        urlPath = page === 1 ? path : `${path}&page=${page}`;
     } else {
-        // Clean path (genre/type) - page 1 tidak perlu suffix /page/1/
-        const cleanPath = path.endsWith('/') ? path : `${path}/`;
-        url = page === 1
-            ? `${BASE_URL}${cleanPath}`
-            : `${BASE_URL}${cleanPath}page/${page}/`;
+        const clean = path.endsWith('/') ? path : `${path}/`;
+        urlPath = page === 1 ? clean : `${clean}page/${page}/`;
     }
-
-    const { data } = await axios.get(url, { headers: HEADERS, timeout: 20000, maxRedirects: 5 });
-    const $ = cheerio.load(data);
-
-    const items: any[] = [];
-
-    // Try multiple selectors used by komikindo.tv
-    const selectors = ['.animepost', '.bs', '.listupd .bs', '.bsx'];
-    let found = false;
-
-    for (const sel of selectors) {
-        if ($(sel).length > 0) {
-            $(sel).each((_, el) => {
-                const title =
-                    $(el).find('.tt h4').text().trim() ||
-                    $(el).find('.tt').text().trim() ||
-                    $(el).find('h3, h4').first().text().trim() ||
-                    $(el).find('[itemprop="url"]').attr('title') || '';
-                const link = $(el).find('a').first().attr('href') || '';
-                const thumb =
-                    $(el).find('img').attr('src') ||
-                    $(el).find('img').attr('data-src') || '';
-                const score = $(el).find('.score, .numscore').text().trim() || 'N/A';
-                const typeCls = ($(el).find('.typeflag').attr('class') || '').toLowerCase();
-                const pathType = (path.match(/\/type\/(manga|manhwa|manhua)\//) || [])[1] || '';
-                const type = typeCls.includes('manhwa') ? 'manhwa' : typeCls.includes('manhua') ? 'manhua' : typeCls.includes('manga') ? 'manga' : pathType;
-                const chapter = ($(el).find('.lsch a').first().text() || $(el).find('.epxs').first().text() || $(el).find('.ep').first().text()).trim();
-                const time = ($(el).find('.datech').first().text() || $(el).find('.date').first().text()).trim();
-
-                if (title && link) {
-                    items.push({
-                        title,
-                        link,
-                        thumb: thumb.split('?')[0] || thumb,
-                        score,
-                        type,
-                        chapter,
-                        time,
-                        desc: `Score: ${score}`,
-                    });
-                }
-            });
-            found = true;
-            break;
-        }
-    }
-
-    if (!found || items.length === 0) {
-        // fallback: coba .listupd
-        $('.listupd article, .listupd .bs').each((_, el) => {
-            const title = $(el).find('h3, h4, .tt').first().text().trim();
-            const link = $(el).find('a').first().attr('href') || '';
-            const thumb = $(el).find('img').attr('src') || $(el).find('img').attr('data-src') || '';
-            if (title && link) {
-                items.push({ title, link, thumb: thumb.split('?')[0] || thumb, score: 'N/A', type: 'manga', desc: 'Score: N/A' });
-            }
-        });
-    }
-
-    const hasMore = items.length >= PER_PAGE;
-
+    const $ = cheerio.load(await fetchHtml(urlPath));
+    const pathType = ((path.match(/\/type\/(manga|manhwa|manhua)\//) || [])[1]) || '';
+    const items = parseCards($, 100).map((it) => ({ ...it, type: it.type || pathType }));
     return {
         items: items.slice(0, PER_PAGE),
-        hasMore,
+        hasMore: items.length >= PER_PAGE,
         total: items.length,
         page,
     };

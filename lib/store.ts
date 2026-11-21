@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { currentSeason, dayKey, isNight, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS } from './season';
 
 // ─── XP / Level System ────────────────────────────────────────────────────────
 const EXP_PER_LEVEL = 200;
@@ -12,8 +13,14 @@ export interface UserStats {
   chaptersRead: number;
 }
 
+export interface SeasonStats {
+  id: number; points: number; chapters: number; night: number; streak: number; lastDay: string; read: string[];
+}
+
 interface UserStatsStore {
   stats: UserStats;
+  season: SeasonStats;
+  recordChapter: (link: string) => boolean;
   addExp: (amount?: number) => void;
   addKoin: (amount: number) => void;
 }
@@ -22,6 +29,31 @@ export const useUserStats = create<UserStatsStore>()(
   persist(
     (set, get) => ({
       stats: { exp: 0, level: 1, koin: 0, chaptersRead: 0 },
+      season: { id: 0, points: 0, chapters: 0, night: 0, streak: 0, lastDay: '', read: [] },
+      // Catat chapter untuk poin musim. Chapter yang sama hanya dihitung sekali per musim.
+      recordChapter: (link) => {
+        const now = new Date();
+        const sid = currentSeason(now).id;
+        const prev = get().season;
+        const base: SeasonStats = prev.id === sid ? prev : { ...prev, id: sid, points: 0, chapters: 0, night: 0, read: [] };
+        if (base.read.includes(link)) { if (prev !== base) set({ season: base }); return false; }
+        const today = dayKey(now);
+        let streak = base.streak;
+        let bonus = 0;
+        if (base.lastDay !== today) {
+          streak = base.lastDay === dayKey(new Date(now.getTime() - 86400000)) ? streak + 1 : 1;
+          bonus = DAILY_BONUS;
+        }
+        const night = isNight(now);
+        set({ season: {
+          ...base, streak, lastDay: today,
+          chapters: base.chapters + 1,
+          night: base.night + (night ? 1 : 0),
+          points: base.points + POINTS_PER_CHAPTER + bonus + (night ? NIGHT_BONUS : 0),
+          read: [...base.read, link].slice(-1500),
+        } });
+        return true;
+      },
       addExp: (amount = XP_PER_CHAPTER) => {
         const { exp, level, koin, chaptersRead } = get().stats;
         const newExp = exp + amount;

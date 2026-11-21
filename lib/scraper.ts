@@ -2,10 +2,87 @@ import * as cheerio from 'cheerio';
 import axios from 'axios';
 
 const HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36',
+    'Accept-Language': 'id,en;q=0.8',
 };
 
-const BASE_URL = 'https://komikindo.tv';
+// Domain komikindo sering ganti/diblokir. Atur domain utama lewat env KOMIKINDO_URL di Vercel,
+// sisanya dicoba berurutan sebagai cadangan.
+const CANDIDATES: string[] = [
+    process.env.KOMIKINDO_URL || '',
+    'https://komikindo.cv',
+    'https://komikindo.dev',
+    'https://komikindo.ch',
+    'https://komikindo.tv',
+].filter(Boolean).map((u) => u.replace(/\/+$/, ''));
+
+let workingBase: string | null = null;
+export const getBase = () => workingBase || CANDIDATES[0];
+export const getCandidates = () => CANDIDATES;
+
+// Ambil HTML dari path (/genres/action/) atau URL penuh. Coba domain satu per satu sampai berhasil.
+export async function fetchHtml(pathOrUrl: string): Promise<string> {
+    let path = pathOrUrl;
+    if (/^https?:\/\//i.test(pathOrUrl)) {
+        try { const u = new URL(pathOrUrl); path = u.pathname + u.search; } catch {}
+    }
+    const bases = workingBase ? [workingBase, ...CANDIDATES.filter((b) => b !== workingBase)] : CANDIDATES;
+    let lastErr: any = null;
+    for (const base of bases) {
+        try {
+            const { data } = await axios.get(base + path, { headers: HEADERS, timeout: 12000, maxRedirects: 5 });
+            if (typeof data === 'string' && data.length > 2000) { workingBase = base; return data; }
+        } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('Semua domain komikindo gagal diakses');
+}
+
+const absUrl = (href: string | undefined) => {
+    if (!href) return '';
+    return href.startsWith('http') ? href : `${getBase()}${href.startsWith('/') ? '' : '/'}${href}`;
+};
+
+// Baca kartu komik dari halaman daftar (home, genre, tipe, pencarian). Selector dibuat longgar
+// supaya tahan beda tema.
+export function parseCards($: cheerio.CheerioAPI, limit = 100) {
+    const items: any[] = [];
+    const sel = ['.animepost', '.bs', '.bsx'].find((s) => $(s).length > 0);
+    if (!sel) return items;
+    $(sel).each((_, el) => {
+        if (items.length >= limit) return;
+        const $el = $(el);
+        const first = (...selectors: string[]) => {
+            for (const s of selectors) {
+                const t = $el.find(s).first().text().trim();
+                if (t) return t;
+            }
+            return '';
+        };
+        const title = first('.tt h4', '.tt', 'h3', 'h4') || $el.find('a[title]').first().attr('title') || '';
+        const link = absUrl($el.find('a').first().attr('href'));
+        const img = $el.find('img').first();
+        let thumb = img.attr('data-lazy-src') || img.attr('data-src') || img.attr('src') || '';
+        if (thumb.startsWith('data:')) thumb = img.attr('data-src') || '';
+        thumb = thumb.split('?')[0];
+        if (!title || !link || !thumb) return;
+
+        const score = first('.score', '.numscore', '.rating i') || 'N/A';
+        const cls = ($el.find('.typeflag').attr('class') || $el.find('.type').attr('class') || '').toLowerCase();
+        const typeTxt = first('.type').toLowerCase();
+        const raw = `${cls} ${typeTxt}`;
+        const type = raw.includes('manhwa') ? 'Manhwa' : raw.includes('manhua') ? 'Manhua' : raw.includes('manga') ? 'Manga' : '';
+        items.push({
+            title, link, thumb,
+            desc: `Score: ${score}`,
+            score,
+            type,
+            chapter: first('.lsch a', '.epxs', '.eps', '.ep', '.chapter'),
+            time: first('.datech', '.date', '.epxdate'),
+            views: first('.view', '.vw'),
+        });
+    });
+    return items;
+}
 
 const categories = [
     { title: 'Action', path: '/genres/action/' },
@@ -22,79 +99,44 @@ const categories = [
     { title: 'Magic', path: '/genres/magic/' },
     { title: 'Seinen', path: '/genres/seinen/' },
     { title: 'Martial Arts', path: '/genres/martial-arts/' },
-    { title: 'Slice of Life', path: '/genres/slice-of-life/' }
+    { title: 'Slice of Life', path: '/genres/slice-of-life/' },
 ];
 
 export async function scrapeHomeCategories() {
-    const fetchCategory = async (cat: {title: string, path: string}) => {
+    const fetchCategory = async (cat: { title: string; path: string }) => {
         try {
-            const { data } = await axios.get(`${BASE_URL}${cat.path}`, { headers: HEADERS });
-            const $ = cheerio.load(data);
-            const items: any[] = [];
-            $('.animepost').each((i, el) => {
-                if(items.length >= 8) return;
-                const title = $(el).find('.tt h4').text().trim() || $(el).find('[itemprop="url"]').attr('title');
-                const link = $(el).find('a').attr('href');
-                const thumb = $(el).find('img').attr('src');
-                const desc = 'Score: ' + ($(el).find('.score').text().trim() || 'N/A');
-                const score = $(el).find('.score').text().trim() || 'N/A';
-                const typeCls = ($(el).find('.typeflag').attr('class') || '').toLowerCase();
-                const type = typeCls.includes('manhwa') ? 'Manhwa' : typeCls.includes('manhua') ? 'Manhua' : typeCls.includes('manga') ? 'Manga' : '';
-                const chapter = ($(el).find('.lsch a').first().text() || $(el).find('.epxs').first().text() || $(el).find('.ep').first().text()).trim();
-                const time = ($(el).find('.datech').first().text() || $(el).find('.date').first().text()).trim();
-                const views = ($(el).find('.view').first().text() || $(el).find('.vw').first().text()).trim();
-                
-                if (title && link && thumb) {
-                    items.push({ title, link, thumb: thumb.split('?')[0] || thumb, desc, score, type, chapter, time, views });
-                }
-            });
-            return { category: cat.title, items };
-        } catch(e) {
-            return { category: cat.title, items: [] };
+            const $ = cheerio.load(await fetchHtml(cat.path));
+            return { category: cat.title, items: parseCards($, 8) };
+        } catch {
+            return { category: cat.title, items: [] as any[] };
         }
     };
-
     const results = await Promise.all(categories.map(fetchCategory));
-    return results.filter(r => r.items.length > 0);
+    return results.filter((r) => r.items.length > 0);
 }
 
 export async function scrapeHome() {
-    // Legacy support, perhaps not needed, but keeping it
     const cats = await scrapeHomeCategories();
-    return cats.flatMap(c => c.items);
+    return cats.flatMap((c) => c.items);
 }
 
 export async function scrapeSearch(query: string) {
-    let results: any[] = [];
-    
     try {
-        const { data } = await axios.get(`${BASE_URL}/?s=${encodeURIComponent(query)}`, { headers: HEADERS });
-        const $ = cheerio.load(data);
-
-        $('.animepost').each((i, el) => {
-            const title = $(el).find('.tt h4').text().trim() || $(el).find('[itemprop="url"]').attr('title');
-            const link = $(el).find('a').attr('href');
-            const thumb = $(el).find('img').attr('src');
-            const desc = 'Category: Manga/Manhwa';
-
-            if (title && link && thumb) {
-                results.push({ title, link, thumb: thumb.split('?')[0] || thumb, desc });
-            }
-        });
+        const $ = cheerio.load(await fetchHtml(`/?s=${encodeURIComponent(query)}`));
+        const results = parseCards($, 60).map((m) => ({ ...m, desc: 'Category: Manga/Manhwa' }));
+        return results.filter((v, i, a) => a.findIndex((t) => t.link === v.link) === i);
     } catch (err) {
-        console.error("Search error:", err);
+        console.error('Search error:', err);
+        return [];
     }
-
-    const unique = results.filter((v,i,a)=>a.findIndex(t=>(t.link === v.link))===i);
-    return unique;
 }
 
 export async function scrapeDetail(url: string) {
     // If it's a komikindo.ch url, handle gracefully and replace with komikindo.tv
-    const normalizedUrl = url.replace('komikindo.ch', 'komikindo.tv');
+    const normalizedUrl = url;
     
     // If the old app has links, they might break but home is totally rewritten.
-    const { data } = await axios.get(normalizedUrl, { headers: HEADERS });
+    const data = await fetchHtml(normalizedUrl);
     const $ = cheerio.load(data);
     
     // Parse komikindo.ch details
@@ -123,8 +165,8 @@ export async function scrapeDetail(url: string) {
 }
 
 export async function scrapeChapter(url: string) {
-    const normalizedUrl = url.replace('komikindo.ch', 'komikindo.tv');
-    const { data } = await axios.get(normalizedUrl, { headers: HEADERS });
+    const normalizedUrl = url;
+    const data = await fetchHtml(normalizedUrl);
     const $ = cheerio.load(data);
     
     const title = $('.entry-title').text().trim() || $('title').text().trim();
