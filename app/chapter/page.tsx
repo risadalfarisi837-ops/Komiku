@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useHistory, useUserStats } from '@/lib/store';
-import { pushSeasonScore } from '@/lib/leaderboard';
+import { pushSeasonScore, addProfileExp } from '@/lib/leaderboard';
 
 function IconBack() {
     return (
@@ -624,7 +624,7 @@ function ChapterContent() {
                         totalPages:    json.data.images?.length ?? 0,
                     });
                     addExp();
-                    if (recordChapter(url as string)) pushSeasonScore();
+                    if (recordChapter(url as string)) { pushSeasonScore(); addProfileExp(10); }
                 } else {
                     setError(json.message || 'Gagal memuat chapter');
                 }

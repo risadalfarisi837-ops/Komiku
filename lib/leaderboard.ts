@@ -80,3 +80,19 @@ export async function fetchTop(seasonId: number): Promise<Row[]> {
   });
   return rows.sort((a, b) => b.points - a.points).slice(0, 100);
 }
+
+// Tambah EXP ke profil Firebase (users/<uid>) supaya Level di Profil ikut naik saat baca chapter.
+// Rumus level sama dengan Profil: 200 EXP per level.
+const EXP_PER_LEVEL = 200;
+export async function addProfileExp(amount: number): Promise<void> {
+  try {
+    const user = await getUser();
+    if (!user) return;
+    const { db } = await getFirebase();
+    await db.ref(`users/${user.uid}`).transaction((cur: any) => {
+      if (cur === null) return cur; // data belum terbaca, Firebase akan mengulang dengan data asli
+      const exp = (Number(cur.exp) || 0) + amount;
+      return { ...cur, exp, level: Math.floor(exp / EXP_PER_LEVEL) + 1 };
+    });
+  } catch {}
+}

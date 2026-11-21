@@ -3,7 +3,7 @@
 import { useEffect, useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { useUserStats } from '@/lib/store';
-import { currentSeason, RANKS, rankFor, fmt, TARGETS, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS, Track } from '@/lib/season';
+import { currentSeason, RANKS, rankFor, fmt, targetsFor, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS, Track } from '@/lib/season';
 import { fetchTop, pushSeasonScore, getUser, Row } from '@/lib/leaderboard';
 
 const CORAL = '#FF6B6B';
@@ -116,6 +116,7 @@ export default function RankingPage() {
   const night = mounted && mine.id === season.id ? mine.night : 0;
   const streak = mounted ? mine.streak : 0;
   const { next } = rankFor(pts);
+  const targets = targetsFor(pts);
 
   const list = tab === 'Semua' ? rows : rows.filter((r) => rankFor(r.points).rank.track === tab);
   const myIndex = me ? rows.findIndex((r) => r.uid === me.uid) : -1;
@@ -163,9 +164,9 @@ export default function RankingPage() {
           <div style={{ width: `${next ? Math.min(100, (pts / next.min) * 100) : 100}%`, height: '100%', borderRadius: 4, background: GREEN }} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <MiniStat icon={IconBook} label="Chapter" value={chapters} target={TARGETS.chapter} />
-          <MiniStat icon={IconFlame} label="Streak" value={streak} target={TARGETS.streak} unit="hari" />
-          <MiniStat icon={IconMoon} label="Malam" value={night} target={TARGETS.night} />
+          <MiniStat icon={IconBook} label="Chapter" value={chapters} target={targets.chapter} />
+          <MiniStat icon={IconFlame} label="Streak" value={streak} target={targets.streak} unit="hari" />
+          <MiniStat icon={IconMoon} label="Malam" value={night} target={targets.night} />
         </div>
       </div>
 
