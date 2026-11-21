@@ -56,7 +56,11 @@ async function scrapePage(path: string, page: number) {
                     $(el).find('img').attr('src') ||
                     $(el).find('img').attr('data-src') || '';
                 const score = $(el).find('.score, .numscore').text().trim() || 'N/A';
-                const type = $(el).find('.type').text().trim().toLowerCase() || 'manga';
+                const typeCls = ($(el).find('.typeflag').attr('class') || '').toLowerCase();
+                const pathType = (path.match(/\/type\/(manga|manhwa|manhua)\//) || [])[1] || '';
+                const type = typeCls.includes('manhwa') ? 'manhwa' : typeCls.includes('manhua') ? 'manhua' : typeCls.includes('manga') ? 'manga' : pathType;
+                const chapter = ($(el).find('.lsch a').first().text() || $(el).find('.epxs').first().text() || $(el).find('.ep').first().text()).trim();
+                const time = ($(el).find('.datech').first().text() || $(el).find('.date').first().text()).trim();
 
                 if (title && link) {
                     items.push({
@@ -65,6 +69,8 @@ async function scrapePage(path: string, page: number) {
                         thumb: thumb.split('?')[0] || thumb,
                         score,
                         type,
+                        chapter,
+                        time,
                         desc: `Score: ${score}`,
                     });
                 }
