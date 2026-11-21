@@ -10,9 +10,9 @@ const HEADERS = {
 // sisanya dicoba berurutan sebagai cadangan.
 const CANDIDATES: string[] = [
     process.env.KOMIKINDO_URL || '',
+    'https://komikindo.ch',
     'https://komikindo.cv',
     'https://komikindo.dev',
-    'https://komikindo.ch',
     'https://komikindo.tv',
 ].filter(Boolean).map((u) => u.replace(/\/+$/, ''));
 
@@ -47,7 +47,7 @@ const absUrl = (href: string | undefined) => {
 export function parseCards($: cheerio.CheerioAPI, limit = 100) {
     const items: any[] = [];
     const sel = ['.animepost', '.bs', '.bsx'].find((s) => $(s).length > 0);
-    if (!sel) return items;
+    if (!sel) return parseCardsGeneric($, limit);
     $(sel).each((_, el) => {
         if (items.length >= limit) return;
         const $el = $(el);
@@ -163,50 +163,123 @@ const textOf = ($: cheerio.CheerioAPI, selectors: string[]) => {
 const metaOf = ($: cheerio.CheerioAPI, prop: string) =>
     ($(`meta[property="${prop}"]`).attr('content') || $(`meta[name="${prop}"]`).attr('content') || '').trim();
 
+// Pembaca kartu umum: dipakai kalau tema tidak punya kelas .animepost/.bs/.bsx (komikindo.ch sekarang).
+// Cari tautan /komik/<slug>/ yang berisi gambar, lalu ambil judul, cover, tipe, chapter, dan waktu
+// dari kotak terdekat yang hanya memuat satu komik.
+function parseCardsGeneric($: cheerio.CheerioAPI, limit = 100) {
+    const items: any[] = [];
+    const seen = new Set<string>();
+    $('a[href*="/komik/"]').each((_, el) => {
+        if (items.length >= limit) return;
+        const $a = $(el);
+        const link = cleanUrl($a.attr('href'));
+        const $img = $a.find('img').first();
+        if (!link || seen.has(link) || !$img.length) return;
+
+        let thumb = imgSrc($img).split('?')[0];
+        if (!thumb || /\.gif$/i.test(thumb) || !/komikindo|wp-content|uploads/i.test(thumb)) return;
+
+        // Naik ke kotak terbesar yang masih hanya berisi satu komik
+        let $c = $a;
+        for (let i = 0; i < 4; i++) {
+            const $p = $c.parent();
+            if (!$p.length) break;
+            const hrefs = new Set($p.find('a[href*="/komik/"]').map((_, x) => $(x).attr('href')).get());
+            if (hrefs.size > 1) break;
+            $c = $p;
+        }
+        const text = $c.text().replace(/\s+/g, ' ');
+        const title = (
+            $c.find('h2, h3, h4').first().text().trim()
+            || $a.attr('title') || $img.attr('title') || $img.attr('alt') || ''
+        ).replace(/^Komik\s+/i, '').trim();
+        if (!title) return;
+
+        const chapterTxt = $c.find('a[href*="-chapter-"]').first().text().trim();
+        const timeTxt = (text.match(/\d+\s*(?:detik|menit|jam|hari|minggu|bulan|tahun)\s*(?:yang\s*)?lalu/i) || [''])[0];
+        const typeTxt = (text.match(/Manhwa|Manhua|Manga/i) || [''])[0];
+        const scoreTxt = $c.find('*').filter((_, x) => $(x).children().length === 0)
+            .map((_, x) => $(x).text().trim()).get().find((t) => /^(10|\d(\.\d{1,2})?)$/.test(t)) || 'N/A';
+
+        seen.add(link);
+        items.push({
+            title, link, thumb,
+            desc: `Score: ${scoreTxt}`,
+            score: scoreTxt,
+            type: typeTxt ? typeTxt[0].toUpperCase() + typeTxt.slice(1).toLowerCase() : '',
+            chapter: chapterTxt,
+            time: timeTxt,
+            views: '',
+        });
+    });
+    return items;
+}
+
+const escapeRe = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const stripKomik = (v: string) => v.replace(/^Komik\s+/i, '').replace(/\s*[-–|]\s*Komik\s*Indo.*$/i, '').trim();
+
 export async function scrapeDetail(url: string) {
     const $ = cheerio.load(await fetchHtml(url));
 
-    const title = (textOf($, ['.entry-title', 'h1']) || metaOf($, 'og:title') || $('title').text())
-        .replace(/\s*[-–|]\s*Komik\s*Indo.*$/i, '').trim();
+    const title = stripKomik(textOf($, ['.entry-title', 'h1']) || metaOf($, 'og:title') || $('title').text());
 
-    let thumb = '';
-    for (const s of ['.thumb img', '.infoanime img', '.series-thumb img', '.thumbook img', 'article img']) {
-        thumb = imgSrc($(s).first());
-        if (thumb) break;
+    // og:image paling bisa diandalkan; selector gambar lain bisa kena iklan
+    let thumb = cleanUrl(metaOf($, 'og:image'));
+    if (!thumb || /\.gif(\?|$)/i.test(thumb)) {
+        for (const s of ['.thumb img', '.infoanime img', '.series-thumb img', '.thumbook img']) {
+            thumb = imgSrc($(s).first());
+            if (thumb) break;
+        }
     }
-    thumb = (thumb || cleanUrl(metaOf($, 'og:image'))).split('?')[0];
+    thumb = thumb.split('?')[0];
 
-    const synopsis = textOf($, ['[itemprop="description"]', '.entry-content-single', '.sinopsis', '.desc', '.entry-content p'])
+    // Sinopsis: isi setelah judul "Sinopsis ...", lalu cadangan lain
+    let synopsis = '';
+    $('h2, h3').each((_, el) => {
+        if (synopsis || !/sinopsis/i.test($(el).text())) return;
+        let $n = $(el).next();
+        for (let i = 0; i < 4 && $n.length; i++, $n = $n.next()) {
+            const t = $n.text().replace(/\s+/g, ' ').trim();
+            if (t.length > 30) { synopsis = t; break; }
+        }
+    });
+    synopsis = synopsis
+        || textOf($, ['[itemprop="description"]', '.entry-content-single', '.sinopsis', '.desc'])
         || metaOf($, 'og:description') || 'Tidak ada sinopsis.';
 
-    const chapters: { title: string; link: string; date: string }[] = [];
-    const seen = new Set<string>();
-    const add = (el: any) => {
-        const $a = $(el);
-        const link = cleanUrl($a.attr('href'));
-        const t = ($a.find('.chapternum').text() || $a.text()).replace(/\s+/g, ' ').trim();
-        if (!link || !t || seen.has(link)) return;
-        seen.add(link);
-        const $row = $a.closest('li, .lchx, .chbox, .eph-num').length ? $a.closest('li, .lchx, .chbox, .eph-num') : $a.parent();
-        const date = $row.find('.date, .chapterdate, .chapter-date, .dt').first().text().trim();
-        chapters.push({ title: t, link, date });
+    // Chapter: tautan /<slug>-chapter-N/ (slug komik tanpa awalan angka). Tautan waktu ("1 tahun yang lalu")
+    // dan tombol "Chapter Awal/Baru" dilewati supaya tidak dobel.
+    let path = url;
+    try { path = new URL(url).pathname; } catch {}
+    const slug = path.replace(/\/+$/, '').split('/').pop()!.replace(/^\d+-/, '');
+    const strictRe = new RegExp(`/${escapeRe(slug)}-chapter-[^/]+/?$`, 'i');
+    const looseRe = /-chapter-[^/]+\/?$/i;
+    const dateRe = /(yang\s+)?lalu$|^\d+\s*(detik|menit|jam|hari|minggu|bulan|tahun)/i;
+
+    const collect = (re: RegExp) => {
+        const out: { title: string; link: string; date: string }[] = [];
+        const dates: Record<string, string> = {};
+        const seen = new Set<string>();
+        $('a[href]').each((_, el) => {
+            const $a = $(el);
+            const link = cleanUrl($a.attr('href'));
+            if (!link || !re.test(link.split('?')[0])) return;
+            const t = $a.text().replace(/\s+/g, ' ').trim();
+            if (!t) return;
+            if (dateRe.test(t)) { dates[link] = t; return; }
+            if (/^Chapter\s+(Awal|Baru)/i.test(t) || seen.has(link)) return;
+            seen.add(link);
+            out.push({ title: t, link, date: '' });
+        });
+        out.forEach((c) => { c.date = dates[c.link] || ''; });
+        return out;
     };
 
-    const chapterSelectors = [
-        '.eps_lst .lchx a', '#chapter_list a', '.listeps a', '.lchx a',
-        '.chapter-list a', '.eplister li a', '#chapterlist li a',
-    ];
-    for (const s of chapterSelectors) {
-        $(s).each((_, el) => add(el));
-        if (chapters.length) break;
-    }
-    // Cadangan: semua tautan yang jelas menuju chapter
-    if (!chapters.length) {
-        $('a[href*="chapter"], a[href*="-ch-"]').each((_, el) => add(el));
-    }
+    let chapters = collect(strictRe);
+    if (!chapters.length) chapters = collect(looseRe);
 
     if (!chapters.length) {
-        throw new Error('Daftar chapter tidak ditemukan. Buka /api/manga/debug?url=<link komik ini> untuk cek selector.');
+        throw new Error('Daftar chapter tidak ditemukan. Buka /api/manga/debug?url=<link komik ini> untuk cek.');
     }
     return { title, thumb, synopsis, chapters };
 }
@@ -232,17 +305,25 @@ function readerImages($: cheerio.CheerioAPI): string[] {
         if (found.length) return found;
     }
 
-    // 2) Selector area baca (urut dari yang paling spesifik)
+    // 2) komikindo.ch: gambar halaman punya alt "<judul> Chapter N" dan bukan cover situs sendiri
+    $('img').each((_, el) => {
+        const $i = $(el);
+        const u = imgSrc($i);
+        if (u && /chapter/i.test($i.attr('alt') || '') && !/wp-content\/uploads/i.test(u)) push(u);
+    });
+    if (found.length) return found;
+
+    // 3) Selector area baca (urut dari yang paling spesifik)
     const readerSelectors = [
         '#chimg-auh img', '#chimg img', '.chapter-image img', '#chapter_imgs img',
-        '.reader-area img', '#readerarea img', '.imgch img', '.entry-content img',
+        '.reader-area img', '#readerarea img', '.imgch img',
     ];
     for (const s of readerSelectors) {
         $(s).each((_, el) => push(imgSrc($(el))));
         if (found.length) return found;
     }
 
-    // 3) Cadangan: semua gambar di konten utama, tanpa header/footer/sidebar/iklan
+    // 4) Cadangan: semua gambar di konten utama, tanpa header/footer/sidebar/iklan
     const $c = cheerio.load($.html());
     $c('header, footer, aside, nav, .sidebar, .widget, .ads, [class*="banner"], [id*="banner"]').remove();
     $c('img').each((_, el) => {
@@ -263,8 +344,8 @@ const hrefOf = ($: cheerio.CheerioAPI, selectors: string[]) => {
 export async function scrapeChapter(url: string) {
     const $ = cheerio.load(await fetchHtml(url));
 
-    const title = (textOf($, ['.entry-title', 'h1']) || metaOf($, 'og:title') || $('title').text())
-        .replace(/\s*[-–|]\s*Komik\s*Indo.*$/i, '').trim();
+    const title = stripKomik(textOf($, ['.entry-title', 'h1']) || metaOf($, 'og:title') || $('title').text())
+        .replace(/\s+Bahasa Indonesia$/i, '');
     const images = readerImages($);
     if (!images.length) {
         throw new Error('Gambar chapter tidak ditemukan. Buka /api/manga/debug?url=<link chapter ini> untuk cek selector.');
