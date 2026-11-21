@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'uploads.mangadex.org',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'api.dicebear.com',
         pathname: '/**',
       }
