@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: 'Komiku',
   description: 'Baca komik manga, manhwa, manhua gratis dan lengkap',
   manifest: '/manifest.json',
-  themeColor: '#0A0B0E',
+  themeColor: '#1B1A20',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -23,10 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="id">
-      <body className="bg-[#0D0D10] text-white flex flex-col min-h-screen items-center" suppressHydrationWarning>
-        <div className="w-full max-w-md bg-[#0D0D10] relative shadow-sm overflow-x-hidden flex flex-col">
+      <body className="font-sans bg-[#1B1A20] text-white flex flex-col min-h-screen items-center" suppressHydrationWarning>
+        <div className="w-full max-w-md bg-[#1B1A20] relative shadow-sm overflow-x-hidden flex flex-col">
           
-          <main className="w-full relative pb-24">
+          <main className="w-full relative pb-28">
             {children}
           </main>
 

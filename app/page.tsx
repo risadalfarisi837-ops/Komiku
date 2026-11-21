@@ -3,6 +3,7 @@
 import { useEffect, useState, memo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useHistory } from '@/lib/store';
 
 // ─── Firebase ────────────────────────────────────────────────────────────────
 declare global { interface Window { firebase: any; _fbReady: boolean; } }
@@ -72,218 +73,211 @@ function getRating(desc: string): string | null {
   return (isNaN(n) || n <= 0) ? null : n.toFixed(1);
 }
 
-// ─── Banner + Search di atas ──────────────────────────────────────────────────
-function BannerWithSearch({ items, onSearch }: { items: any[]; onSearch: (q: string) => void }) {
-  const [idx, setIdx] = useState(0);
-  const [val, setVal] = useState('');
-  const timerRef = useRef<any>(null);
-  const slides = items.slice(0, 5);
+// ─── Warna & util ────────────────────────────────────────────────────────────
+const ACCENT = '#FF6B6B';
+const CARD = '#2A2931';
+const MUTED = '#8F8D9B';
 
-  useEffect(() => {
-    if (slides.length === 0) return;
-    timerRef.current = setInterval(() => setIdx(p => (p + 1) % slides.length), 4000);
-    return () => clearInterval(timerRef.current);
-  }, [slides.length]);
+function typeLabel(item: any): string {
+  const f = getFlag(item.title, item.type, item.flag);
+  if (f === '🇰🇷') return 'Manhwa';
+  if (f === '🇨🇳') return 'Manhua';
+  if (f === '🇯🇵') return 'Manga';
+  return 'Komik';
+}
+const clamp = (n: number): React.CSSProperties => ({ display: '-webkit-box', WebkitLineClamp: n, WebkitBoxOrient: 'vertical', overflow: 'hidden' });
 
-  const hero = slides[idx];
-
+// ─── Header: logo + search + lonceng ─────────────────────────────────────────
+function Header({ onSearch }: { onSearch: () => void }) {
   return (
-    <div style={{ position: 'relative', width: '100%', height: 420, overflow: 'hidden' }}>
-      {/* BG image */}
-      {hero && (
-        <img
-          src={hero.thumb} alt={hero?.title || ''}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', transition: 'opacity 0.5s' }}
-          referrerPolicy="no-referrer"
-        />
-      )}
-      {/* Dark gradient overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.3) 40%, rgba(19,21,26,0.85) 75%, #0D0D10 100%)' }} />
-
-      {/* Search bar at top */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, padding: '14px 16px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '10px 14px' }}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <circle cx={11} cy={11} r={8} /><line x1={21} y1={21} x2={16.65} y2={16.65} />
-            </svg>
-            <input
-              type="text" placeholder="Search..."
-              value={val} onChange={e => setVal(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') onSearch(val); }}
-              style={{ background: 'transparent', border: 'none', color: '#fff', width: '100%', marginLeft: 10, outline: 'none', fontSize: 14, fontFamily: "'Outfit', sans-serif" }}
-            />
-          </div>
-          {/* Search icon button */}
-          <button onClick={() => onSearch(val)} style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <circle cx={11} cy={11} r={8} /><line x1={21} y1={21} x2={16.65} y2={16.65} />
-            </svg>
-          </button>
-          {/* Login icon */}
-          <Link href="/profile" style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1={15} y1={12} x2={3} y2={12}/>
-            </svg>
-          </Link>
-        </div>
+    <div style={{ display: 'flex', alignItems: 'center', padding: '14px 14px 12px' }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: '#26252C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800 }}>K</div>
+      <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.5, marginLeft: 8, flex: 1 }}>
+        Komi<span style={{ color: ACCENT }}>ku</span>
       </div>
-
-      {/* Spotlight text content */}
-      {hero && (
-        <div style={{ position: 'absolute', bottom: 20, left: 16, right: 16, zIndex: 2 }}>
-          <div style={{ fontSize: 12, fontWeight: 900, color: '#9ca3af', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase', fontStyle: 'italic' }}>
-            #1 Spotlight
-          </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 6, lineHeight: 1.3, textShadow: '0 2px 12px rgba(0,0,0,0.9)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {hero.title}
-          </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {hero.desc?.replace(/^Score:\s*[\d.]+\s*/i, '') || hero.desc || ''}
-          </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>...</div>
-        </div>
-      )}
-
-      {/* Dots bottom-right */}
-      <div style={{ position: 'absolute', bottom: 8, right: 16, display: 'flex', gap: 5, zIndex: 3 }}>
-        {slides.map((_, i) => (
-          <span
-            key={i}
-            onClick={() => { setIdx(i); clearInterval(timerRef.current); }}
-            style={{ display: 'block', borderRadius: 99, cursor: 'pointer', transition: 'all 0.3s', width: idx === i ? 18 : 6, height: 6, background: idx === i ? '#fff' : 'rgba(255,255,255,0.3)' }}
-          />
-        ))}
-      </div>
+      <button onClick={onSearch} aria-label="Cari" style={{ background: 'none', border: 0, color: '#fff', padding: 8 }}>
+        <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round"><circle cx={11} cy={11} r={7.5} /><line x1={21} y1={21} x2={16.5} y2={16.5} /></svg>
+      </button>
+      <button aria-label="Notifikasi" style={{ position: 'relative', background: 'none', border: 0, color: '#fff', padding: 8, marginLeft: 6 }}>
+        <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 01-3.4 0" /></svg>
+        <span style={{ position: 'absolute', top: 6, right: 7, width: 9, height: 9, borderRadius: '50%', background: ACCENT }} />
+      </button>
     </div>
   );
 }
 
-// ─── Manga Card kotak persegi + flag + rating + chapter ───────────────────────
-const MangaCard = memo(function MangaCard({ item }: { item: any }) {
-  const flag = getFlag(item.title, item.type, item.flag);
-  const rating = item.score && item.score !== 'N/A' ? item.score : getRating(item.desc);
-  const chapterCount = item.chapterCount ?? null;
+// ─── Banner geser: teks kiri, cover kanan, tombol "Baca sekarang" ────────────
+function Hero({ items }: { items: any[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const slides = items.slice(0, 5);
+
+  useEffect(() => {
+    if (slides.length < 2) return;
+    let i = 0;
+    const t = setInterval(() => {
+      const el = ref.current;
+      if (!el) return;
+      i = (i + 1) % slides.length;
+      el.scrollTo({ left: i * (el.scrollWidth / slides.length), behavior: 'smooth' });
+    }, 5000);
+    return () => clearInterval(t);
+  }, [slides.length]);
 
   return (
-    <Link href={`/manga?url=${encodeURIComponent(item.link)}`} style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none', width: '100%' }}>
-      {/* Poster */}
-      <div style={{ position: 'relative', width: '100%', paddingTop: '133%', borderRadius: 10, overflow: 'hidden', background: '#1C1F26' }}>
-        <img
-          src={item.thumb} alt={item.title} referrerPolicy="no-referrer" loading="lazy"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-        {/* Flag top-left */}
-        <div style={{ position: 'absolute', top: 6, left: 6, width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>
-          {flag}
-        </div>
-        {/* Rating top-right */}
-        {rating && (
-          <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '3px 6px' }}>
-            <span style={{ color: '#facc15', fontSize: 10 }}>★</span>
-            <span style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>{rating}</span>
+    <div ref={ref} className="no-scrollbar" style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '4px 14px' }}>
+      {slides.map((m, i) => {
+        const rating = m.score && m.score !== 'N/A' ? m.score : getRating(m.desc);
+        const desc = (m.desc || '').replace(/^Score:\s*[\d.]+\s*/i, '');
+        return (
+          <div key={i} style={{ position: 'relative', flex: '0 0 94%', height: 215, borderRadius: 28, overflow: 'hidden', scrollSnapAlign: 'center', background: '#16151A' }}>
+            <img src={m.thumb} alt="" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(18px) brightness(.35)', transform: 'scale(1.3)' }} />
+            <img src={m.thumb} alt={m.title} referrerPolicy="no-referrer" style={{ position: 'absolute', right: 14, top: 14, bottom: -20, width: '36%', objectFit: 'cover', borderRadius: 18, transform: 'rotate(6deg)', boxShadow: '0 6px 24px rgba(0,0,0,.6)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(20,19,24,.92) 45%, transparent 75%)' }} />
+            <div style={{ position: 'absolute', left: 18, top: 16, bottom: 16, width: '60%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ letterSpacing: 0.3 }}>{typeLabel(m).toUpperCase()}</span>
+                {rating && <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ color: '#FBBF24' }}>★</span>{rating}</span>}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, letterSpacing: -1, marginTop: 4, ...clamp(2) }}>{m.title}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35, marginTop: 6, color: '#E8E6EF', ...clamp(2) }}>{desc}</div>
+              <Link href={`/manga?url=${encodeURIComponent(m.link)}`} style={{ marginTop: 'auto', alignSelf: 'flex-start', background: ACCENT, color: '#fff', fontWeight: 800, fontSize: 15, padding: '10px 22px', borderRadius: 99 }}>
+                Baca sekarang
+              </Link>
+            </div>
           </div>
-        )}
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Judul section: judul besar + link koral ─────────────────────────────────
+function SectionTitle({ title, sub, action, onAction, href }: { title: string; sub?: string; action: string; onAction?: () => void; href?: string }) {
+  const inner = (
+    <span style={{ color: ACCENT, fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', gap: 2 }}>
+      {action}
+      <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+    </span>
+  );
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '30px 14px 14px' }}>
+      <div>
+        <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -1 }}>{title}</div>
+        {sub && <div style={{ fontSize: 16, fontWeight: 800, color: MUTED, letterSpacing: -0.5, marginTop: 2 }}>{sub}</div>}
       </div>
-      {/* Title */}
-      <div style={{ fontSize: 13, color: '#fff', fontWeight: 800, marginTop: 6, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden', wordBreak: 'break-word' }}>
-        {item.title}
+      {href ? <Link href={href}>{inner}</Link> : <button onClick={onAction} style={{ background: 'none', border: 0 }}>{inner}</button>}
+    </div>
+  );
+}
+
+// ─── Lanjut baca (dari riwayat) ──────────────────────────────────────────────
+function ContinueReading() {
+  const { history } = useHistory();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  const seen = new Set<string>();
+  const list = history.filter(h => (seen.has(h.mangaLink) ? false : (seen.add(h.mangaLink), true))).slice(0, 8);
+  if (!list.length) return null;
+
+  return (
+    <>
+      <SectionTitle title="Lanjut baca" action="Riwayat" href="/history" />
+      <div className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 14px' }}>
+        {list.map((h, i) => {
+          const pct = h.totalPages > 0 ? Math.min(100, Math.round((h.pageRead / h.totalPages) * 100)) : 0;
+          const ch = (h.chapterNumber || h.chapterTitle || '').toString().replace(/^ch(apter)?\.?\s*/i, '');
+          return (
+            <Link key={i} href={`/chapter?url=${encodeURIComponent(h.chapterLink)}`} style={{ flex: '0 0 82%', maxWidth: 330, display: 'flex', gap: 14, background: CARD, borderRadius: 22, padding: 12 }}>
+              <img src={h.mangaThumb} alt="" referrerPolicy="no-referrer" style={{ width: 62, height: 84, borderRadius: 10, objectFit: 'cover', background: '#222' }} />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.7, ...clamp(2) }}>{h.mangaTitle}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>Ch. {ch} <span style={{ color: MUTED }}>· {pct}%</span></div>
+                  <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,.08)' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: ACCENT }} />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
-      {/* Chapter count */}
-      {chapterCount !== null && chapterCount > 0 && (
-        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, fontWeight: 600 }}>
-          {chapterCount} Chapter
-        </div>
-      )}
+    </>
+  );
+}
+
+// ─── Kartu besar (Rekomendasi) ───────────────────────────────────────────────
+const BigCard = memo(function BigCard({ item }: { item: any }) {
+  const rating = item.score && item.score !== 'N/A' ? item.score : getRating(item.desc);
+  return (
+    <Link href={`/manga?url=${encodeURIComponent(item.link)}`} style={{ flex: '0 0 86%', maxWidth: 360, scrollSnapAlign: 'start' }}>
+      <div style={{ position: 'relative', height: 215, borderRadius: 28, overflow: 'hidden', background: CARD }}>
+        <img src={item.thumb} alt={item.title} loading="lazy" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+        <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(20,19,24,.8)', fontSize: 14, fontWeight: 800, padding: '4px 10px', borderRadius: 8 }}>{typeLabel(item)}</span>
+        {rating && <span style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(20,19,24,.8)', fontSize: 13, fontWeight: 800, padding: '4px 10px', borderRadius: 8 }}><span style={{ color: '#FBBF24' }}>★</span> {rating}</span>}
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.6, margin: '10px 4px 0', ...clamp(1) }}>{item.title}</div>
     </Link>
   );
 });
 
-// ─── Horizontal scroll section ────────────────────────────────────────────────
-const HorizSection = memo(function HorizSection({ cat, label, onSeeAll }: { cat: any; label?: string; onSeeAll: (c: string) => void }) {
+// ─── Rail poster biasa (Update / Populer) ────────────────────────────────────
+const PosterRail = memo(function PosterRail({ items }: { items: any[] }) {
   return (
-    <div style={{ width: '100%', marginBottom: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px 10px' }}>
-        <h2 style={{ fontSize: 26, margin: 0, fontWeight: 900, color: '#fff' }}>{label || cat.category}</h2>
-        <button onClick={() => onSeeAll(cat.category)} style={{ color: '#9ca3af', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none', fontFamily: "'Outfit', sans-serif" }}>
-          View All
-        </button>
-      </div>
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 16px 4px', scrollSnapType: 'x mandatory', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-        {cat.items.slice(0, 12).map((m: any, i: number) => (
-          <div key={i} style={{ width: 140, flexShrink: 0, scrollSnapAlign: 'start' }}>
-            <MangaCard item={m} />
-          </div>
-        ))}
-      </div>
+    <div className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 14px' }}>
+      {items.slice(0, 12).map((m, i) => {
+        const rating = m.score && m.score !== 'N/A' ? m.score : getRating(m.desc);
+        return (
+          <Link key={i} href={`/manga?url=${encodeURIComponent(m.link)}`} style={{ flex: '0 0 128px' }}>
+            <div style={{ position: 'relative', paddingTop: '140%', borderRadius: 20, overflow: 'hidden', background: CARD }}>
+              <img src={m.thumb} alt={m.title} loading="lazy" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+              <span style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(20,19,24,.8)', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}>{typeLabel(m)}</span>
+              {rating && <span style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(20,19,24,.8)', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}><span style={{ color: '#FBBF24' }}>★</span> {rating}</span>}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.25, letterSpacing: -0.4, marginTop: 8, ...clamp(2) }}>{m.title}</div>
+          </Link>
+        );
+      })}
     </div>
   );
 });
 
-// ─── Grid section (3 col) ─────────────────────────────────────────────────────
-const GridSection = memo(function GridSection({ cat, onSeeAll }: { cat: any; onSeeAll: (c: string) => void }) {
-  return (
-    <div style={{ width: '100%', marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 16px 12px' }}>
-        <h2 style={{ fontSize: 22, margin: 0, fontWeight: 900, color: '#fff' }}>{cat.category}</h2>
-        <button onClick={() => onSeeAll(cat.category)} style={{ color: '#9ca3af', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none', fontFamily: "'Outfit', sans-serif" }}>
-          View All
-        </button>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px 12px', padding: '0 16px' }}>
-        {cat.items.slice(0, 6).map((m: any, i: number) => (
-          <MangaCard key={i} item={m} />
-        ))}
-      </div>
-    </div>
-  );
-});
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// ─── Skeleton ────────────────────────────────────────────────────────────────
 function SkeletonHome() {
+  const sh: React.CSSProperties = { background: 'linear-gradient(90deg,#2A2931 25%,#33323B 50%,#2A2931 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' };
   return (
-    <div>
-      <div style={{ width: '100%', height: 420, background: 'linear-gradient(90deg,#1C1F26 25%,#252525 50%,#1C1F26 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }} />
-      {[0, 1].map(i => (
-        <div key={i} style={{ padding: '18px 16px 8px' }}>
-          <div style={{ width: 120, height: 22, borderRadius: 6, background: '#1C1F26', marginBottom: 14, animation: 'shimmer 1.5s infinite linear', backgroundSize: '200% 100%' }} />
-          <div style={{ display: 'flex', gap: 12, overflow: 'hidden' }}>
-            {[0,1,2].map(j => (
-              <div key={j} style={{ width: 140, flexShrink: 0 }}>
-                <div style={{ width: '100%', paddingTop: '133%', borderRadius: 10, background: '#1C1F26', animation: 'shimmer 1.5s infinite linear', backgroundSize: '200% 100%' }} />
-                <div style={{ height: 14, borderRadius: 4, background: '#1C1F26', marginTop: 8, animation: 'shimmer 1.5s infinite linear', backgroundSize: '200% 100%' }} />
-                <div style={{ height: 11, borderRadius: 4, background: '#1C1F26', marginTop: 5, width: '60%', animation: 'shimmer 1.5s infinite linear', backgroundSize: '200% 100%' }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+    <div style={{ padding: '0 14px' }}>
+      <div style={{ ...sh, height: 215, borderRadius: 28 }} />
+      <div style={{ ...sh, width: 150, height: 26, borderRadius: 8, margin: '34px 0 14px' }} />
+      <div style={{ ...sh, height: 110, borderRadius: 22 }} />
+      <div style={{ ...sh, width: 190, height: 26, borderRadius: 8, margin: '34px 0 14px' }} />
+      <div style={{ ...sh, height: 215, borderRadius: 28 }} />
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Halaman utama ───────────────────────────────────────────────────────────
 export default function Home() {
   const router = useRouter();
   const [categories, setCategories] = useState<{ category: string; items: any[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Firebase di-load setelah halaman siap (defer supaya ga ngeblok render)
+  // Firebase di-load setelah halaman siap (defer supaya tidak memblok render)
   useEffect(() => {
     const t = setTimeout(() => {
       getFirebase().then(({ db }) => {
         db.ref('users').get().then(() => {}).catch(() => {});
       }).catch(() => {});
-    }, 3000); // tunda 3 detik
+    }, 3000);
     return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
     const CACHE_KEY = 'komiku_home_v1';
-    const CACHE_TTL = 5 * 60 * 1000; // 5 menit
-
-    // Tampilkan cache dulu (instant render)
+    const CACHE_TTL = 5 * 60 * 1000;
     try {
       const raw = localStorage.getItem(CACHE_KEY);
       if (raw) {
@@ -291,16 +285,14 @@ export default function Home() {
         if (Array.isArray(data) && Date.now() - ts < CACHE_TTL) {
           setCategories(data);
           setLoading(false);
-          return; // data masih fresh, skip fetch
+          return;
         } else if (Array.isArray(data)) {
-          // Data expired tapi tampilkan dulu biar ga blank
           setCategories(data);
           setLoading(false);
         }
       }
     } catch {}
 
-    // Fetch data terbaru di background
     fetch('/api/manga/home')
       .then(r => r.json())
       .then(json => {
@@ -315,53 +307,46 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSearch = useCallback((q: string) => {
-    if (!q.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-  }, [router]);
+  const goSearch = useCallback(() => router.push('/search'), [router]);
+  const seeAll = useCallback((c: string) => router.push(`/search?genre=${encodeURIComponent(c)}`), [router]);
 
-  const handleSeeAll = useCallback((c: string) => {
-    router.push(`/search?genre=${encodeURIComponent(c)}`);
-  }, [router]);
-
-  const allItems = categories.flatMap(c => c.items);
-  const bannerItems = allItems.slice(0, 5);
-
-  // 3 section tetap: Update, Popular, For You
-  const updateCat  = { category: 'Update',   items: allItems.slice(0, 12) };
-  const popularCat = { category: 'Popular',  items: [...allItems].sort((a, b) => (parseFloat(getRating(b.desc) ?? '0') || 0) - (parseFloat(getRating(a.desc) ?? '0') || 0)).slice(0, 12) };
-  const forYouCat  = { category: 'For You',  items: allItems.slice(12, 24) };
+  const all = categories.flatMap(c => c.items);
+  const rate = (x: any) => parseFloat(getRating(x.desc) ?? '0') || 0;
+  const hero = all.slice(0, 5);
+  const recommended = all.slice(5, 15);
+  const popular = [...all].sort((a, b) => rate(b) - rate(a)).slice(0, 12);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap');
-        *, *::before, *::after { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; background: #0D0D10; color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; width: 100%; }
-        a { text-decoration: none; }
+        a { text-decoration: none; color: inherit; }
         ::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       `}</style>
 
-      <div style={{ background: '#0D0D10', color: '#fff', fontFamily: "'Outfit', sans-serif" }}>
-        <main style={{ paddingBottom: 80 }}>
-          {loading ? (
-            <SkeletonHome />
-          ) : error ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>{error}</div>
-          ) : (
-            <>
-              {/* Banner dengan search bar di atas — sama persis kayak sebelumnya */}
-              <BannerWithSearch items={bannerItems} onSearch={handleSearch} />
+      <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh' }}>
+        <Header onSearch={goSearch} />
+        {loading ? (
+          <SkeletonHome />
+        ) : error ? (
+          <div style={{ padding: 20, textAlign: 'center', color: MUTED }}>{error}</div>
+        ) : (
+          <>
+            <Hero items={hero} />
+            <ContinueReading />
 
-              {/* Cuma 3 section */}
-              <HorizSection cat={updateCat}  label="Update"   onSeeAll={handleSeeAll} />
-              <HorizSection cat={popularCat} label="Popular"  onSeeAll={handleSeeAll} />
-              <HorizSection cat={forYouCat}  label="For You"  onSeeAll={handleSeeAll} />
-            </>
-          )}
-        </main>
+            <SectionTitle title="Rekomendasi" sub="Pilihan tim Komiku" action="Lihat semua" onAction={() => seeAll('Rekomendasi')} />
+            <div className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollSnapType: 'x mandatory', scrollPaddingLeft: 14, padding: '0 14px' }}>
+              {recommended.map((m, i) => <BigCard key={i} item={m} />)}
+            </div>
+
+            <SectionTitle title="Update terbaru" action="Lihat semua" onAction={() => seeAll('Update')} />
+            <PosterRail items={all.slice(0, 12)} />
+
+            <SectionTitle title="Populer" action="Lihat semua" onAction={() => seeAll('Popular')} />
+            <PosterRail items={popular} />
+          </>
+        )}
       </div>
     </>
   );

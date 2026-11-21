@@ -266,7 +266,7 @@ function LevelBadge({ level }: { level: number }) {
     const isShimmer = rank.name === 'Diamond' || rank.name === 'Mythic';
     const shimmerBg = rank.name === 'Diamond'
         ? 'linear-gradient(90deg,#9ca3af,#06b6d4,#9ca3af)'
-        : 'linear-gradient(90deg,#1C1F26,#2a2d35,#1C1F26)';
+        : 'linear-gradient(90deg,#2A2931,#2a2d35,#2A2931)';
 
     return (
         <span
@@ -316,7 +316,7 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
         <div
             onMouseDown={start} onMouseUp={stop} onMouseLeave={stop}
             onTouchStart={start} onTouchEnd={stop} onTouchMove={stop}
-            className="flex gap-3 p-3 rounded-2xl border border-white/5 bg-[#0D0D10]/60 mb-3 select-none"
+            className="flex gap-3 p-3 rounded-2xl border border-white/5 bg-[#1B1A20]/60 mb-3 select-none"
         >
             <AvatarWithBorder src={c.foto} size={38} borderKey={c.activeBorder} />
             <div className="flex-1 min-w-0">
@@ -436,7 +436,7 @@ function CommentPanel({ onClose, chapterUrl, chapterTitle }: { onClose: () => vo
                 position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
                 animation: 'slideUp 0.3s cubic-bezier(.22,1,.36,1)',
             }}
-            className="bg-[#0D0D10]/98 backdrop-blur-xl border-t border-white/[0.08] rounded-t-[20px] max-h-[72vh] flex flex-col"
+            className="bg-[#1B1A20]/98 backdrop-blur-xl border-t border-white/[0.08] rounded-t-[20px] max-h-[72vh] flex flex-col"
         >
             <style>{`
                 @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -476,7 +476,7 @@ function CommentPanel({ onClose, chapterUrl, chapterTitle }: { onClose: () => vo
                     borderKey={userData?.activeBorder}
                 />
                 {currentUser ? (
-                    <div className="flex-1 flex items-center gap-2 bg-[#0D0D10] border border-white/10 rounded-2xl px-4 pr-2 py-2">
+                    <div className="flex-1 flex items-center gap-2 bg-[#1B1A20] border border-white/10 rounded-2xl px-4 pr-2 py-2">
                         <input
                             ref={inputRef}
                             type="text"
@@ -490,7 +490,7 @@ function CommentPanel({ onClose, chapterUrl, chapterTitle }: { onClose: () => vo
                         <button
                             onClick={handleSend}
                             disabled={!inputVal.trim() || posting}
-                            className="w-8 h-8 rounded-xl bg-[#1C1F26] flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform flex-shrink-0"
+                            className="w-8 h-8 rounded-xl bg-[#2A2931] flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform flex-shrink-0"
                         >
                             {posting
                                 ? <svg className="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
@@ -501,7 +501,7 @@ function CommentPanel({ onClose, chapterUrl, chapterTitle }: { onClose: () => vo
                 ) : (
                     <button
                         onClick={handleLogin}
-                        className="flex-1 flex items-center gap-2 bg-[#0D0D10] border border-white/10 rounded-2xl px-4 pr-3 py-2.5 active:scale-95 transition-transform"
+                        className="flex-1 flex items-center gap-2 bg-[#1B1A20] border border-white/10 rounded-2xl px-4 pr-3 py-2.5 active:scale-95 transition-transform"
                     >
                         <span className="flex-1 text-sm text-gray-600 text-left">Tulis komentar...</span>
                         <IconSend />
@@ -587,8 +587,6 @@ function ChapterContent() {
     const [liked, setLiked] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
     const hideTimer = useRef<any>(null);
-    const [showXpToast, setShowXpToast] = useState(false);
-    const xpToastTimer = useRef<any>(null);
 
     // Auto-scroll state
     const [isScrolling, setIsScrolling] = useState(false);
@@ -625,9 +623,6 @@ function ChapterContent() {
                         totalPages:    json.data.images?.length ?? 0,
                     });
                     addExp();
-                    clearTimeout(xpToastTimer.current);
-                    setShowXpToast(true);
-                    xpToastTimer.current = setTimeout(() => setShowXpToast(false), 2500);
                 } else {
                     setError(json.message || 'Gagal memuat chapter');
                 }
@@ -733,7 +728,7 @@ function ChapterContent() {
 
     if (loading || navigating) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen space-y-6 bg-[#0D0D10]">
+            <div className="flex flex-col items-center justify-center min-h-screen space-y-6 bg-[#1B1A20]">
                 <Loader2 className="w-14 h-14 animate-spin text-gray-400" />
                 <p className="text-gray-500 text-sm font-semibold tracking-widest uppercase animate-pulse">
                     {navigating ? 'Memuat Chapter...' : 'Menyiapkan Komik...'}
@@ -744,9 +739,9 @@ function ChapterContent() {
 
     if (error || !chapter) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-[#0D0D10] px-6 text-center space-y-4">
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#1B1A20] px-6 text-center space-y-4">
                 <p className="text-gray-400 text-base font-semibold">{error || 'Chapter tidak ditemukan'}</p>
-                <button onClick={() => window.history.back()} className="px-8 py-3 bg-[#1C1F26] text-white font-bold rounded-2xl border border-white/5 active:scale-95 transition-transform">
+                <button onClick={() => window.history.back()} className="px-8 py-3 bg-[#2A2931] text-white font-bold rounded-2xl border border-white/5 active:scale-95 transition-transform">
                     Kembali
                 </button>
             </div>
@@ -796,36 +791,7 @@ function ChapterContent() {
                     0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
                     50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
                 }
-                @keyframes xpToastIn {
-                    from { opacity: 0; transform: translateX(12px) scale(0.92); }
-                    to   { opacity: 1; transform: translateX(0)     scale(1); }
-                }
             `}</style>
-
-            {/* XP Toast */}
-            {showXpToast && (
-                <div style={{
-                    position: 'fixed',
-                    top: '72px',
-                    right: '16px',
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: 'rgba(26,29,36,0.95)',
-                    border: '1px solid rgba(250,204,21,0.35)',
-                    borderRadius: '14px',
-                    padding: '10px 16px',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.5), 0 0 12px rgba(250,204,21,0.15)',
-                    animation: 'xpToastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards',
-                }}>
-                    <span style={{ fontSize: '18px', lineHeight: 1 }}>⚡</span>
-                    <div>
-                        <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#facc15', letterSpacing: '0.01em' }}>+10 XP</p>
-                        <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Chapter selesai dibuka</p>
-                    </div>
-                </div>
-            )}
 
             {/* Auto-scroll indicator */}
             {isScrolling && (
@@ -1004,7 +970,7 @@ function ChapterContent() {
 export default function ChapterPage() {
     return (
         <Suspense fallback={
-            <div className="flex flex-col flex-1 items-center justify-center min-h-screen bg-[#0D0D10]">
+            <div className="flex flex-col flex-1 items-center justify-center min-h-screen bg-[#1B1A20]">
                 <Loader2 className="w-12 h-12 animate-spin text-gray-300" />
             </div>
         }>

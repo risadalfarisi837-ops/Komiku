@@ -129,7 +129,7 @@ function LevelBadge({ level }: { level: number }) {
   const isShimmer = rank.name === 'Diamond' || rank.name === 'Mythic';
   const shimmerBg = rank.name === 'Diamond'
     ? 'linear-gradient(90deg,#9ca3af,#06b6d4,#9ca3af)'
-    : 'linear-gradient(90deg,#1C1F26,#2a2d35,#1C1F26)';
+    : 'linear-gradient(90deg,#2A2931,#2a2d35,#2A2931)';
 
   return (
     <span
@@ -184,7 +184,7 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
     <div
       onMouseDown={start} onMouseUp={stop} onMouseLeave={stop}
       onTouchStart={start} onTouchEnd={stop} onTouchMove={stop}
-      className="flex gap-3 p-3 rounded-2xl border border-white/5 bg-[#0D0D10]/60 mb-3 select-none"
+      className="flex gap-3 p-3 rounded-2xl border border-white/5 bg-[#1B1A20]/60 mb-3 select-none"
     >
       <AvatarWithBorder src={c.foto} size={38} borderKey={c.activeBorder} />
       <div className="flex-1 min-w-0">
@@ -310,7 +310,7 @@ function ReviewsTab({ mangaUrl, mangaTitle }: { mangaUrl: string; mangaTitle: st
           borderKey={userData?.activeBorder}
         />
         {currentUser ? (
-          <div className="flex-1 flex items-center gap-2 bg-[#0D0D10] border border-white/10 rounded-2xl px-4 pr-2 py-2">
+          <div className="flex-1 flex items-center gap-2 bg-[#1B1A20] border border-white/10 rounded-2xl px-4 pr-2 py-2">
             <input
               type="text" value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') post(); }}
@@ -318,13 +318,13 @@ function ReviewsTab({ mangaUrl, mangaTitle }: { mangaUrl: string; mangaTitle: st
               className="flex-1 bg-transparent text-sm text-white outline-none placeholder-gray-600"
             />
             <button onClick={post} disabled={!text.trim() || posting}
-              className="w-8 h-8 rounded-xl bg-[#1C1F26] flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform flex-shrink-0">
+              className="w-8 h-8 rounded-xl bg-[#2A2931] flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform flex-shrink-0">
               {posting ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
             </button>
           </div>
         ) : (
           <button onClick={login}
-            className="flex-1 flex items-center gap-2 bg-[#0D0D10] border border-white/10 rounded-2xl px-4 pr-3 py-2.5 active:scale-95 transition-transform">
+            className="flex-1 flex items-center gap-2 bg-[#1B1A20] border border-white/10 rounded-2xl px-4 pr-3 py-2.5 active:scale-95 transition-transform">
             <span className="flex-1 text-sm text-gray-600 text-left">Tulis komentar...</span>
             <Send className="w-4 h-4 text-gray-700 flex-shrink-0" />
           </button>
@@ -376,22 +376,22 @@ function MangaDetailContent() {
   }, [url]);
 
   if (loading) return (
-    <div className="flex flex-col justify-center items-center min-h-screen bg-[#0D0D10] gap-4">
+    <div className="flex flex-col justify-center items-center min-h-screen bg-[#1B1A20] gap-4">
       <Loader2 className="w-10 h-10 animate-spin text-gray-300" />
       <p className="text-gray-500 text-sm">Memuat detail manga...</p>
     </div>
   );
   if (error || !detail) return (
-    <div className="px-6 py-20 text-center bg-[#0D0D10] min-h-screen">
+    <div className="px-6 py-20 text-center bg-[#1B1A20] min-h-screen">
       <p className="text-gray-400 mb-4">{error || 'Manga tidak ditemukan'}</p>
-      <button onClick={() => router.back()} className="px-6 py-2 bg-[#1A1D24] text-white rounded-full">Kembali</button>
+      <button onClick={() => router.back()} className="px-6 py-2 bg-[#2A2931] text-white rounded-full">Kembali</button>
     </div>
   );
 
   const isFav = isFavorite(url as string);
 
   return (
-    <div className="bg-[#0D0D10] flex flex-col relative text-white">
+    <div className="bg-[#1B1A20] flex flex-col relative text-white">
       {/* Background */}
       <div className="absolute top-0 left-0 w-full h-[60vh] z-0">
         <Image src={detail.thumb || "https://picsum.photos/400/600"} alt={detail.title} fill
@@ -408,7 +408,7 @@ function MangaDetailContent() {
       </div>
 
       {/* Sheet */}
-      <div className="relative z-10 mt-[45vh] bg-[#1A1D24] rounded-t-[2.5rem] w-full max-w-md mx-auto p-6 border-t border-white/5 shadow-2xl">
+      <div className="relative z-10 mt-[45vh] bg-[#2A2931] rounded-t-[2.5rem] w-full max-w-md mx-auto p-6 border-t border-white/5 shadow-2xl">
         <div className="flex justify-between items-start mt-2">
           <div className="flex-1 pr-4">
             <h1 className="text-2xl font-black text-white leading-tight mb-1">{detail.title}</h1>
@@ -416,7 +416,7 @@ function MangaDetailContent() {
           </div>
           <button
             onClick={() => toggleFavorite({ title: detail.title, link: url as string, thumb: detail.thumb, desc: detail.synopsis?.slice(0, 50) })}
-            className={`w-12 h-12 rounded-full flex items-center justify-center border active:scale-95 transition-all shrink-0 z-50 relative cursor-pointer ${mounted && isFav ? 'bg-red-500/10 border-red-500/30' : 'bg-[#0D0D10] border-white/5'}`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center border active:scale-95 transition-all shrink-0 z-50 relative cursor-pointer ${mounted && isFav ? 'bg-red-500/10 border-red-500/30' : 'bg-[#1B1A20] border-white/5'}`}
           >
             <Heart className={`w-5 h-5 transition-all ${mounted && isFav ? 'fill-red-500 text-red-500 scale-110' : 'fill-gray-600 text-gray-600'}`} strokeWidth={0} />
           </button>
@@ -435,7 +435,7 @@ function MangaDetailContent() {
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`pb-2 text-sm font-bold transition-colors relative ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
               {tab}
-              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1C1F26] rounded-t-full shadow-[0_0_8px_rgba(58,200,186,0.8)]" />}
+              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2A2931] rounded-t-full shadow-[0_0_8px_rgba(58,200,186,0.8)]" />}
             </button>
           ))}
         </div>
@@ -451,12 +451,12 @@ function MangaDetailContent() {
                     const isLastRead = lastRead?.chapterLink === ch.link;
                     return (
                       <Link href={`/chapter?url=${encodeURIComponent(ch.link)}&thumb=${encodeURIComponent(detail.thumb||"")}&mangaTitle=${encodeURIComponent(detail.title||"")}`} key={i}
-                        className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer group ${isRead ? 'bg-[#0D0D10]/30 border-white/5 opacity-70' : 'bg-[#0D0D10]/50 border-white/5 hover:bg-[#1C1F26]'}`}>
+                        className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer group ${isRead ? 'bg-[#1B1A20]/30 border-white/5 opacity-70' : 'bg-[#1B1A20]/50 border-white/5 hover:bg-[#2A2931]'}`}>
                         <div className="flex items-center gap-3 pointer-events-none">
-                          <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm relative ${isLastRead ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : isRead ? 'bg-[#1A1D24] border-white/5 text-gray-600' : 'bg-[#1A1D24] border-white/5 text-gray-300'}`}>
+                          <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm relative ${isLastRead ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : isRead ? 'bg-[#2A2931] border-white/5 text-gray-600' : 'bg-[#2A2931] border-white/5 text-gray-300'}`}>
                             {detail.chapters.length - i}
                             {isLastRead && (
-                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-[#1A1D24]" />
+                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-[#2A2931]" />
                             )}
                           </div>
                           <div>
@@ -500,10 +500,10 @@ function MangaDetailContent() {
           : 'Ch. 1';
         return (
           <div className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md z-50">
-            <div className="bg-[#0D0D10] px-4 pt-3 pb-6 flex items-center border-t border-white/5">
+            <div className="bg-[#1B1A20] px-4 pt-3 pb-6 flex items-center border-t border-white/5">
               <Link
                 href={`/chapter?url=${encodeURIComponent(targetChapter.link)}&thumb=${encodeURIComponent(detail.thumb||"")}&mangaTitle=${encodeURIComponent(detail.title||"")}`}
-                className="flex-1 bg-[#1A1D24] text-white font-black py-4 rounded-[1.5rem] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-white/5"
+                className="flex-1 bg-[#2A2931] text-white font-black py-4 rounded-[1.5rem] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-white/5"
               >
                 {isResume ? 'Lanjut Baca →' : 'Swipe to Read →'}
               </Link>
@@ -521,7 +521,7 @@ function MangaDetailContent() {
 
 export default function MangaPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-screen bg-[#0D0D10]"><Loader2 className="w-10 h-10 animate-spin text-gray-300" /></div>}>
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen bg-[#1B1A20]"><Loader2 className="w-10 h-10 animate-spin text-gray-300" /></div>}>
       <MangaDetailContent />
     </Suspense>
   );

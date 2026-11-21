@@ -26,41 +26,48 @@ function useFirebasePhoto() {
   return photoURL;
 }
 
-const HomeIcon = ({ active }: { active: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? 'white' : '#4B5563'} xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L3 9.5V20a1 1 0 001 1h5v-6h6v6h5a1 1 0 001-1V9.5L12 2z"/>
+type IconProps = { color: string; filled: boolean };
+const svg = { width: 26, height: 26, viewBox: '0 0 24 24', fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
+const HomeIcon = ({ color, filled }: IconProps) => (
+  <svg {...svg} fill={filled ? color : 'none'} stroke={color} strokeWidth={2}>
+    <path d="M12 3L3.5 10.2V20a1 1 0 001 1H9v-6h6v6h4.5a1 1 0 001-1v-9.8L12 3z" />
+  </svg>
+);
+const CompassIcon = ({ color, filled }: IconProps) => (
+  <svg {...svg} stroke={color} strokeWidth={2}>
+    <circle cx="12" cy="12" r="9.5" />
+    <polygon points="16 8 14 14 8 16 10 10 16 8" fill={filled ? color : 'none'} />
+  </svg>
+);
+const RankingIcon = ({ color }: IconProps) => (
+  <svg {...svg} stroke={color} strokeWidth={2}>
+    <rect x="3" y="12" width="5" height="9" rx="1" />
+    <rect x="9.5" y="3" width="5" height="18" rx="1" />
+    <rect x="16" y="8" width="5" height="13" rx="1" />
+  </svg>
+);
+const LibraryIcon = ({ color }: IconProps) => (
+  <svg {...svg} stroke={color} strokeWidth={2}>
+    <rect x="3" y="4" width="4" height="16" rx="1" />
+    <rect x="9" y="4" width="4" height="16" rx="1" />
+    <path d="M15.5 5.2l3.8-1 3 14.6-3.8 1z" />
+  </svg>
+);
+const PersonIcon = ({ color }: IconProps) => (
+  <svg {...svg} stroke={color} strokeWidth={2}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1" />
   </svg>
 );
 
-const CompassIcon = ({ active }: { active: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? 'white' : '#4B5563'} strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10"/>
-    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill={active ? 'white' : '#4B5563'} stroke="none"/>
-  </svg>
-);
-
-const RankingIcon = ({ active }: { active: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? 'white' : '#4B5563'} strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="14" width="4" height="8" rx="1"/>
-    <rect x="9" y="9" width="4" height="13" rx="1"/>
-    <rect x="16" y="4" width="4" height="18" rx="1"/>
-  </svg>
-);
-
-const ArchiveIcon = ({ active }: { active: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? 'white' : '#4B5563'} strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-    <polyline points="21 8 21 21 3 21 3 8"/>
-    <rect x="1" y="3" width="22" height="5" rx="1"/>
-    <line x1="10" y1="12" x2="14" y2="12"/>
-  </svg>
-);
-
-const PersonIcon = ({ active }: { active: boolean }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? 'white' : '#4B5563'} strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
+const links = [
+  { href: '/',          Icon: HomeIcon,    label: 'Beranda' },
+  { href: '/schedule',  Icon: CompassIcon, label: 'Jelajah' },
+  { href: '/favorites', Icon: RankingIcon, label: 'Peringkat' },
+  { href: '/history',   Icon: LibraryIcon, label: 'Koleksi' },
+  { href: '/profile',   Icon: PersonIcon,  label: 'Profil' },
+];
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -68,37 +75,35 @@ export default function BottomNav() {
 
   if (pathname.startsWith('/chapter') || pathname.startsWith('/manga') || pathname.startsWith('/search')) return null;
 
-  const links = [
-    { href: '/',          Icon: HomeIcon,    label: '' },
-    { href: '/schedule',  Icon: CompassIcon, label: '' },
-    { href: '/favorites', Icon: RankingIcon, label: '' },
-    { href: '/history',   Icon: ArchiveIcon, label: '' },
-    { href: '/profile',   Icon: PersonIcon,  label: '' },
-  ];
-
   return (
-    <nav style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-      background: '#0D0D10',
-      borderTop: '1px solid rgba(255,255,255,0.05)',
-      display: 'flex', alignItems: 'center',
-      paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
-    }}> 
-      {links.map(({ href, Icon }) => {
-        const isActive = pathname === href;
-        const isProfile = href === '/profile';
-        return (
-          <Link key={href} href={href} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '14px 0', textDecoration: 'none' }}>
-            {isProfile && photoURL ? (
-              <div className={`w-6 h-6 rounded-full overflow-hidden transition-all ${isActive ? 'ring-2 ring-white' : 'opacity-50'}`}>
-                <img src={photoURL} alt="pp" className="w-full h-full object-cover" />
+    <nav
+      style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+        display: 'flex', justifyContent: 'center',
+        background: 'var(--nav)',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 6px)',
+      }}
+    >
+      <div style={{ display: 'flex', width: '100%', maxWidth: 448, padding: '8px 6px 0' }}>
+        {links.map(({ href, Icon, label }) => {
+          const active = pathname === href;
+          const color = active ? '#fff' : 'var(--muted)';
+          const isProfile = href === '/profile';
+          return (
+            <Link key={href} href={href} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none' }}>
+              <div style={{ width: 62, height: 36, borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? 'rgba(255,107,107,0.28)' : 'transparent', transition: 'background .2s' }}>
+                {isProfile && photoURL ? (
+                  <img src={photoURL} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', outline: active ? '2px solid #fff' : 'none', opacity: active ? 1 : 0.7 }} />
+                ) : (
+                  <Icon color={color} filled={active} />
+                )}
               </div>
-            ) : (
-              <Icon active={isActive} />
-            )}
-          </Link>
-        );
-      })}
+              <span style={{ fontSize: 11.5, fontWeight: active ? 800 : 700, color, paddingBottom: 6 }}>{label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

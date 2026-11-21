@@ -38,7 +38,7 @@ function MangaCardInner({ title, link, thumb, desc, score, flag, chapterCount }:
 
   return (
     <Link href={`/manga?url=${encodeURIComponent(link)}`} className="group flex flex-col w-full flex-shrink-0 snap-start relative">
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-[#1A1D24] shadow-sm">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-[#2A2931] shadow-sm">
         <Image
           src={thumb}
           alt={title}
@@ -54,7 +54,7 @@ function MangaCardInner({ title, link, thumb, desc, score, flag, chapterCount }:
 
         <button
           onClick={handleFavorite}
-          className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-[#1A1D24]/60 backdrop-blur-md flex items-center justify-center shadow-sm"
+          className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-[#2A2931]/60 backdrop-blur-md flex items-center justify-center shadow-sm"
         >
           <Heart
             className={`w-3.5 h-3.5 ${mounted && isFav ? 'fill-gray-500 text-gray-500' : 'text-gray-300'}`}
@@ -62,7 +62,7 @@ function MangaCardInner({ title, link, thumb, desc, score, flag, chapterCount }:
           />
         </button>
 
-        <div className="absolute inset-x-2 bottom-2 bg-[#1A1D24]/80 backdrop-blur-lg rounded-2xl p-2.5 border border-white/5">
+        <div className="absolute inset-x-2 bottom-2 bg-[#2A2931]/80 backdrop-blur-lg rounded-2xl p-2.5 border border-white/5">
           <ScrollingTitle text={title} className="font-bold text-white text-sm" />
           {/* Rating + Chapter count */}
           <div className="flex items-center justify-between mt-1 gap-1">

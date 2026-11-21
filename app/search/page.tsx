@@ -296,11 +296,11 @@ function SearchContent() {
     const hasFilter = appliedGenre || appliedFormat || appliedStatus;
 
     return (
-        <div className="min-h-screen bg-[#0D0D10] text-white pb-28 max-w-md mx-auto">
+        <div className="min-h-screen bg-[#1B1A20] text-white pb-28 max-w-md mx-auto">
             {/* Header */}
-            <div className="sticky top-0 z-40 bg-[#0D0D10]/95 backdrop-blur-sm px-4 pt-0 pb-3 space-y-3">
+            <div className="sticky top-0 z-40 bg-[#1B1A20]/95 backdrop-blur-sm px-4 pt-0 pb-3 space-y-3">
                 <div className="flex items-center gap-2 pt-3">
-                    <div className="flex-1 flex items-center gap-2 bg-[#1C1F26] border border-white/10 rounded-2xl px-4 py-2.5">
+                    <div className="flex-1 flex items-center gap-2 bg-[#2A2931] border border-white/10 rounded-2xl px-4 py-2.5">
                         <Search className="w-4 h-4 text-gray-400 shrink-0" />
                         <input
                             ref={inputRef}
@@ -318,13 +318,13 @@ function SearchContent() {
                         )}
                     </div>
                     <button
-                        className={`w-10 h-10 flex items-center justify-center rounded-2xl border shrink-0 ${hasFilter ? 'bg-[#1C1F26] border-white/20' : 'bg-[#1C1F26] border-white/10'}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-2xl border shrink-0 ${hasFilter ? 'bg-[#2A2931] border-white/20' : 'bg-[#2A2931] border-white/10'}`}
                         onClick={() => setShowSheet(true)}
                     >
                         <SlidersHorizontal className="w-4 h-4 text-gray-300" />
                     </button>
                     <button
-                        className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#1C1F26] border border-white/10 shrink-0"
+                        className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#2A2931] border border-white/10 shrink-0"
                         onClick={handleSubmit}
                     >
                         <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -334,9 +334,9 @@ function SearchContent() {
                 {/* Active filter chips */}
                 {hasFilter && (
                     <div className="flex items-center gap-2 flex-wrap">
-                        {appliedGenre && <span className="px-3 py-1 rounded-full bg-[#1C1F26]/20 border border-white/20/30 text-xs text-gray-400 font-semibold">{appliedGenre}</span>}
-                        {appliedFormat && <span className="px-3 py-1 rounded-full bg-[#1C1F26]/20 border border-white/20/30 text-xs text-gray-400 font-semibold">{appliedFormat}</span>}
-                        {appliedStatus && <span className="px-3 py-1 rounded-full bg-[#1C1F26]/20 border border-white/20/30 text-xs text-gray-400 font-semibold">{appliedStatus}</span>}
+                        {appliedGenre && <span className="px-3 py-1 rounded-full bg-[#2A2931]/20 border border-white/20/30 text-xs text-gray-400 font-semibold">{appliedGenre}</span>}
+                        {appliedFormat && <span className="px-3 py-1 rounded-full bg-[#2A2931]/20 border border-white/20/30 text-xs text-gray-400 font-semibold">{appliedFormat}</span>}
+                        {appliedStatus && <span className="px-3 py-1 rounded-full bg-[#2A2931]/20 border border-white/20/30 text-xs text-gray-400 font-semibold">{appliedStatus}</span>}
                         <button onClick={() => { setAppliedGenre(null); setAppliedFormat(null); setAppliedStatus(null); setPendingGenre(null); setPendingFormat(null); setPendingStatus(null); }} className="text-xs text-gray-500 underline">Reset</button>
                     </div>
                 )}
@@ -382,7 +382,7 @@ function SearchContent() {
                         <p className="text-xs text-[#8F94A3]">Periksa koneksi internet kamu</p>
                         <button
                             onClick={() => fetchResults(activeQuery, appliedGenre, appliedFormat, appliedStatus, 1, false)}
-                            className="mt-2 px-5 py-2 rounded-xl bg-[#1C1F26] border border-white/10 text-sm text-white font-semibold"
+                            className="mt-2 px-5 py-2 rounded-xl bg-[#2A2931] border border-white/10 text-sm text-white font-semibold"
                         >
                             Coba lagi
                         </button>
@@ -397,7 +397,7 @@ function SearchContent() {
                             return (
                                 <Link key={i} href={`/manga?url=${encodeURIComponent(item.link)}`}>
                                     <div className="flex flex-col gap-1.5">
-                                        <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#1C1F26]">
+                                        <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#2A2931]">
                                             {item.thumb ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
                                                 <img src={item.thumb} alt={item.title} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
@@ -443,7 +443,7 @@ function SearchContent() {
                 <div className="fixed inset-0 z-50" onClick={() => setShowSheet(false)}>
                     <div className="absolute inset-0 bg-black/50" />
                     <div
-                        className="absolute bottom-0 left-0 right-0 max-w-md mx-auto bg-[#1C1F26] rounded-t-2xl max-h-[85vh] overflow-y-auto"
+                        className="absolute bottom-0 left-0 right-0 max-w-md mx-auto bg-[#2A2931] rounded-t-2xl max-h-[85vh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex justify-center pt-3 pb-1">
@@ -509,7 +509,7 @@ function SearchContent() {
 
                         {/* Action buttons */}
                         <div className="flex gap-3 px-4 py-4 border-t border-white/5">
-                            <button onClick={handleResetFilter} className="flex-1 py-3 rounded-2xl bg-[#0D0D10] text-white font-semibold text-sm">Reset</button>
+                            <button onClick={handleResetFilter} className="flex-1 py-3 rounded-2xl bg-[#1B1A20] text-white font-semibold text-sm">Reset</button>
                             <button onClick={handleApplyFilter} className="flex-[2] py-3 rounded-2xl bg-[#2A2D35] text-white font-semibold text-sm">Filter</button>
                         </div>
                     </div>
@@ -522,7 +522,7 @@ function SearchContent() {
 export default function SearchPage() {
     return (
         <Suspense fallback={
-            <div className="flex flex-col justify-center items-center min-h-screen bg-[#0D0D10] gap-3">
+            <div className="flex flex-col justify-center items-center min-h-screen bg-[#1B1A20] gap-3">
                 <Loader2 className="w-10 h-10 animate-spin text-gray-500" />
                 <p className="text-sm text-[#8F94A3]">Memuat...</p>
             </div>

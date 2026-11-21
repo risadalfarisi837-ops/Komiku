@@ -189,7 +189,7 @@ export default function LeaderboardPage() {
               {activeTrack.key === 'all' ? 'All Tracks · 8-Week Ranking by Track' : `${activeTrack.line1} ${activeTrack.line2} · 8-Week Ranking`}
             </p>
           </div>
-          <button onClick={load} disabled={loading} style={{ width: 40, height: 40, borderRadius: 13, background: '#1C1F26', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginTop: 4 }}>
+          <button onClick={load} disabled={loading} style={{ width: 40, height: 40, borderRadius: 13, background: '#2A2931', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginTop: 4 }}>
             <RefreshCw size={16} color="#9ca3af" />
           </button>
         </div>
@@ -227,7 +227,7 @@ export default function LeaderboardPage() {
         ) : error ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 32px', gap: 16, textAlign: 'center' }}>
             <p style={{ color: '#9ca3af', fontSize: 14 }}>{error}</p>
-            <button onClick={load} style={{ padding: '10px 24px', background: '#1C1F26', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 99, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>Coba Lagi</button>
+            <button onClick={load} style={{ padding: '10px 24px', background: '#2A2931', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 99, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>Coba Lagi</button>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: 12 }}>

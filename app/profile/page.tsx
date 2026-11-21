@@ -110,7 +110,7 @@ function RankModal({ open, onClose, currentLevel }: { open: boolean; onClose: ()
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-md bg-[#1A1D24] rounded-t-3xl px-5 pt-5 pb-28 border-t border-white/10 overflow-y-auto"
+        className="relative w-full max-w-md bg-[#2A2931] rounded-t-3xl px-5 pt-5 pb-28 border-t border-white/10 overflow-y-auto"
         style={{ maxHeight: '85vh' }}
         onClick={e => e.stopPropagation()}
       >
@@ -168,7 +168,7 @@ function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRenam
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-md bg-[#1A1D24] rounded-t-3xl px-5 pt-5 pb-10 border-t border-white/10"
+        className="relative w-full max-w-md bg-[#2A2931] rounded-t-3xl px-5 pt-5 pb-10 border-t border-white/10"
         onClick={e => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4" />
@@ -177,7 +177,7 @@ function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRenam
           {freeRenameUsed ? `Gratis sudah dipakai • Biaya: ${RENAME_COST} koin` : '1x gratis tersedia'}
         </p>
         <input
-          className="w-full bg-[#0D0D10] border border-white/10 rounded-2xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-blue-500 mb-4"
+          className="w-full bg-[#1B1A20] border border-white/10 rounded-2xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-blue-500 mb-4"
           value={name}
           onChange={e => setName(e.target.value)}
           maxLength={20}
@@ -299,7 +299,7 @@ function BorderShopModal({
     >
       <div
         style={{
-          background: '#1A1D24', borderRadius: '24px 24px 0 0',
+          background: '#2A2931', borderRadius: '24px 24px 0 0',
           width: '100%', maxWidth: 480, maxHeight: '85vh',
           display: 'flex', flexDirection: 'column',
           border: '1px solid rgba(255,255,255,0.06)',
@@ -330,7 +330,7 @@ function BorderShopModal({
             <button
               onClick={() => { setPreview(''); onEquip(''); }}
               style={{
-                background: !preview ? '#1C1F26' : 'rgba(255,255,255,0.07)',
+                background: !preview ? '#2A2931' : 'rgba(255,255,255,0.07)',
                 border: 'none', borderRadius: 20, padding: '6px 14px',
                 color: '#fff', fontWeight: 800, fontSize: 11, cursor: 'pointer',
               }}
@@ -340,7 +340,7 @@ function BorderShopModal({
             {preview && (
               <button
                 onClick={() => onEquip(preview)}
-                style={{ background: '#1C1F26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '6px 14px', color: '#fff', fontWeight: 800, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{ background: '#2A2931', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '6px 14px', color: '#fff', fontWeight: 800, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <Check size={12} /> Pakai Ini
               </button>
@@ -423,7 +423,7 @@ function BorderShopModal({
                       onClick={() => setConfirm({ key, harga: item.harga })}
                       disabled={!canAfford}
                       style={{
-                        background: canAfford ? '#1C1F26' : '#2a2d36',
+                        background: canAfford ? '#2A2931' : '#2a2d36',
                         color: canAfford ? '#fff' : '#555',
                         border: 'none', borderRadius: 20, padding: '8px 16px',
                         fontSize: 12, fontWeight: 800, cursor: canAfford ? 'pointer' : 'not-allowed',
@@ -450,7 +450,7 @@ function BorderShopModal({
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#1A1D24', borderRadius: 24, padding: '28px 24px', width: 300, textAlign: 'center', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: '#2A2931', borderRadius: 24, padding: '28px 24px', width: 300, textAlign: 'center', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <p style={{ color: '#fff', fontWeight: 900, fontSize: 16, marginBottom: 8 }}>Konfirmasi Pembelian</p>
             <p style={{ color: '#aaa', fontSize: 13, marginBottom: 6 }}>{BORDER_CATALOG[confirm.key]?.nama}</p>
@@ -461,7 +461,7 @@ function BorderShopModal({
                 Batal
               </button>
               <button onClick={() => { onBuy(confirm.key, confirm.harga); setConfirm(null); setTab('owned'); setPreview(confirm.key); }}
-                style={{ flex: 1, background: '#1C1F26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 0', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>
+                style={{ flex: 1, background: '#2A2931', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 0', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>
                 Beli!
               </button>
             </div>
@@ -636,7 +636,7 @@ function DevPanel({ uid, db, userData, onUpdate }: {
                   </div>
                   <button onClick={applyToUser} disabled={saving}
                     className="w-full py-4 rounded-2xl font-black text-sm text-white disabled:opacity-50 mt-2"
-                    style={{ background:'linear-gradient(135deg,#1C1F26,#2a2d35)', boxShadow:'0 10px 20px rgba(59,130,246,0.3)' }}
+                    style={{ background:'linear-gradient(135deg,#2A2931,#2a2d35)', boxShadow:'0 10px 20px rgba(59,130,246,0.3)' }}
                   >{saving ? 'Memproses...' : 'TERAPKAN KE USER'}</button>
                 </div>
               )}
@@ -669,7 +669,7 @@ function DevPanel({ uid, db, userData, onUpdate }: {
                     </div>
                     <button onClick={sendGlobal} disabled={saving}
                       className="w-full py-4 rounded-2xl font-black text-sm text-white disabled:opacity-50"
-                      style={{ background:'linear-gradient(135deg,#1C1F26,#2a2d35)', boxShadow:'0 10px 20px rgba(59,130,246,0.3)' }}
+                      style={{ background:'linear-gradient(135deg,#2A2931,#2a2d35)', boxShadow:'0 10px 20px rgba(59,130,246,0.3)' }}
                     >{saving ? 'Mengirim...' : 'KIRIM KOMPENSASI GLOBAL'}</button>
                   </div>
                 </div>
@@ -837,7 +837,7 @@ export default function ProfilePage() {
     if (activeTab === 'comments') {
       if (!comments.length) return <p className="text-center text-gray-500 text-sm mt-8">Belum ada aktivitas komentar.</p>;
       return comments.map(c => (
-        <div key={c.id} className="bg-[#1A1D24] rounded-2xl p-4 border border-white/5 flex gap-3">
+        <div key={c.id} className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-3">
           <img src={photoURL || ''} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-400 font-semibold mb-1">{c.mangaTitle || 'Komik'}</p>
@@ -849,7 +849,7 @@ export default function ProfilePage() {
     if (activeTab === 'history') {
       if (!mounted || !history.length) return <p className="text-center text-gray-500 text-sm mt-8">Belum ada riwayat baca.</p>;
       return history.slice(0, 20).map((h, i) => (
-        <div key={i} className="bg-[#1A1D24] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
+        <div key={i} className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
           <img src={h.mangaThumb} alt="" className="w-16 h-22 rounded-xl object-cover flex-shrink-0" style={{height:'88px', width:'64px'}} />
           <div className="flex-1 min-w-0">
             <p className="text-base text-white font-bold leading-tight line-clamp-2">{h.mangaTitle}</p>
@@ -864,7 +864,7 @@ export default function ProfilePage() {
     return (
       <>
         {histItems.map((h, i) => (
-          <div key={i} className="bg-[#1A1D24] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
+          <div key={i} className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
             <img src={h.mangaThumb} alt="" className="w-16 rounded-xl object-cover flex-shrink-0" style={{height:'88px', width:'64px'}} />
             <div className="flex-1 min-w-0">
               <p className="text-base text-white font-bold leading-tight line-clamp-2">{h.mangaTitle}</p>
@@ -873,7 +873,7 @@ export default function ProfilePage() {
           </div>
         ))}
         {favItems.map((f, i) => (
-          <div key={i} className="bg-[#1A1D24] rounded-2xl p-3 border border-white/5 flex gap-3 items-center">
+          <div key={i} className="bg-[#2A2931] rounded-2xl p-3 border border-white/5 flex gap-3 items-center">
             <img src={f.thumb} alt="" className="w-12 h-16 rounded-xl object-cover flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white font-bold leading-tight line-clamp-2">{f.title}</p>
@@ -886,18 +886,18 @@ export default function ProfilePage() {
   };
 
   if (loadingAuth) return (
-    <div className="min-h-screen bg-[#0D0D10] flex items-center justify-center">
+    <div className="min-h-screen bg-[#1B1A20] flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-white/20 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   if (!user) return (
-    <div className="min-h-screen bg-[#0D0D10] flex flex-col pb-28">
-      <div className="bg-[#0D0D10]/90 backdrop-blur-md px-6 pt-12 pb-4 sticky top-0 z-30 border-b border-white/5">
+    <div className="min-h-screen bg-[#1B1A20] flex flex-col pb-28">
+      <div className="bg-[#1B1A20]/90 backdrop-blur-md px-6 pt-12 pb-4 sticky top-0 z-30 border-b border-white/5">
         <h1 className="text-2xl font-black text-white tracking-tight">Akun<span className="text-gray-300">.</span></h1>
       </div>
       <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-6">
-        <div className="w-24 h-24 rounded-full bg-[#1A1D24] border-2 border-white/10 flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-[#2A2931] border-2 border-white/10 flex items-center justify-center">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
           </svg>
@@ -924,7 +924,7 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0D0D10] pb-28">
+    <div className="min-h-screen bg-[#1B1A20] pb-28">
       <style>{`
         @keyframes pulseGlowCyan { 0% { box-shadow:0 0 4px rgba(6,182,212,0.4); } 100% { box-shadow:0 0 14px rgba(6,182,212,0.9); } }
         @keyframes pulseGlowPink { 0% { box-shadow:0 0 4px rgba(236,72,153,0.4); } 100% { box-shadow:0 0 16px rgba(236,72,153,0.9); } }
@@ -936,7 +936,7 @@ export default function ProfilePage() {
       `}</style>
       {/* Header */}
       <div className="pt-12 pb-6 px-6 flex flex-col items-center text-center relative">
-        <button onClick={handleLogout} className="absolute top-12 right-5 p-2 rounded-xl bg-[#1A1D24] border border-white/5 text-gray-400 active:scale-95 transition-all">
+        <button onClick={handleLogout} className="absolute top-12 right-5 p-2 rounded-xl bg-[#2A2931] border border-white/5 text-gray-400 active:scale-95 transition-all">
           <LogOut className="w-4 h-4" />
         </button>
 

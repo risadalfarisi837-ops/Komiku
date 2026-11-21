@@ -1,4 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap");
 @import "tailwindcss";
+
+:root {
+  --bg: #1B1A20;
+  --card: #2A2931;
+  --nav: #212027;
+  --accent: #FF6B6B;
+  --muted: #8F8D9B;
+}
+body { font-family: "Plus Jakarta Sans", system-ui, sans-serif; letter-spacing: -0.2px; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
 
 /* Safe area support untuk navbar nempel ke bawah layar */
 :root {
@@ -6,7 +18,7 @@
 }
 
 html, body {
-  background-color: #0D0D10;
+  background-color: #1B1A20;
 }
 
 .animate-marquee-text {

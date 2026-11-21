@@ -271,11 +271,11 @@ export default function BrowsePage() {
   const hasActiveFilter = appliedGenre || appliedFormat || appliedStatus;
 
   return (
-    <div className="bg-[#0D0D10] min-h-screen text-white max-w-md mx-auto pb-24">
+    <div className="bg-[#1B1A20] min-h-screen text-white max-w-md mx-auto pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#0D0D10]/95 backdrop-blur-sm px-4 pt-3 pb-3">
+      <div className="sticky top-0 z-30 bg-[#1B1A20]/95 backdrop-blur-sm px-4 pt-3 pb-3">
         <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-2 bg-[#1C1F26] border border-white/10 rounded-2xl px-4 py-2.5">
+          <div className="flex-1 flex items-center gap-2 bg-[#2A2931] border border-white/10 rounded-2xl px-4 py-2.5">
             <Search className="w-4 h-4 text-gray-400 shrink-0" />
             <input
               type="text"
@@ -294,7 +294,7 @@ export default function BrowsePage() {
           <button
             onClick={openSheet}
             className={`w-10 h-10 flex items-center justify-center rounded-2xl border shrink-0 transition-colors ${
-              hasActiveFilter ? 'bg-[#1C1F26] border-white/20' : 'bg-[#1C1F26] border-white/10'
+              hasActiveFilter ? 'bg-[#2A2931] border-white/20' : 'bg-[#2A2931] border-white/10'
             }`}
           >
             <SlidersHorizontal className="w-4 h-4 text-white" />
@@ -302,7 +302,7 @@ export default function BrowsePage() {
           <button
             onClick={openSheet}
             className={`w-10 h-10 flex items-center justify-center rounded-2xl border shrink-0 transition-colors ${
-              hasActiveFilter ? 'bg-[#1C1F26] border-white/20' : 'bg-[#1C1F26] border-white/10'
+              hasActiveFilter ? 'bg-[#2A2931] border-white/20' : 'bg-[#2A2931] border-white/10'
             }`}
           >
             <ChevronDown className="w-4 h-4 text-white" />
@@ -331,7 +331,7 @@ export default function BrowsePage() {
                 return (
                   <Link key={i} href={`/manga?url=${encodeURIComponent(item.link)}`}>
                     <div className="flex flex-col gap-1.5">
-                      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#1C1F26]">
+                      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#2A2931]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.thumb}
@@ -455,7 +455,7 @@ export default function BrowsePage() {
             <div className="px-5 py-4 border-t border-white/5 flex gap-3 shrink-0">
               <button
                 onClick={resetFilter}
-                className="flex-1 py-3 rounded-2xl bg-[#1C1F26] text-white font-bold text-sm"
+                className="flex-1 py-3 rounded-2xl bg-[#2A2931] text-white font-bold text-sm"
               >
                 Reset
               </button>

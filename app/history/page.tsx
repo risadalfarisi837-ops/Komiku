@@ -31,7 +31,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
     { key: 'download', label: 'Download' },
   ];
   return (
-    <div className="flex w-full relative" style={{ background: '#0D0D10' }}>
+    <div className="flex w-full relative" style={{ background: '#1B1A20' }}>
       {tabs.map((t) => {
         const isActive = active === t.key;
         return (
@@ -46,7 +46,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
               <span
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  background: 'radial-gradient(ellipse 120% 150% at 50% -10%, #1C1F26 0%, #13151a 30%, transparent 70%)',
+                  background: 'radial-gradient(ellipse 120% 150% at 50% -10%, #2A2931 0%, #13151a 30%, transparent 70%)',
                 }}
               />
             )}
@@ -83,7 +83,7 @@ function HistoryCard({
   item: HistoryItem;
 }) {
   const inner = (
-    <div className="bg-[#1A1D24] rounded-2xl p-4 border border-white/5 flex gap-4 items-center active:scale-[0.98] transition-all" style={{marginBottom:12}}>
+    <div className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-4 items-center active:scale-[0.98] transition-all" style={{marginBottom:12}}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <div style={{width:64,height:88,minWidth:64,maxWidth:64,flexShrink:0,borderRadius:12,overflow:"hidden",background:"#252830"}}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -128,7 +128,7 @@ function EmptyState({ tab }: { tab: Tab }) {
       </div>
       <p className="text-white font-bold">{cfg.title}</p>
       <p className="text-gray-500 text-sm mt-1">{cfg.desc}</p>
-      <Link href="/" className="mt-6 px-6 py-3 bg-[#1C1F26] text-white font-bold text-sm rounded-full">Jelajahi Manga</Link>
+      <Link href="/" className="mt-6 px-6 py-3 bg-[#2A2931] text-white font-bold text-sm rounded-full">Jelajahi Manga</Link>
     </div>
   );
 }
@@ -143,7 +143,7 @@ export default function HistoryPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return <div className="min-h-screen bg-[#0D0D10]" />;
+  if (!mounted) return <div className="min-h-screen bg-[#1B1A20]" />;
 
   const handleTabChange = (t: Tab) => {
     setActiveTab(t);
@@ -171,9 +171,9 @@ export default function HistoryPage() {
   );
 
   return (
-    <div className="bg-[#0D0D10] min-h-screen text-white max-w-md mx-auto pb-40">
+    <div className="bg-[#1B1A20] min-h-screen text-white max-w-md mx-auto pb-40">
       {/* Sticky Tab */}
-      <div className="sticky top-0 z-40 bg-[#0D0D10]">
+      <div className="sticky top-0 z-40 bg-[#1B1A20]">
         <TabBar active={activeTab} onChange={handleTabChange} />
 
         {/* Search bar - below tabs */}
@@ -203,7 +203,7 @@ export default function HistoryPage() {
                   {grouped.map(([label, items]) => (
                     <div key={label}>
                       <div className="flex items-center gap-3 my-3">
-                        <div className="bg-[#1C1F26] text-white text-xs font-black px-3 py-1.5 rounded-lg">{label}</div>
+                        <div className="bg-[#2A2931] text-white text-xs font-black px-3 py-1.5 rounded-lg">{label}</div>
                         <div className="flex-1 h-px bg-white/5" />
                       </div>
                       <div className="space-y-0">
