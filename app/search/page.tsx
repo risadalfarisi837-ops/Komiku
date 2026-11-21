@@ -46,7 +46,7 @@ const GENRE_PATHS: Record<string, string> = {
   'Wuxia': '/genre/wuxia/',
 };
 const FORMAT_PATHS: Record<string, string> = {
-  'Manga': '/type/manga/', 'Manhwa': '/type/manhwa/', 'Manhua': '/type/manhua/',
+  'Manga': '/manga/', 'Manhwa': '/manhwa/', 'Manhua': '/manhua/',
 };
 const STATUS_PATHS: Record<string, string> = {
   'Ongoing': '/daftar-manga/?status=ongoing&orderby=popular',
@@ -67,7 +67,7 @@ function detectFlag(title: string, link: string): string {
 }
 
 function buildPath(genre: string | null, format: string | null, status: string | null) {
-    if (genre) return GENRE_PATHS[genre] || DEFAULT_PATH;
+    if (genre) return (GENRE_PATHS[genre] || DEFAULT_PATH).replace('/genre/', '/genres/');
     if (format) return FORMAT_PATHS[format] || DEFAULT_PATH;
     if (status) return STATUS_PATHS[status] || DEFAULT_PATH;
     return DEFAULT_PATH;
@@ -198,19 +198,20 @@ function SearchContent() {
                 data = json.success && Array.isArray(json.data) ? json.data : [];
                 setHasMore(false);
             } else {
-                // Browse/filter mode — fetch langsung dari browser
-                const BASE = 'https://komikindo.tv';
+                // Browse/filter mode — lewat API route (scraping server side)
                 const basePath = buildPath(genre, format, status);
-                let url: string;
+                let path: string;
                 if (basePath.includes('?')) {
-                    url = pg === 1 ? `${BASE}${basePath}` : `${BASE}${basePath}&page=${pg}`;
+                    path = pg === 1 ? basePath : `${basePath}&page=${pg}`;
                 } else {
                     const clean = basePath.endsWith('/') ? basePath : `${basePath}/`;
-                    url = pg === 1 ? `${BASE}${clean}` : `${BASE}${clean}page/${pg}/`;
+                    path = pg === 1 ? clean : `${clean}page/${pg}/`;
                 }
-                const html = await fetchFromUrl(url);
-                data = parseHtmlToResults(html);
-                setHasMore(data.length >= 18);
+                const res = await fetch(`/api/manga/browse?path=${encodeURIComponent(path)}`);
+                const json = await res.json();
+                if (!json.success) throw new Error(json.message || 'Gagal memuat');
+                data = Array.isArray(json.data?.items) ? json.data.items : [];
+                setHasMore(!!json.data?.hasMore);
             }
 
             cacheSet(cacheKey, data);

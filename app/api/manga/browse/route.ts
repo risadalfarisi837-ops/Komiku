@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import { fetchHtml, parseCards } from '@/lib/scraper';
 
-const PER_PAGE = 18;
+const PER_PAGE = 12; // jumlah minimum kartu per halaman supaya dianggap masih ada halaman berikutnya
 
 async function scrapePage(path: string, page: number) {
     let urlPath: string;
@@ -13,10 +13,10 @@ async function scrapePage(path: string, page: number) {
         urlPath = page === 1 ? clean : `${clean}page/${page}/`;
     }
     const $ = cheerio.load(await fetchHtml(urlPath));
-    const pathType = ((path.match(/\/type\/(manga|manhwa|manhua)\//) || [])[1]) || '';
+    const pathType = (((path.match(/\/(?:type\/)?(manga|manhwa|manhua)\/?$/i) || [])[1]) || '').replace(/^./, (c) => c.toUpperCase());
     const items = parseCards($, 100).map((it) => ({ ...it, type: it.type || pathType }));
     return {
-        items: items.slice(0, PER_PAGE),
+        items,
         hasMore: items.length >= PER_PAGE,
         total: items.length,
         page,

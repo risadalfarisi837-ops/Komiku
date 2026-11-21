@@ -144,7 +144,7 @@ const cleanUrl = (u: string | undefined) => {
 };
 
 const imgSrc = ($img: cheerio.Cheerio<any>) => {
-    const attrs = ['data-lazy-src', 'data-src', 'data-original', 'data-cfsrc', 'src'];
+    const attrs = ['data-lazy-src', 'data-src', 'data-original', 'data-cfsrc', 'data-lazy', 'src'];
     for (const a of attrs) {
         const v = cleanUrl($img.attr(a));
         if (v) return v;
@@ -173,11 +173,7 @@ function parseCardsGeneric($: cheerio.CheerioAPI, limit = 100) {
         if (items.length >= limit) return;
         const $a = $(el);
         const link = cleanUrl($a.attr('href'));
-        const $img = $a.find('img').first();
-        if (!link || seen.has(link) || !$img.length) return;
-
-        let thumb = imgSrc($img).split('?')[0];
-        if (!thumb || /\.gif$/i.test(thumb) || !/komikindo|wp-content|uploads/i.test(thumb)) return;
+        if (!link || seen.has(link) || !/\/komik\/[^/]+\/?$/.test(link.split('?')[0])) return;
 
         // Naik ke kotak terbesar yang masih hanya berisi satu komik
         let $c = $a;
@@ -188,10 +184,25 @@ function parseCardsGeneric($: cheerio.CheerioAPI, limit = 100) {
             if (hrefs.size > 1) break;
             $c = $p;
         }
+
+        // Cover: coba <img> dulu; kalau lazy-load/noscript/background-image, cari URL gambar di HTML kotaknya
+        let thumb = '';
+        $c.find('img').each((_, im) => {
+            if (thumb) return;
+            const u = imgSrc($(im)).split('?')[0];
+            if (u && !/\.gif$/i.test(u) && /wp-content|uploads/i.test(u)) thumb = u;
+        });
+        if (!thumb) {
+            const m = ($c.html() || '').match(/https?:\/\/[^"'\s)]+?wp-content\/uploads[^"'\s)]*?\.(?:jpe?g|png|webp)/i);
+            if (m) thumb = m[0].split('?')[0];
+        }
+        if (!thumb) return;
+
         const text = $c.text().replace(/\s+/g, ' ');
         const title = (
-            $c.find('h2, h3, h4').first().text().trim()
-            || $a.attr('title') || $img.attr('title') || $img.attr('alt') || ''
+            $c.find('a[href*="/komik/"][title]').first().attr('title')
+            || $c.find('h2, h3, h4').first().text().trim()
+            || $c.find('img[alt]').first().attr('alt') || ''
         ).replace(/^Komik\s+/i, '').trim();
         if (!title) return;
 

@@ -40,7 +40,8 @@ export async function GET(request: Request) {
             terbacaChapter: items.filter((i) => i.chapter).length,
             terbacaWaktu: items.filter((i) => i.time).length,
             contoh: items.slice(0, 3),
-            kelasPertama: $('.animepost, .bs').first().html()?.slice(0, 600) || null,
+            kelasPertama: $('.animepost, .bs').first().html()?.slice(0, 600)
+                || $('a[href*="/komik/"]').first().parent().parent().html()?.slice(0, 900) || null,
         });
     } catch (e: any) {
         return NextResponse.json({ ok: false, domainDicoba: getCandidates(), error: e?.message || String(e) }, { status: 500 });
