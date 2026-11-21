@@ -37,9 +37,15 @@ export async function scrapeHomeCategories() {
                 const link = $(el).find('a').attr('href');
                 const thumb = $(el).find('img').attr('src');
                 const desc = 'Score: ' + ($(el).find('.score').text().trim() || 'N/A');
+                const score = $(el).find('.score').text().trim() || 'N/A';
+                const typeCls = ($(el).find('.typeflag').attr('class') || '').toLowerCase();
+                const type = typeCls.includes('manhwa') ? 'Manhwa' : typeCls.includes('manhua') ? 'Manhua' : typeCls.includes('manga') ? 'Manga' : '';
+                const chapter = ($(el).find('.lsch a').first().text() || $(el).find('.epxs').first().text() || $(el).find('.ep').first().text()).trim();
+                const time = ($(el).find('.datech').first().text() || $(el).find('.date').first().text()).trim();
+                const views = ($(el).find('.view').first().text() || $(el).find('.vw').first().text()).trim();
                 
                 if (title && link && thumb) {
-                    items.push({ title, link, thumb: thumb.split('?')[0] || thumb, desc });
+                    items.push({ title, link, thumb: thumb.split('?')[0] || thumb, desc, score, type, chapter, time, views });
                 }
             });
             return { category: cat.title, items };
