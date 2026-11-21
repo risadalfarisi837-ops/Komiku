@@ -88,7 +88,9 @@ function coverOf(m: any, size: 256 | 512 | 0 = 512) {
     const rel = (m.relationships || []).find((r: any) => r.type === 'cover_art');
     const file = rel?.attributes?.fileName;
     if (!file) return '';
-    return `${COVERS}/${m.id}/${file}${size ? `.${size}.jpg` : ''}`;
+    // Lewat /api/img (server) karena MangaDex diblokir sebagian ISP di Indonesia, jadi tidak bisa dimuat langsung dari browser
+    const direct = `${COVERS}/${m.id}/${file}${size ? `.${size}.jpg` : ''}`;
+    return `/api/img?url=${encodeURIComponent(direct)}`;
 }
 
 function titleOf(m: any) {
