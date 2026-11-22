@@ -4,14 +4,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFavorites } from '@/lib/store';
 import { currentSeason } from '@/lib/season';
-import { getFirebase } from '@/lib/leaderboard';
+import { getFirebase, getUser } from '@/lib/leaderboard';
+import { Gift, claimGift, GIFT_TYPE_LABEL } from '@/lib/gifts';
+import { BORDER_CATALOG } from '@/components/BorderSheet';
+import { WALLPAPER_CATALOG, RARITY_STYLE } from '@/lib/wallpapers';
+import { EFFECT_CATALOG } from '@/lib/effects';
+import ProfileEffect from '@/components/ProfileEffect';
+import GiftEffect from '@/components/GiftEffect';
 
 const CORAL = '#FF6B6B';
 const MUTED = '#8F8D9B';
 const K_SEEN = 'komiku-notif-seen';        // { [linkKomik]: jumlahChapterTerakhirDilihat }
 const K_INFO = 'komiku-notif-info-read';   // string[] id info yang sudah dibaca
 
-type Tab = 'update' | 'info' | 'komentar';
+type Tab = 'update' | 'hadiah' | 'info' | 'komentar';
 interface UpdateItem { link: string; title: string; thumb: string; baru: number; chapter: string; date: string }
 interface InfoItem { id: string; judul: string; isi: string; waktu?: number }
 
@@ -85,6 +91,68 @@ function Empty({ title, sub }: { title: string; sub: string }) {
   );
 }
 
+
+// ─── Hadiah ──────────────────────────────────────────────────────────────────
+function ago(ts: number) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'baru saja';
+  if (m < 60) return `${m} menit lalu`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} jam lalu`;
+  return `${Math.floor(h / 24)} hari lalu`;
+}
+
+const NUM_ART: Record<string, { bg: string; icon: React.ReactNode; tag?: string }> = {
+  koin: { bg: 'linear-gradient(135deg,#0ea5e9,#6366f1)', icon: (
+    <svg width={34} height={34} viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z" fill="#fff" fillOpacity={0.95} /><path d="M2 9h20M9 3l3 18M15 3l-3 18" stroke="rgba(0,0,0,.22)" fill="none" strokeWidth={1} /></svg>) },
+  level: { bg: 'linear-gradient(135deg,#f59e0b,#ef4444)', icon: <span style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1 }}>LV</span> },
+  exp: { bg: 'linear-gradient(135deg,#10b981,#0ea5e9)', icon: (
+    <svg width={34} height={34} viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9L12 2z" /></svg>) },
+  poin: { bg: 'linear-gradient(135deg,#ff6b6b,#be123c)', icon: (
+    <svg width={34} height={34} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v5a5 5 0 01-10 0V4zM4 5h3v3a3 3 0 01-3-3zM20 5h-3v3a3 3 0 003-3zM9 20h6M12 14v6" /></svg>) },
+};
+
+function GiftArt({ g, photo }: { g: Gift; photo: string }) {
+  const box: React.CSSProperties = { width: 88, height: 88, borderRadius: 20, flex: '0 0 88px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, color: '#fff' };
+  if (g.type === 'border') {
+    const url = g.itemKey ? BORDER_CATALOG[g.itemKey]?.url : '';
+    return (
+      <div style={{ ...box, background: 'linear-gradient(135deg,#1e1b4b,#4c1d95)' }}>
+        <div style={{ position: 'relative', width: 48, height: 48 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo || 'https://placehold.co/96/1a1d24/fff?text=?'} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+          {url && <div style={{ position: 'absolute', top: '50%', left: '50%', width: '130%', height: '130%', transform: 'translate(-50%,-50%)', backgroundImage: `url('${url}')`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', pointerEvents: 'none' }} />}
+        </div>
+      </div>
+    );
+  }
+  if (g.type === 'wallpaper') {
+    const w = g.itemKey ? WALLPAPER_CATALOG[g.itemKey] : undefined;
+    const r = w ? RARITY_STYLE[w.rarity] : undefined;
+    return (
+      <div style={{ ...box, background: w?.url ? `url(${w.url}) center/cover` : w?.grad || '#334155', border: `2px solid ${r?.border || 'rgba(255,255,255,.1)'}`, boxShadow: r?.glow && r.glow !== 'none' ? r.glow : undefined, justifyContent: 'flex-end' }}>
+        <span style={{ background: 'rgba(0,0,0,.55)', width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 800, padding: '3px 0', color: r?.color || '#fff' }}>{w?.rarity || 'Wallpaper'}</span>
+      </div>
+    );
+  }
+  if (g.type === 'effect') {
+    const e = g.itemKey ? EFFECT_CATALOG[g.itemKey] : undefined;
+    return (
+      <div style={{ ...box, background: 'linear-gradient(135deg,#0f172a,#312e81)', justifyContent: 'flex-end' }}>
+        <div style={{ position: 'absolute', inset: 0 }}><ProfileEffect effectKey={g.itemKey} /></div>
+        <span style={{ position: 'relative', background: 'rgba(0,0,0,.55)', width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 800, padding: '3px 0' }}>{e?.tier || 'Efek'}</span>
+      </div>
+    );
+  }
+  const n = NUM_ART[g.type] || NUM_ART.koin;
+  return (
+    <div style={{ ...box, background: n.bg }}>
+      {n.icon}
+      <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.6 }}>+{(g.amount || 0).toLocaleString('id-ID')}</span>
+    </div>
+  );
+}
+
 export default function NotifikasiPage() {
   const router = useRouter();
   const favorites = useFavorites((s) => s.favorites);
@@ -94,6 +162,14 @@ export default function NotifikasiPage() {
   const [infos, setInfos] = useState<InfoItem[]>([]);
   const [readInfo, setReadInfo] = useState<string[]>([]);
   const [checking, setChecking] = useState(true);
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  const [giftsLoading, setGiftsLoading] = useState(true);
+  const [needLogin, setNeedLogin] = useState(false);
+  const [uid, setUid] = useState('');
+  const [photo, setPhoto] = useState('');
+  const [claiming, setClaiming] = useState('');
+  const [giftErr, setGiftErr] = useState('');
+  const [fx, setFx] = useState<{ title: string; sub?: string } | null>(null);
 
   useEffect(() => { setMounted(true); setReadInfo(readJSON<string[]>(K_INFO, [])); }, []);
 
@@ -142,6 +218,59 @@ export default function NotifikasiPage() {
     return () => { alive = false; };
   }, [mounted]);
 
+  // Hadiah dari developer (users/<uid>/gifts)
+  useEffect(() => {
+    if (!mounted) return;
+    let alive = true;
+    (async () => {
+      try {
+        const u = await getUser();
+        if (!alive) return;
+        if (!u) { setNeedLogin(true); return; }
+        setUid(u.uid); setPhoto(u.photoURL || '');
+        const { db } = await getFirebase();
+        const v = (await db.ref(`users/${u.uid}/gifts`).get()).val() || {};
+        const arr: Gift[] = Object.entries(v as Record<string, any>).map(([id, x]) => ({
+          id, type: x.type, amount: x.amount, itemKey: x.itemKey, itemName: x.itemName || 'Hadiah',
+          from: x.from || 'Developer', message: x.message, timestamp: Number(x.timestamp) || 0, claimed: !!x.claimed,
+        })).sort((a, b) => b.timestamp - a.timestamp);
+        if (alive) { setGifts(arr); if (arr.some((g) => !g.claimed)) setTab('hadiah'); }
+      } catch {} finally { if (alive) setGiftsLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [mounted]);
+
+  const doClaim = async (g: Gift) => {
+    if (!uid || claiming) return;
+    setClaiming(g.id); setGiftErr('');
+    try {
+      const { db } = await getFirebase();
+      const ok = await claimGift(db, uid, g);
+      setGifts((prev) => prev.map((x) => (x.id === g.id ? { ...x, claimed: true } : x)));
+      if (ok) setFx({ title: 'Hadiah diterima!', sub: g.itemName });
+    } catch (e: any) { setGiftErr('Gagal mengklaim: ' + (e?.message || 'coba lagi')); }
+    setClaiming('');
+  };
+
+  const claimAll = async () => {
+    if (!uid || claiming) return;
+    const pending = gifts.filter((g) => !g.claimed);
+    setClaiming('all'); setGiftErr('');
+    let n = 0;
+    try {
+      const { db } = await getFirebase();
+      for (const g of pending) {
+        if (await claimGift(db, uid, g)) n++;
+        setGifts((prev) => prev.map((x) => (x.id === g.id ? { ...x, claimed: true } : x)));
+      }
+      if (n) setFx({ title: 'Hadiah diterima!', sub: n + ' hadiah berhasil diklaim' });
+    } catch (e: any) { setGiftErr('Gagal mengklaim: ' + (e?.message || 'coba lagi')); }
+    setClaiming('');
+  };
+
+  const pendingGifts = gifts.filter((g) => !g.claimed);
+  const doneGifts = gifts.filter((g) => g.claimed).slice(0, 15);
+
   const unreadInfo = useMemo(() => infos.filter((i) => !readInfo.includes(i.id)).length, [infos, readInfo]);
 
   const markAll = () => {
@@ -170,6 +299,7 @@ export default function NotifikasiPage() {
 
   const tabs: { k: Tab; label: string }[] = [
     { k: 'update', label: 'Pembaruan' },
+    { k: 'hadiah', label: pendingGifts.length > 0 ? `Hadiah · ${pendingGifts.length}` : 'Hadiah' },
     { k: 'info', label: unreadInfo > 0 ? `Info · ${unreadInfo}` : 'Info' },
     { k: 'komentar', label: 'Komentar' },
   ];
@@ -189,7 +319,7 @@ export default function NotifikasiPage() {
         {tabs.map((t) => {
           const on = tab === t.k;
           return (
-            <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, height: 42, borderRadius: 99, border: 0, background: on ? '#1B1A20' : 'transparent', color: on ? '#fff' : MUTED, fontSize: 19, fontWeight: 800, letterSpacing: -0.6 }}>{t.label}</button>
+            <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, height: 42, borderRadius: 99, border: 0, background: on ? '#1B1A20' : 'transparent', color: on ? '#fff' : MUTED, fontSize: 15.5, fontWeight: 800, letterSpacing: -0.5, padding: 0 }}>{t.label}</button>
           );
         })}
       </div>
@@ -236,6 +366,47 @@ export default function NotifikasiPage() {
           </div>
         )
       )}
+
+      {tab === 'hadiah' && (
+        giftsLoading ? (
+          <div style={{ padding: '80px 20px', textAlign: 'center', color: MUTED, fontWeight: 700 }}>Memuat hadiah...</div>
+        ) : needLogin ? (
+          <Empty title="Masuk dulu ya" sub="Masuk lewat halaman Profil untuk melihat dan mengklaim hadiah." />
+        ) : gifts.length === 0 ? (
+          <Empty title="Belum ada hadiah" sub="Hadiah dari developer akan muncul di sini, lalu kamu klaim sendiri." />
+        ) : (
+          <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {giftErr && <div style={{ background: 'rgba(255,92,92,.12)', color: '#FF7A7A', borderRadius: 14, padding: '10px 14px', fontSize: 14, fontWeight: 700 }}>{giftErr}</div>}
+            {pendingGifts.length > 1 && (
+              <button onClick={claimAll} disabled={!!claiming} style={{ height: 48, borderRadius: 99, border: 0, background: 'linear-gradient(90deg,#FF6B6B,#F59E0B)', color: '#fff', fontSize: 18, fontWeight: 800, opacity: claiming ? 0.6 : 1 }}>
+                {claiming === 'all' ? 'Mengklaim...' : `Klaim semua (${pendingGifts.length})`}
+              </button>
+            )}
+            {[...pendingGifts, ...doneGifts].map((g) => (
+              <div key={g.id} style={{ background: '#2A2931', borderRadius: 24, padding: 14, border: g.claimed ? '1px solid rgba(255,255,255,.05)' : '1px solid rgba(255,107,107,.45)', opacity: g.claimed ? 0.6 : 1 }}>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <GiftArt g={g} photo={photo} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: MUTED, fontSize: 14, fontWeight: 800 }}>Hadiah dari {g.from} · {ago(g.timestamp)}</div>
+                    <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.15, marginTop: 4 }}>{g.itemName}</div>
+                    <div style={{ color: CORAL, fontSize: 14, fontWeight: 800, marginTop: 3 }}>{GIFT_TYPE_LABEL[g.type] || 'Hadiah'}</div>
+                    {g.message && <div style={{ marginTop: 8, background: '#1F1E24', borderRadius: 12, padding: '8px 10px', color: '#D6D4DE', fontSize: 14, fontWeight: 700, lineHeight: 1.35 }}>“{g.message}”</div>}
+                  </div>
+                </div>
+                {g.claimed ? (
+                  <div style={{ marginTop: 12, textAlign: 'center', color: '#6FD6B2', fontWeight: 800, fontSize: 15 }}>✓ Sudah diklaim</div>
+                ) : (
+                  <button onClick={() => doClaim(g)} disabled={!!claiming} style={{ marginTop: 12, width: '100%', height: 48, borderRadius: 99, border: 0, background: CORAL, color: '#fff', fontSize: 18, fontWeight: 800, opacity: claiming ? 0.6 : 1 }}>
+                    {claiming === g.id ? 'Mengklaim...' : 'Klaim hadiah'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      <GiftEffect show={!!fx} onDone={() => setFx(null)} title={fx?.title} sub={fx?.sub} />
 
       {tab === 'komentar' && <Empty title="Belum ada balasan" sub="Balasan di komentarmu akan muncul di sini." />}
     </div>

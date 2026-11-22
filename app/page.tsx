@@ -4,7 +4,45 @@ import { useEffect, useState, memo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useHistory } from '@/lib/store';
-import { getFirebase } from '@/lib/firebase-client';
+
+// ─── Firebase ────────────────────────────────────────────────────────────────
+declare global { interface Window { firebase: any; _fbReady: boolean; } }
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
+  authDomain: "komiku-d8788.firebaseapp.com",
+  databaseURL: "https://komiku-d8788-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "komiku-d8788",
+  storageBucket: "komiku-d8788.firebasestorage.app",
+  messagingSenderId: "186745171350",
+  appId: "1:186745171350:web:92cd160ed67e25de8801b7",
+};
+function loadFirebaseCDN(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window._fbReady) return Promise.resolve();
+  return new Promise((resolve) => {
+    const urls = [
+      'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js',
+      'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js',
+      'https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js',
+    ];
+    let done = 0;
+    urls.forEach(src => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => { done++; if (done === urls.length) { window._fbReady = true; resolve(); } };
+      document.head.appendChild(s);
+    });
+  });
+}
+let _fbInit2 = false;
+async function getFirebase() {
+  await loadFirebaseCDN();
+  if (!_fbInit2) {
+    if (!window.firebase.apps.length) window.firebase.initializeApp(FIREBASE_CONFIG);
+    _fbInit2 = true;
+  }
+  return { auth: window.firebase.auth(), db: window.firebase.database() };
+}
 
 interface TopUser {
   uid: string; displayName: string; photoURL: string;
@@ -52,6 +90,20 @@ const ell: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', tex
 
 // ─── Header: logo + search + lonceng ─────────────────────────────────────────
 function Header({ onSearch }: { onSearch: () => void }) {
+  const [hasGift, setHasGift] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const t = setTimeout(async () => {
+      try {
+        const { auth, db } = await getFirebase();
+        const u: any = auth.currentUser || await new Promise((res) => { const un = auth.onAuthStateChanged((x: any) => { un(); res(x); }); });
+        if (!u || !alive) return;
+        const v = (await db.ref(`users/${u.uid}/gifts`).get()).val() || {};
+        if (alive) setHasGift(Object.values(v).some((g: any) => g && !g.claimed));
+      } catch {}
+    }, 1500);
+    return () => { alive = false; clearTimeout(t); };
+  }, []);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '14px 14px 12px' }}>
       <div style={{ width: 38, height: 38, borderRadius: 10, background: '#26252C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800 }}>K</div>
@@ -63,7 +115,7 @@ function Header({ onSearch }: { onSearch: () => void }) {
       </button>
       <button onClick={() => { window.location.assign('/notifikasi'); }} aria-label="Notifikasi" style={{ position: 'relative', background: 'none', border: 0, color: '#fff', padding: 8, marginLeft: 6 }}>
         <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 01-3.4 0" /></svg>
-        <span style={{ position: 'absolute', top: 6, right: 7, width: 9, height: 9, borderRadius: '50%', background: ACCENT }} />
+        {hasGift && <span style={{ position: 'absolute', top: 6, right: 7, width: 9, height: 9, borderRadius: '50%', background: ACCENT }} />}
       </button>
     </div>
   );

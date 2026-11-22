@@ -6,6 +6,7 @@ import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore, ACTIVE_DAYS } from '@/lib/leaderboard';
+import { sendGifts, giftTitle, GiftType } from '@/lib/gifts';
 import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
@@ -308,10 +309,27 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     setSaving(false);
   };
 
+  // Hadiah masuk ke Notifikasi penerima (tab Hadiah) dan baru diterapkan setelah dia klaim
+  const sendToTarget = async (g: { type: GiftType; amount?: number; itemKey?: string; itemName: string }) => {
+    if (!target) { showToast('Pilih user dulu.', 'error'); return; }
+    setSaving(true);
+    try {
+      await sendGifts(db, [target.uid], { ...g, from: gSender || 'Developer', message: gMsg });
+      showToast('Hadiah terkirim ke notifikasi ' + target.name + '.', 'success');
+      setGift({ title: 'Gift terkirim!', sub: g.itemName + ' untuk ' + target.name });
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
+    setSaving(false);
+  };
+
   const applyNumber = () => {
     if (act !== 'koin' && act !== 'level' && act !== 'exp' && act !== 'poin') return;
     const n = parseInt(amount);
     if (isNaN(n) || n < 0) { showToast('Isi angka yang benar.', 'error'); return; }
+    if (mode === 'add') {
+      if (n <= 0) { showToast('Isi angka lebih dari 0.', 'error'); return; }
+      sendToTarget({ type: act as GiftType, amount: n, itemName: giftTitle(act as GiftType, n) });
+      return;
+    }
     if (act === 'poin') { applyPoints(n); return; }
     const calc = (c: number) => (mode === 'add' ? c + n : mode === 'sub' ? c - n : n);
     run((cur) => {
@@ -398,6 +416,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     if (!itemKey) { showToast('Pilih item dulu.', 'error'); return; }
     const c = DEV_ITEMS[itemCat];
     const nama = c.items.find(i => i.key === itemKey)?.nama || itemKey;
+    if (give) { sendToTarget({ type: itemCat as GiftType, itemKey, itemName: nama }); return; }
     run((cur) => {
       const p: any = {};
       if (give) p[c.owned + '/' + itemKey] = itemCat === 'wallpaper' ? (Number(cur.ownedWallpapers?.[itemKey]) || 0) + 1 : true;
@@ -418,39 +437,12 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     setSaving(true);
     try {
       const snap = await db.ref('users').get();
-      const updates: any = {};
-      let count = 0;
-      let mine: any = null;
-      snap.forEach((child: any) => {
-        const u = child.key; const d = child.val() || {};
-        let patch: any = null;
-        if (gType === 'koin') patch = { koin: (d.koin || 0) + val };
-        else if (gType === 'level') { const nl = (d.level || 1) + val; patch = { level: nl, exp: (nl - 1) * 200 }; }
-        else if (gType === 'exp') { const e = (Number.isFinite(Number(d.exp)) ? Number(d.exp) : ((d.level || 1) - 1) * 200) + val; patch = { exp: e, level: Math.floor(e / 200) + 1 }; }
-        if (patch) Object.keys(patch).forEach(k => { updates[`users/${u}/${k}`] = patch[k]; });
-        updates[`users/${u}/newGift`] = { from: gSender, message: gMsg, itemName: `+${val} ${GIFT_UNIT[gType]}`, cat: gType, isKompensasi: true, timestamp: Date.now() };
-        if (u === uid && patch) mine = patch;
-        count++;
-      });
-      if (gType === 'poin') {
-        // Poin musim: tambah ke semua akun yang ada di peringkat musim ini (bonus dev, tidak tertimpa baca chapter)
-        const sid = currentSeason().id;
-        const lb = await db.ref(`leaderboard/s${sid}`).get();
-        count = 0;
-        lb.forEach((c: any) => {
-          const v = c.val() || {};
-          updates[`leaderboard/s${sid}/${c.key}/bonus`] = (Number(v.bonus) || 0) + val;
-          updates[`leaderboard/s${sid}/${c.key}/points`] = (Number(v.points) || 0) + val;
-          count++;
-        });
-      }
-      await db.ref().update(updates);
-      if (mine) onUpdate(mine);
-      if (gType === 'poin') await pushSeasonScore();
-      showToast(`Terkirim ke ${count} user.`, 'success');
-      setGift({ title: 'Gift terkirim!', sub: val + ' ' + GIFT_UNIT[gType] + ' ke ' + count + ' user' });
+      const uids: string[] = [];
+      snap.forEach((c: any) => { uids.push(String(c.key)); });
+      await sendGifts(db, uids, { type: gType, amount: val, itemName: giftTitle(gType, val), from: gSender || 'Sistem Komiku', message: gMsg });
+      showToast(`Terkirim ke ${uids.length} user. Mereka klaim lewat Notifikasi.`, 'success');
+      setGift({ title: 'Gift terkirim!', sub: giftTitle(gType, val) + ' ke ' + uids.length + ' user' });
       setGVal('');
-      setUsers(null); // daftar user dimuat ulang saat panel dibuka lagi
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
@@ -573,6 +565,13 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
               <button onClick={applyRole} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
                 {saving ? 'Memproses...' : `Jadikan ${rolePick}`}
               </button>
+            </div>
+          )}
+
+          {(act === 'item' || (numAct && mode === 'add')) && (
+            <div style={{ marginTop: 10 }}>
+              <label style={LABEL}>Pesan untuk penerima (opsional)</label>
+              <input style={FIELD} value={gMsg} onChange={e => setGMsg(e.target.value)} placeholder="Contoh: Selamat ya!" />
             </div>
           )}
 
