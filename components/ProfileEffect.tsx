@@ -18,9 +18,9 @@ function spawn(e: EffectItem, w: number, h: number, fresh: boolean): P {
   return p;
 }
 
-export default function ProfileEffect({ effectKey, className = '' }: { effectKey?: string; className?: string }) {
+export default function ProfileEffect({ effectKey, item, min = 12, className = '' }: { effectKey?: string; item?: EffectItem; min?: number; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const e = effectKey ? EFFECT_CATALOG[effectKey] : undefined;
+  const e = item ?? (effectKey ? EFFECT_CATALOG[effectKey] : undefined);
 
   useEffect(() => {
     const cv = ref.current;
@@ -34,7 +34,7 @@ export default function ProfileEffect({ effectKey, className = '' }: { effectKey
       w = cv.clientWidth; h = cv.clientHeight;
       cv.width = w * dpr; cv.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const n = Math.max(12, Math.min(60, Math.round((w * h) / 9000)));
+      const n = Math.max(min, Math.min(60, Math.round((w * h) / 9000)));
       ps = Array.from({ length: n }, () => spawn(e, w, h, true));
     };
     fit();
@@ -78,7 +78,7 @@ export default function ProfileEffect({ effectKey, className = '' }: { effectKey
     };
     raf = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, [e]);
+  }, [e, min]);
 
   if (!e) return null;
   if (e.url) {

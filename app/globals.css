@@ -63,3 +63,14 @@ html, body {
 
 .badge-dev-anim     { background: linear-gradient(90deg,#dc2626,#7f1d1d,#dc2626); background-size: 200% 100%; color: #fff; border: 1px solid #fca5a5; animation: devPulse 2s infinite ease-in-out, shimmerPremium 3s infinite linear; box-shadow: 0 0 10px rgba(220,38,38,0.8); text-shadow: 0 0 4px rgba(255,255,255,0.5); }
 .badge-premium-anim { background: linear-gradient(90deg,#2563eb,#06b6d4,#2563eb); background-size: 200% 100%; color: #fff; border: none; animation: shimmerPremium 2.5s infinite linear; box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+
+/* ── Wallpaper komentar (gacha) ───────────────────────────── */
+@keyframes wpShimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+@keyframes wpPulse { 0%,100% { box-shadow: 0 0 14px rgba(251,191,36,.35); } 50% { box-shadow: 0 0 26px rgba(251,191,36,.8); } }
+.wp-shimmer {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.18) 50%, transparent 65%);
+  background-size: 250% 100%; animation: wpShimmer 3.2s linear infinite;
+}
+.wp-pulse { animation: wpPulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .wp-shimmer, .wp-pulse { animation: none; } }

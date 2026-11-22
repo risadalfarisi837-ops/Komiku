@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
+import WallpaperBg from '@/components/WallpaperBg';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2, ChevronLeft, Heart, Send } from 'lucide-react';
@@ -171,7 +172,7 @@ function RoleBadge({ role, level }: { role: string; level: number }) {
 // ─── Comment Item ─────────────────────────────────────────────────────────────
 interface CommentData {
   id: string; uid: string; nama: string; foto: string;
-  role: string; level: number; teks: string; waktu: number; activeBorder?: string;
+  role: string; level: number; teks: string; waktu: number; activeBorder?: string; activeWallpaper?: string;
 }
 
 function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: string | null; onDelete: (id: string) => void }) {
@@ -181,7 +182,7 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
   const stop  = () => { if (timerRef.current) clearTimeout(timerRef.current); };
 
   return (
-    <div
+    <WallpaperBg wpKey={c.activeWallpaper}
       onMouseDown={start} onMouseUp={stop} onMouseLeave={stop}
       onTouchStart={start} onTouchEnd={stop} onTouchMove={stop}
       className="flex gap-3 p-3 rounded-2xl border border-white/5 bg-[#1B1A20]/60 mb-3 select-none"
@@ -203,7 +204,7 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
         {/* Text */}
         <p className="text-[13px] text-gray-200 leading-relaxed">{c.teks}</p>
       </div>
-    </div>
+    </WallpaperBg>
   );
 }
 
@@ -264,6 +265,7 @@ function ReviewsTab({ mangaUrl, mangaTitle }: { mangaUrl: string; mangaTitle: st
         role: u.role       || 'Member',
         level: Number(u.level) || 1,
         activeBorder: u.activeBorder || '',
+        activeWallpaper: u.activeWallpaper || '',
         teks: text.trim(),
         waktu: Date.now(),
         mangaTitle,
