@@ -10,24 +10,19 @@ export const REACTIONS: { key: ReactionKey; label: string }[] = [
   { key: 'angry', label: 'Angry' },
 ];
 
-const OL = '#2B3A24';   // garis tepi
-const G = '#8AA16E';    // hijau Komo
-const GD = '#6F8955';   // bercak
+const OL = '#2B3A24';
+const G = '#8AA16E';
+const GD = '#6F8955';
 const CREAM = '#EFE6BE';
 
-// Wajah Komo (si ular/dino hijau) dengan 5 ekspresi
 export function KomoFace({ kind, size = 44 }: { kind: ReactionKey; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" style={{ overflow: 'visible' }}>
-      {/* duri kepala */}
       <path d="M22 14l3 7-8-2zM32 10l3 8-8-1zM42 14l-1 7 8-2z" fill={G} stroke={OL} strokeWidth={2} strokeLinejoin="round" />
-      {/* kepala */}
       <ellipse cx={32} cy={36} rx={26} ry={23} fill={G} stroke={OL} strokeWidth={2.4} />
       <circle cx={17} cy={26} r={2.3} fill={GD} /><circle cx={47} cy={25} r={2} fill={GD} /><circle cx={40} cy={19} r={1.6} fill={GD} />
-      {/* moncong */}
       <ellipse cx={32} cy={43} rx={15} ry={11} fill={CREAM} />
       <circle cx={29} cy={41} r={0.9} fill={OL} /><circle cx={35} cy={41} r={0.9} fill={OL} />
-      {/* pipi */}
       <ellipse cx={13} cy={42} rx={4.6} ry={3.2} fill="#F2A2A2" opacity={0.8} />
       <ellipse cx={51} cy={42} rx={4.6} ry={3.2} fill="#F2A2A2" opacity={0.8} />
 

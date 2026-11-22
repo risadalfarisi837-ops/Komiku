@@ -168,7 +168,6 @@ function KomentarContent() {
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: '#1B1A20', color: '#fff', display: 'flex', flexDirection: 'column' }}>
       <style>{`button { font-family: inherit; cursor: pointer; } input { font-family: inherit; }`}</style>
 
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'max(14px, env(safe-area-inset-top)) 12px 10px' }}>
         <button onClick={() => router.back()} aria-label="Kembali" style={{ background: 'none', border: 0, padding: 6, display: 'flex' }}><Back /></button>
         <div style={{ minWidth: 0 }}>
@@ -177,7 +176,6 @@ function KomentarContent() {
         </div>
       </div>
 
-      {/* Daftar */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 20px' }}>
         {roots.length === 0 ? (
           <div style={{ textAlign: 'center', color: MUTED, fontWeight: 800, fontSize: 18, padding: '90px 30px' }}>Belum ada komentar. Jadilah yang pertama!</div>
@@ -191,7 +189,6 @@ function KomentarContent() {
         ))}
       </div>
 
-      {/* Kolom komentar */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,.1)', background: '#1B1A20', padding: '10px 14px calc(12px + env(safe-area-inset-bottom, 0px))' }}>
         {replyTo && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: MUTED, fontSize: 15, fontWeight: 800, padding: '0 6px 8px' }}>
@@ -221,7 +218,6 @@ function KomentarContent() {
         </div>
       </div>
 
-      {/* Menu titik tiga */}
       {menu && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 320, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div onClick={() => setMenu(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
