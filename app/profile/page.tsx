@@ -10,7 +10,55 @@ import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
-import { getFirebase } from '@/lib/firebase-client';
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
+  authDomain: "komiku-d8788.firebaseapp.com",
+  databaseURL: "https://komiku-d8788-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "komiku-d8788",
+  storageBucket: "komiku-d8788.firebasestorage.app",
+  messagingSenderId: "186745171350",
+  appId: "1:186745171350:web:92cd160ed67e25de8801b7",
+  measurementId: "G-5FS22L934V"
+};
+
+declare global {
+  interface Window { firebase: any; _fbReady: boolean; }
+}
+
+// Load scripts berurutan agar auth-compat tidak load sebelum app-compat
+function loadFirebaseCDN(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window._fbReady) return Promise.resolve();
+  const scripts = [
+    'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js',
+  ];
+  return scripts.reduce((chain, src) => chain.then(() => new Promise<void>((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Gagal load: ${src}`));
+    document.head.appendChild(s);
+  })), Promise.resolve()).then(() => { window._fbReady = true; });
+}
+
+let _fbInit = false;
+let _fbPromise: Promise<{ auth: any; db: any }> | null = null;
+async function getFirebase() {
+  if (_fbPromise) return _fbPromise;
+  _fbPromise = (async () => {
+    await loadFirebaseCDN();
+    if (!_fbInit) {
+      if (!window.firebase.apps.length) window.firebase.initializeApp(FIREBASE_CONFIG);
+      _fbInit = true;
+    }
+    return { auth: window.firebase.auth(), db: window.firebase.database() };
+  })();
+  return _fbPromise;
+}
 
 // ─── Rename Modal ─────────────────────────────────────────────────────────────
 function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRename }: {
@@ -149,12 +197,12 @@ const DEV_ITEMS = {
 } as const;
 type ItemCat = keyof typeof DEV_ITEMS;
 type DevUser = { uid: string; name: string; photo: string; level: number; koin: number; role: string };
-const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['role', 'Role'], ['item', 'Item']] as const;
+const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['poin', 'Poin'], ['role', 'Role'], ['item', 'Item']] as const;
 type DevAct = typeof DEV_ACTS[number][0];
 const DEV_MODES = [['add', 'Tambah'], ['sub', 'Kurangi'], ['set', 'Set jadi']] as const;
 type DevMode = typeof DEV_MODES[number][0];
-const DEV_PRESETS: Record<'koin' | 'level' | 'exp', number[]> = { koin: [100, 500, 1000, 5000, 10000], level: [1, 5, 10, 50], exp: [100, 200, 1000, 5000] };
-const DEV_UNIT: Record<'koin' | 'level' | 'exp', string> = { koin: 'Crystal', level: 'level', exp: 'EXP' };
+const DEV_PRESETS: Record<'koin' | 'level' | 'exp' | 'poin', number[]> = { koin: [100, 500, 1000, 5000, 10000], level: [1, 5, 10, 50], exp: [100, 200, 1000, 5000], poin: [100, 300, 700, 1500, 5000, 8000] };
+const DEV_UNIT: Record<'koin' | 'level' | 'exp' | 'poin', string> = { koin: 'Crystal', level: 'level', exp: 'EXP', poin: 'poin musim ini' };
 const DEV_ROLES = ['Member', 'Komiku Premium', 'Developer'];
 const DEV_REASONS = ['Kompensasi', 'Server down', 'Hadiah event', 'Bonus spesial'];
 
@@ -232,10 +280,32 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     setSaving(false);
   };
 
+  // Poin musim: disimpan di leaderboard/s<musim>/<uid>, field "bonus" = poin hadiah dev (tidak tertimpa saat user baca chapter)
+  const applyPoints = async (n: number) => {
+    if (!target) { showToast('Pilih user dulu.', 'error'); return; }
+    setSaving(true);
+    try {
+      const ref = db.ref(`leaderboard/s${currentSeason().id}/${target.uid}`);
+      const res = await ref.transaction((cur: any) => {
+        const base = cur || { name: target.name, photo: target.photo, points: 0, chapters: 0, streak: 0, night: 0 };
+        const bonus = Number(base.bonus) || 0;
+        const raw = (Number(base.points) || 0) - bonus; // poin asli dari baca chapter
+        const total = Math.max(0, mode === 'add' ? raw + bonus + n : mode === 'sub' ? raw + bonus - n : n);
+        return { ...base, name: base.name || target.name, photo: base.photo || target.photo || '', bonus: total - raw, points: total, t: Date.now() };
+      });
+      const total = Number(res.snapshot.val()?.points) || 0;
+      if (target.uid === uid) await pushSeasonScore(); // sinkronkan ke tampilan lokal
+      showToast(`Poin ${target.name} sekarang ${fmt(total)}.`, 'success');
+      if (mode === 'add') setGift({ title: 'Gift terkirim!', sub: '+' + n + ' poin untuk ' + target.name });
+    } catch (e: any) { showToast('Gagal: ' + e.message + ' (cek aturan database leaderboard)', 'error'); }
+    setSaving(false);
+  };
+
   const applyNumber = () => {
-    if (act !== 'koin' && act !== 'level' && act !== 'exp') return;
+    if (act !== 'koin' && act !== 'level' && act !== 'exp' && act !== 'poin') return;
     const n = parseInt(amount);
     if (isNaN(n) || n < 0) { showToast('Isi angka yang benar.', 'error'); return; }
+    if (act === 'poin') { applyPoints(n); return; }
     const calc = (c: number) => (mode === 'add' ? c + n : mode === 'sub' ? c - n : n);
     run((cur) => {
       const lvl = Number(cur.level) || 1;
@@ -309,7 +379,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const ql = q.trim().replace('#', '').toLowerCase();
   const matches = (users || []).filter(u => !ql || u.name.toLowerCase().includes(ql) || u.uid.toLowerCase().startsWith(ql)).slice(0, 6);
   const cnt = (o: any) => Object.keys(o || {}).length;
-  const numAct = act === 'koin' || act === 'level' || act === 'exp';
+  const numAct = act === 'koin' || act === 'level' || act === 'exp' || act === 'poin';
   const modeLabel = DEV_MODES.find(m => m[0] === mode)![1];
   const catDef = DEV_ITEMS[itemCat];
   const nameOf = (cat: ItemCat, key: string) => DEV_ITEMS[cat].items.find(i => i.key === key)?.nama || '';
@@ -399,13 +469,13 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
                 {DEV_MODES.map(([k, l]) => <button key={k} onClick={() => setMode(k)} style={chip(mode === k)}>{l}</button>)}
               </div>
               <div style={ROW}>
-                {DEV_PRESETS[act as 'koin' | 'level' | 'exp'].map(n => (
+                {DEV_PRESETS[act as 'koin' | 'level' | 'exp' | 'poin'].map(n => (
                   <button key={n} onClick={() => setAmount(String(n))} style={chip(amount === String(n))}>{n.toLocaleString('id-ID')}</button>
                 ))}
               </div>
               <input style={FIELD} value={amount} onChange={e => setAmount(e.target.value)} type="number" inputMode="numeric" placeholder="Atau ketik jumlah sendiri" />
               <button onClick={applyNumber} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
-                {saving ? 'Memproses...' : `${modeLabel} ${amount || '…'} ${DEV_UNIT[act as 'koin' | 'level' | 'exp']}`}
+                {saving ? 'Memproses...' : `${modeLabel} ${amount || '…'} ${DEV_UNIT[act as 'koin' | 'level' | 'exp' | 'poin']}`}
               </button>
             </div>
           )}
@@ -650,7 +720,7 @@ export default function ProfilePage() {
     return () => { if (unsub) unsub(); };
   }, []);
 
-  const pts      = mounted && mine.id === season.id ? mine.points : 0;
+  const pts      = mounted && mine.id === season.id ? mine.points + (mine.bonus || 0) : 0;
   const chapters = mounted && mine.id === season.id ? mine.chapters : 0;
   const night    = mounted && mine.id === season.id ? mine.night : 0;
   const streak   = mounted ? mine.streak : 0;

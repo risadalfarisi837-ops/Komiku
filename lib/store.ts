@@ -14,6 +14,7 @@ export interface UserStats {
 }
 
 export interface SeasonStats {
+  bonus?: number; // poin dari Panel Developer (disinkronkan dari Firebase)
   id: number; points: number; chapters: number; night: number; streak: number; lastDay: string; read: string[];
 }
 
@@ -35,7 +36,7 @@ export const useUserStats = create<UserStatsStore>()(
         const now = new Date();
         const sid = currentSeason(now).id;
         const prev = get().season;
-        const base: SeasonStats = prev.id === sid ? prev : { ...prev, id: sid, points: 0, chapters: 0, night: 0, read: [] };
+        const base: SeasonStats = prev.id === sid ? prev : { ...prev, id: sid, points: 0, chapters: 0, night: 0, read: [], bonus: 0 };
         if (base.read.includes(link)) { if (prev !== base) set({ season: base }); return false; }
         const today = dayKey(now);
         let streak = base.streak;
