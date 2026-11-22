@@ -20,7 +20,7 @@ type Tile = {
 const ICON = 'w-12 h-12';
 const MENU: Tile[] = [
   { title: 'Clans', sub: 'Gabung squad', from: '#172554', to: '#1e3a8a', border: '#a16207', icon: <Shield className={ICON} fill="#fbbf24" color="#fbbf24" /> },
-  { title: 'AniPet', sub: 'Koleksi pet', from: '#fcd34d', to: '#f59e0b', border: '#fde68a', dark: true, icon: <PawPrint className={ICON} fill="#451a03" color="#451a03" /> },
+  { title: 'Pet', sub: 'Koleksi pet', from: '#fcd34d', to: '#f59e0b', border: '#fde68a', dark: true, icon: <PawPrint className={ICON} fill="#451a03" color="#451a03" /> },
   { title: 'Mancing', sub: 'Mini game santai', from: '#0e4f5c', to: '#0e90a8', border: '#22d3ee', icon: <Fish className={ICON} /> },
   { title: 'Avatar Border', sub: 'Shop decoration', from: '#4a044e', to: '#7e22ce', border: '#c084fc', icon: <Smile className={ICON} /> },
   { title: 'Profile Effects', sub: 'Efek profil', from: '#7c2d12', to: '#dc2626', border: '#fb7185', icon: <Sparkles className={ICON} /> },
