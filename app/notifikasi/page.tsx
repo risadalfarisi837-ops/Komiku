@@ -29,39 +29,58 @@ function builtinInfo(): InfoItem[] {
     { id: `season-${s.id}`, judul: `Season ${s.id} sudah dimulai`, isi: `Periode ${s.label}. Baca chapter untuk kumpulkan poin dan naikkan lencanamu.` },
     { id: 'lencana-3-jalur', judul: 'Lencana baru: Noble, Murim, Demon', isi: 'Tiga jalur dengan 10 tingkat tiap jalur. Lencana musim lalu tetap terbuka.' },
     { id: 'edit-profil', judul: 'Profilmu bisa diedit', isi: 'Ganti foto, nama tampilan, dan lencana yang dipakai dari halaman Profil.' },
+    { id: 'cara-poin', judul: 'Cara dapat poin', isi: '10 poin tiap chapter baru, bonus 10 poin untuk chapter pertama tiap hari.' },
+    { id: 'bonus-malam', judul: 'Bonus baca malam', isi: 'Baca jam 22.00–04.59 dapat tambahan 5 poin per chapter.' },
+    { id: 'streak', judul: 'Jaga streak-mu', isi: 'Baca minimal satu chapter tiap hari supaya streak tidak putus.' },
+    { id: 'reset-musim', judul: 'Poin direset tiap musim', isi: 'Satu musim berlangsung 2 bulan. Lencana yang sudah terbuka tetap jadi milikmu.' },
+    { id: 'papan-peringkat', judul: 'Papan peringkat 100 besar', isi: 'Pembaca dengan poin tertinggi musim ini tampil di tab Peringkat.' },
+    { id: 'notif-chapter', judul: 'Notifikasi chapter baru', isi: 'Komik di Favorit yang rilis chapter baru akan muncul di tab Pembaruan.' },
   ];
 }
 
 function KomoSleeping() {
+  const ol = '#2B3A24', g = '#8AA16E', gd = '#6F8955', cream = '#EFE6BE';
   return (
-    <svg width={240} height={190} viewBox="0 0 240 190">
-      <g fill="#fff" stroke="#14301c" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round">
-        <path d="M168 48h18l-18 18h20" fill="none" /><path d="M190 22h14l-14 14h16" fill="none" />
+    <svg width={120} height={132} viewBox="0 0 120 132" style={{ overflow: 'visible' }}>
+      {/* Zz */}
+      <g fontFamily="Plus Jakarta Sans, system-ui, sans-serif" fontWeight={900} textAnchor="middle" fill="#fff" stroke="#14201a" strokeWidth={3} paintOrder="stroke" strokeLinejoin="round">
+        <text x={86} y={34} fontSize={20}>Z</text>
+        <text x={100} y={14} fontSize={14}>Z</text>
       </g>
-      <path d="M150 128c20-4 42-16 52-38-2 20-8 38-30 52z" fill="#7C9961" stroke="#14301c" strokeWidth={3.5} strokeLinejoin="round" />
-      <ellipse cx={120} cy={146} rx={50} ry={34} fill="#7C9961" stroke="#14301c" strokeWidth={3.5} />
-      <path d="M95 126c0-12 10-20 25-20s25 8 25 20c0 14-10 22-25 22s-25-8-25-22z" fill="#EBE0B5" />
-      <path d="M100 118h40v18h-40z" fill="#fff" stroke="#14301c" strokeWidth={3} />
-      <path d="M100 124h40M100 130h40" stroke="#D64545" strokeWidth={5} /><path d="M120 118v18" stroke="#14301c" strokeWidth={2.5} />
-      <ellipse cx={86} cy={160} rx={20} ry={11} fill="#7C9961" stroke="#14301c" strokeWidth={3.5} />
-      <ellipse cx={154} cy={160} rx={20} ry={11} fill="#7C9961" stroke="#14301c" strokeWidth={3.5} />
-      <circle cx={120} cy={74} r={40} fill="#7C9961" stroke="#14301c" strokeWidth={3.5} />
-      <path d="M96 34l4 10-9-4zM114 30l4 10-9-3zM134 32l-2 10 9-3z" fill="#7C9961" stroke="#14301c" strokeWidth={3} strokeLinejoin="round" />
-      <ellipse cx={120} cy={84} rx={22} ry={16} fill="#EBE0B5" />
-      <circle cx={92} cy={86} r={6} fill="#F2A2A2" opacity={0.7} /><circle cx={148} cy={86} r={6} fill="#F2A2A2" opacity={0.7} />
-      <path d="M97 70q8 6 16 0M127 70q8 6 16 0" fill="none" stroke="#14301c" strokeWidth={3.5} strokeLinecap="round" />
-      <path d="M113 90q7 6 14 0" fill="none" stroke="#14301c" strokeWidth={3.5} strokeLinecap="round" />
-      <ellipse cx={120} cy={80} rx={4} ry={2.4} fill="#14301c" />
+      {/* ekor */}
+      <path d="M78 112c14 1 26-6 30-22 1 14-6 30-22 34z" fill={g} stroke={ol} strokeWidth={2.4} strokeLinejoin="round" />
+      <circle cx={96} cy={108} r={2} fill={gd} /><circle cx={102} cy={100} r={1.6} fill={gd} />
+      {/* badan */}
+      <path d="M26 112c0-20 12-34 32-34s32 14 32 34c0 8-6 12-14 12H40c-8 0-14-4-14-12z" fill={g} stroke={ol} strokeWidth={2.4} />
+      <ellipse cx={58} cy={108} rx={21} ry={13} fill={cream} />
+      {/* buku */}
+      <rect x={38} y={100} width={40} height={15} rx={3} fill="#fff" stroke={ol} strokeWidth={2.2} />
+      <rect x={38} y={104} width={40} height={4} fill="#D64545" /><rect x={38} y={109} width={40} height={2.6} fill="#D64545" />
+      <line x1={58} y1={100} x2={58} y2={115} stroke={ol} strokeWidth={1.8} />
+      {/* tangan & kaki */}
+      <ellipse cx={34} cy={108} rx={7} ry={8} fill={g} stroke={ol} strokeWidth={2.2} />
+      <ellipse cx={82} cy={108} rx={7} ry={8} fill={g} stroke={ol} strokeWidth={2.2} />
+      <ellipse cx={42} cy={124} rx={13} ry={6} fill={g} stroke={ol} strokeWidth={2.2} />
+      <ellipse cx={74} cy={124} rx={13} ry={6} fill={g} stroke={ol} strokeWidth={2.2} />
+      {/* kepala */}
+      <path d="M44 22l3 8-8-3zM56 17l3 9-8-2zM68 21l-1 9 8-4z" fill={g} stroke={ol} strokeWidth={2} strokeLinejoin="round" />
+      <ellipse cx={58} cy={50} rx={32} ry={28} fill={g} stroke={ol} strokeWidth={2.4} />
+      <circle cx={42} cy={38} r={2.6} fill={gd} /><circle cx={74} cy={36} r={2.2} fill={gd} /><circle cx={66} cy={30} r={1.8} fill={gd} />
+      <ellipse cx={58} cy={58} rx={17} ry={13} fill={cream} />
+      <ellipse cx={37} cy={58} rx={5} ry={3.6} fill="#F2A2A2" opacity={0.75} /><ellipse cx={79} cy={58} rx={5} ry={3.6} fill="#F2A2A2" opacity={0.75} />
+      <path d="M40 50q6 5 12 0M64 50q6 5 12 0" fill="none" stroke={ol} strokeWidth={2.6} strokeLinecap="round" />
+      <circle cx={55} cy={56} r={1} fill={ol} /><circle cx={61} cy={56} r={1} fill={ol} />
+      <path d="M52 62q6 5 12 0" fill="none" stroke={ol} strokeWidth={2.4} strokeLinecap="round" />
     </svg>
   );
 }
 
 function Empty({ title, sub }: { title: string; sub: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '70px 40px 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '110px 48px 0' }}>
       <KomoSleeping />
-      <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: -0.8, marginTop: 14 }}>{title}</div>
-      <div style={{ color: MUTED, fontSize: 21, fontWeight: 800, letterSpacing: -0.6, lineHeight: 1.35, marginTop: 8 }}>{sub}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.6, marginTop: 16 }}>{title}</div>
+      <div style={{ color: MUTED, fontSize: 18, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.35, marginTop: 6, maxWidth: 260 }}>{sub}</div>
     </div>
   );
 }
@@ -162,7 +181,7 @@ export default function NotifikasiPage() {
       <div style={{ display: 'flex', alignItems: 'center', padding: '14px 12px 10px', gap: 12 }}>
         <button onClick={() => router.back()} aria-label="Kembali" style={{ background: 'none', border: 0, padding: 6, display: 'flex' }}><Back /></button>
         <div style={{ flex: 1, fontSize: 25, fontWeight: 800, letterSpacing: -0.8 }}>Notifikasi</div>
-        <button onClick={markAll} style={{ background: 'none', border: 0, color: CORAL, fontSize: 21, fontWeight: 800, letterSpacing: -0.6, padding: '6px 8px' }}>Tandai semua dibaca</button>
+        <button onClick={markAll} style={{ background: 'none', border: 0, color: CORAL, fontSize: 19, fontWeight: 800, letterSpacing: -0.5, padding: '6px 8px' }}>Tandai semua dibaca</button>
       </div>
 
       {/* Segmen */}
@@ -170,7 +189,7 @@ export default function NotifikasiPage() {
         {tabs.map((t) => {
           const on = tab === t.k;
           return (
-            <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, height: 46, borderRadius: 99, border: 0, background: on ? '#1B1A20' : 'transparent', color: on ? '#fff' : MUTED, fontSize: 21, fontWeight: 800, letterSpacing: -0.6 }}>{t.label}</button>
+            <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, height: 42, borderRadius: 99, border: 0, background: on ? '#1B1A20' : 'transparent', color: on ? '#fff' : MUTED, fontSize: 19, fontWeight: 800, letterSpacing: -0.6 }}>{t.label}</button>
           );
         })}
       </div>
