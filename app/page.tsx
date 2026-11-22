@@ -4,45 +4,7 @@ import { useEffect, useState, memo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useHistory } from '@/lib/store';
-
-// ─── Firebase ────────────────────────────────────────────────────────────────
-declare global { interface Window { firebase: any; _fbReady: boolean; } }
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
-  authDomain: "komiku-d8788.firebaseapp.com",
-  databaseURL: "https://komiku-d8788-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "komiku-d8788",
-  storageBucket: "komiku-d8788.firebasestorage.app",
-  messagingSenderId: "186745171350",
-  appId: "1:186745171350:web:92cd160ed67e25de8801b7",
-};
-function loadFirebaseCDN(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window._fbReady) return Promise.resolve();
-  return new Promise((resolve) => {
-    const urls = [
-      'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js',
-      'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js',
-      'https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js',
-    ];
-    let done = 0;
-    urls.forEach(src => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = () => { done++; if (done === urls.length) { window._fbReady = true; resolve(); } };
-      document.head.appendChild(s);
-    });
-  });
-}
-let _fbInit2 = false;
-async function getFirebase() {
-  await loadFirebaseCDN();
-  if (!_fbInit2) {
-    if (!window.firebase.apps.length) window.firebase.initializeApp(FIREBASE_CONFIG);
-    _fbInit2 = true;
-  }
-  return { auth: window.firebase.auth(), db: window.firebase.database() };
-}
+import { getFirebase } from '@/lib/firebase-client';
 
 interface TopUser {
   uid: string; displayName: string; photoURL: string;

@@ -15,22 +15,37 @@ declare global {
   interface Window { firebase: any; _fbReady: boolean; }
 }
 
-function loadFirebaseCDN(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window._fbReady) return Promise.resolve();
-  const scripts = [
-    'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js',
-    'https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js',
-  ];
-  return scripts.reduce((chain, src) => chain.then(() => new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+const FIREBASE_SCRIPTS = [
+  'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js',
+];
+
+// Satu skrip hanya dimuat sekali, dan semua pemanggil menunggu skrip yang SAMA sampai benar-benar selesai.
+function loadScriptOnce(src: string): Promise<void> {
+  const w = window as any;
+  w.__fbScripts = w.__fbScripts || {};
+  if (w.__fbScripts[src]) return w.__fbScripts[src];
+  const p = new Promise<void>((resolve, reject) => {
     const s = document.createElement('script');
     s.src = src;
+    s.async = false;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Gagal load: ${src}`));
+    s.onerror = () => { delete w.__fbScripts[src]; s.remove(); reject(new Error(`Gagal load: ${src}`)); };
     document.head.appendChild(s);
-  })), Promise.resolve()).then(() => { window._fbReady = true; });
+  });
+  w.__fbScripts[src] = p;
+  return p;
+}
+
+async function loadFirebaseCDN(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const ok = () => !!(window.firebase && window.firebase.auth && window.firebase.database);
+  if (window._fbReady && ok()) return;
+  // berurutan: app dulu, baru auth dan database
+  for (const src of FIREBASE_SCRIPTS) await loadScriptOnce(src);
+  if (!ok()) throw new Error('Firebase belum lengkap dimuat');
+  window._fbReady = true;
 }
 
 let _fbPromise: Promise<{ auth: any; db: any }> | null = null;
@@ -40,7 +55,7 @@ export function getFirebase() {
     await loadFirebaseCDN();
     if (!window.firebase.apps.length) window.firebase.initializeApp(FIREBASE_CONFIG);
     return { auth: window.firebase.auth(), db: window.firebase.database() };
-  })();
+  })().catch((e) => { _fbPromise = null; throw e; }); // gagal? boleh dicoba lagi, jangan disimpan
   return _fbPromise;
 }
 

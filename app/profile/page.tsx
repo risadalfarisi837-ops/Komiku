@@ -10,57 +10,7 @@ import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
-import { TRACKS, TrackName, TRACK_COLOR, CATALOG, byTrack, findLencana, heldLencana, recordHeld, mergeBest, isUnlocked, loadEquipped } from '@/lib/lencana';
-import { LencanaIcon } from '@/components/LencanaBadge';
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
-  authDomain: "komiku-d8788.firebaseapp.com",
-  databaseURL: "https://komiku-d8788-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "komiku-d8788",
-  storageBucket: "komiku-d8788.firebasestorage.app",
-  messagingSenderId: "186745171350",
-  appId: "1:186745171350:web:92cd160ed67e25de8801b7",
-  measurementId: "G-5FS22L934V"
-};
-
-declare global {
-  interface Window { firebase: any; _fbReady: boolean; }
-}
-
-// Load scripts berurutan agar auth-compat tidak load sebelum app-compat
-function loadFirebaseCDN(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window._fbReady) return Promise.resolve();
-  const scripts = [
-    'https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js',
-    'https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js',
-  ];
-  return scripts.reduce((chain, src) => chain.then(() => new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Gagal load: ${src}`));
-    document.head.appendChild(s);
-  })), Promise.resolve()).then(() => { window._fbReady = true; });
-}
-
-let _fbInit = false;
-let _fbPromise: Promise<{ auth: any; db: any }> | null = null;
-async function getFirebase() {
-  if (_fbPromise) return _fbPromise;
-  _fbPromise = (async () => {
-    await loadFirebaseCDN();
-    if (!_fbInit) {
-      if (!window.firebase.apps.length) window.firebase.initializeApp(FIREBASE_CONFIG);
-      _fbInit = true;
-    }
-    return { auth: window.firebase.auth(), db: window.firebase.database() };
-  })();
-  return _fbPromise;
-}
+import { getFirebase } from '@/lib/firebase-client';
 
 // ─── Rename Modal ─────────────────────────────────────────────────────────────
 function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRename }: {
@@ -199,7 +149,7 @@ const DEV_ITEMS = {
 } as const;
 type ItemCat = keyof typeof DEV_ITEMS;
 type DevUser = { uid: string; name: string; photo: string; level: number; koin: number; role: string };
-const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['role', 'Role'], ['item', 'Item'], ['lencana', 'Lencana']] as const;
+const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['role', 'Role'], ['item', 'Item']] as const;
 type DevAct = typeof DEV_ACTS[number][0];
 const DEV_MODES = [['add', 'Tambah'], ['sub', 'Kurangi'], ['set', 'Set jadi']] as const;
 type DevMode = typeof DEV_MODES[number][0];
@@ -229,7 +179,6 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [rolePick, setRolePick]         = useState('Member');
   const [itemCat, setItemCat]           = useState<ItemCat>('border');
   const [itemKey, setItemKey]           = useState('');
-  const [lenId, setLenId]               = useState('');
 
   // Tab: Semua user
   const [gType, setGType]   = useState<'koin'|'level'>('koin');
@@ -312,27 +261,6 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       else { p[c.owned + '/' + itemKey] = null; if (cur[c.active] === itemKey) p[c.active] = ''; }
       return p;
     }, give ? nama + ' diberikan.' : nama + ' dicabut.', give ? { title: 'Gift terkirim!', sub: nama + ' untuk ' + (target?.name || 'user') } : undefined);
-  };
-
-  // Lencana: dibuka lewat server (users/{uid}/lencanaBest), user melihatnya saat membuka halaman Lencana.
-  const applyLencana = (mode: 'max' | 'open' | 'wear') => {
-    const l = findLencana(lenId);
-    if (mode !== 'max' && !l) { showToast('Pilih lencana dulu.', 'error'); return; }
-    if (mode === 'max') {
-      run(() => {
-        const p: any = {};
-        TRACKS.forEach(t => { p['lencanaBest/' + t] = 1; });
-        return p;
-      }, 'Semua lencana dibuka.', { title: 'Gift terkirim!', sub: 'Semua lencana untuk ' + (target?.name || 'user') });
-      return;
-    }
-    run((cur) => {
-      const p: any = {};
-      const have = Number(cur.lencanaBest?.[l!.track]) || 11;
-      p['lencanaBest/' + l!.track] = Math.min(have, l!.tier);
-      if (mode === 'wear') p.lencana = l!.id;
-      return p;
-    }, mode === 'wear' ? l!.name + ' dibuka dan dipakai.' : 'Dibuka sampai ' + l!.name + '.', { title: 'Gift terkirim!', sub: l!.name + ' untuk ' + (target?.name || 'user') });
   };
 
   const askGlobal = () => {
@@ -450,7 +378,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
                 </div>
                 <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.5 }}>
                   Punya: {cnt(tData.ownedBorders)} border · {cnt(tData.ownedWallpapers)} wallpaper · {cnt(tData.ownedEffects)} effect<br />
-                  Dipakai: {tData.activeBorder ? nameOf('border', tData.activeBorder) || tData.activeBorder : '–'} · {tData.activeWallpaper ? nameOf('wallpaper', tData.activeWallpaper) || tData.activeWallpaper : '–'} · {tData.activeEffect ? nameOf('effect', tData.activeEffect) || tData.activeEffect : '–'} · {tData.lencana ? findLencana(tData.lencana)?.name || tData.lencana : '–'}
+                  Dipakai: {tData.activeBorder ? nameOf('border', tData.activeBorder) || tData.activeBorder : '–'} · {tData.activeWallpaper ? nameOf('wallpaper', tData.activeWallpaper) || tData.activeWallpaper : '–'} · {tData.activeEffect ? nameOf('effect', tData.activeEffect) || tData.activeEffect : '–'}
                 </div>
               </div>
             )}
@@ -490,27 +418,6 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
               <button onClick={applyRole} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
                 {saving ? 'Memproses...' : `Jadikan ${rolePick}`}
               </button>
-            </div>
-          )}
-
-          {act === 'lencana' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button onClick={() => applyLencana('max')} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
-                {saving ? 'Memproses...' : 'MAX · buka semua 30 lencana'}
-              </button>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B' }}>Atau pilih satu lencana:</div>
-              <select style={FIELD} value={lenId} onChange={e => setLenId(e.target.value)}>
-                <option value="">Pilih lencana...</option>
-                {TRACKS.map(t => (
-                  <optgroup key={t} label={t}>
-                    {byTrack(t).map(l => <option key={l.id} value={l.id}>{l.name} · Tingkat {l.tier}</option>)}
-                  </optgroup>
-                ))}
-              </select>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => applyLencana('open')} disabled={saving || !target} style={{ ...BTN, flex: 1, width: 'auto', background: '#1F1E24', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>Buka sampai sini</button>
-                <button onClick={() => applyLencana('wear')} disabled={saving || !target} style={{ ...BTN, flex: 1, width: 'auto', background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>Buka & pakai</button>
-              </div>
             </div>
           )}
 
@@ -749,16 +656,6 @@ export default function ProfilePage() {
   const streak   = mounted ? mine.streak : 0;
   const { rank, next } = rankFor(pts);
 
-  // Lencana yang dipakai (server > lokal > yang dipegang musim ini) dan jumlah yang sudah terbuka
-  const [lenBest, setLenBest] = useState<Record<TrackName, number> | null>(null);
-  useEffect(() => {
-    if (!mounted) return;
-    recordHeld(heldLencana(pts));
-    setLenBest(mergeBest(userData?.lencanaBest));
-  }, [mounted, pts, userData?.lencanaBest]); // eslint-disable-line react-hooks/exhaustive-deps
-  const equippedL = findLencana(userData?.lencana || (mounted ? loadEquipped() : null)) || heldLencana(pts);
-  const lenOpen = lenBest ? CATALOG.filter((l) => isUnlocked(l, lenBest)).length : 0;
-
   // Peringkat musim = jumlah pemain dengan poin lebih tinggi + 1
   useEffect(() => {
     if (!user || !mounted || pts <= 0) { setSeasonRank(null); return; }
@@ -876,6 +773,7 @@ export default function ProfilePage() {
   const activeEffect = userData?.activeEffect ?? '';
   const ownedBorders = userData?.ownedBorders ? Object.keys(userData.ownedBorders) : [];
   const photoURL = (userData?.photoURL ?? user?.photoURL) || '';
+  const unlocked     = RANKS.filter(r => pts >= r.min).length;
   const target       = next ? next.min : Math.max(pts, 1);
   const barPct       = Math.min(100, (pts / target) * 100);
   const soon = () => alert('Fitur Premium segera hadir.');
@@ -941,8 +839,8 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: TRACK_COLOR[equippedL.track], padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
-            <LencanaIcon l={equippedL} size={22} />{equippedL.name}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
+            <Emblem t={rank.track} fill={rank.bg} size={18} />{rank.name}
           </span>
           {isPremium && !isDev && (
             <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>PREMIUM</span>
@@ -1010,7 +908,7 @@ export default function ProfilePage() {
       <SectionLabel>Kamu</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
         <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => { window.location.assign('/profile/edit'); }} />
-        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${lenOpen} terbuka · ${equippedL.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
+        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
         <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/notifikasi" />
         {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={() => { window.location.assign("/premium"); }} />}
       </div>
