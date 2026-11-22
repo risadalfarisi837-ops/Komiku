@@ -15,7 +15,7 @@ const fmtDate = (t: number) => { const d = new Date(t); return `${d.getDate()} $
 
 interface C {
   id: string; uid: string; nama: string; foto: string; role?: string; level?: number;
-  teks: string; waktu: number; parentId?: string; lencana?: string; likes?: Record<string, boolean>; activeWallpaper?: string;
+  teks: string; waktu: number; parentId?: string; lencana?: string; activeWallpaper?: string; likes?: Record<string, boolean>;
 }
 
 const Back = () => (
@@ -145,7 +145,7 @@ function KomentarContent() {
       <WallpaperBg
         wpKey={c.activeWallpaper}
         style={hasWp
-          ? { display: 'flex', gap: 14, padding: small ? '10px 12px' : '14px 12px', marginTop: small ? 10 : 14, borderRadius: 18, borderWidth: 1, borderStyle: 'solid' }
+          ? { display: 'flex', gap: 14, padding: small ? 12 : 14, marginTop: small ? 10 : 14, borderRadius: 18, border: '1px solid' }
           : { display: 'flex', gap: 14, padding: small ? '10px 0 0' : '16px 0 0' }}
       >
         <Avatar src={c.foto} size={small ? 32 : 42} gold={gold} />
