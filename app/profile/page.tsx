@@ -7,6 +7,7 @@ import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore } from '@/lib/leaderboard';
 import ProfileEffect from '@/components/ProfileEffect';
+import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
 
@@ -211,6 +212,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 }) {
   const [tab, setTab]       = useState<'user'|'global'>('user');
   const [saving, setSaving] = useState(false);
+  const [gift, setGift]     = useState<{ title: string; sub?: string } | null>(null);
   const [toast, setToast]   = useState<{msg:string; type:'success'|'error'}|null>(null);
 
   // Tab: User
@@ -261,7 +263,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   useEffect(() => { if (users && !target) { const me = users.find(u => u.uid === uid); if (me) pick(me); } }, [users]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Jalankan perubahan ke user terpilih: baca data terbaru -> hitung -> simpan -> muat ulang.
-  const run = async (fn: (cur: any) => any, okMsg: string) => {
+  const run = async (fn: (cur: any) => any, okMsg: string, fx?: { title: string; sub?: string }) => {
     if (!target) { showToast('Pilih user dulu.', 'error'); return; }
     setSaving(true);
     try {
@@ -273,6 +275,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       if (target.uid === uid) onUpdate(fresh);
       setUsers(prev => prev && prev.map(x => x.uid === target.uid ? { ...x, name: fresh.displayName || x.name, level: Number(fresh.level) || 1, koin: Number(fresh.koin) || 0, role: fresh.role || 'Member' } : x));
       showToast(okMsg, 'success');
+      if (fx) setGift(fx);
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
@@ -288,7 +291,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       if (act === 'level') { const l = Math.max(1, calc(lvl)); return { level: l, exp: (l - 1) * 200 }; }
       const e = Math.max(0, calc(Number.isFinite(Number(cur.exp)) ? Number(cur.exp) : (lvl - 1) * 200));
       return { exp: e, level: Math.floor(e / 200) + 1 };
-    }, 'Berhasil diterapkan.');
+    }, 'Berhasil diterapkan.', mode === 'add' ? { title: 'Gift terkirim!', sub: '+' + n + ' ' + (act === 'koin' ? 'Crystal' : act === 'level' ? 'Level' : 'EXP') + ' untuk ' + (target?.name || 'user') } : undefined);
   };
 
   const applyRole = () => {
@@ -305,7 +308,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       if (give) p[c.owned + '/' + itemKey] = itemCat === 'wallpaper' ? (Number(cur.ownedWallpapers?.[itemKey]) || 0) + 1 : true;
       else { p[c.owned + '/' + itemKey] = null; if (cur[c.active] === itemKey) p[c.active] = ''; }
       return p;
-    }, give ? nama + ' diberikan.' : nama + ' dicabut.');
+    }, give ? nama + ' diberikan.' : nama + ' dicabut.', give ? { title: 'Gift terkirim!', sub: nama + ' untuk ' + (target?.name || 'user') } : undefined);
   };
 
   const askGlobal = () => {
@@ -338,6 +341,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       await db.ref().update(updates);
       if (mine) onUpdate(mine);
       showToast(`Terkirim ke ${count} user.`, 'success');
+      setGift({ title: 'Gift terkirim!', sub: val + ' ' + (gType === 'koin' ? 'Crystal' : 'Level') + ' ke ' + count + ' user' });
       setGVal('');
       setUsers(null); // daftar user dimuat ulang saat panel dibuka lagi
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
@@ -364,6 +368,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
   return (
     <Sheet open={open} onClose={onClose} title="Panel Developer">
+      <GiftEffect show={!!gift} title={gift?.title} sub={gift?.sub} onDone={() => setGift(null)} />
       {toast && (
         <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 15, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6A0' : '#FF7A7A' }}>
           {toast.msg}
