@@ -37,8 +37,8 @@ const POOL: Species[] = [
 ];
 const START = ['Glacius the Ice', 'Blazon the Rare', 'Ceruh the Dragon'];
 const POS: number[][] = [
-  [48, 30], [70, 34], [28, 38], [58, 46], [18, 50], [78, 50], [40, 54], [66, 58],
-  [34, 32], [84, 44], [14, 42], [50, 40], [60, 28], [26, 56], [74, 54],
+  [50, 38], [28, 34], [72, 34], [38, 50], [62, 50], [16, 42], [84, 42], [50, 60],
+  [24, 52], [76, 52], [40, 28], [60, 28], [34, 42], [66, 42], [50, 48],
 ];
 
 const short = (n: string) => n.split(' ')[0];
@@ -65,12 +65,26 @@ const CSS = `
 @keyframes kzTwinkle{0%,100%{opacity:.35}50%{opacity:1}}
 `;
 
+function useSprite(src: string) {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    if (!SPRITES) return;
+    let alive = true;
+    const im = new window.Image();
+    im.onload = () => { if (alive) setOk(true); };
+    im.src = src;
+    return () => { alive = false; };
+  }, [src]);
+  return ok;
+}
+
 function PetArt({ s, size }: { s: Species; size: number }) {
-  const [bad, setBad] = useState(!SPRITES);
-  if (bad) return <span style={{ fontSize: size * 0.8, lineHeight: 1 }}>{s.e}</span>;
+  const src = '/pet/' + short(s.name).toLowerCase() + '.png';
+  const ok = useSprite(src);
+  if (!ok) return <span style={{ fontSize: size * 0.8, lineHeight: 1 }}>{s.e}</span>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={'/pet/' + short(s.name).toLowerCase() + '.png'} alt={s.name} onError={() => setBad(true)} style={{ width: size, height: size, objectFit: 'contain' }} />
+    <img src={src} alt={s.name} draggable={false} style={{ width: size, height: size, objectFit: 'contain' }} />
   );
 }
 
@@ -81,10 +95,10 @@ function Chip({ r, big }: { r: Rar; big?: boolean }) {
 }
 
 function Island() {
-  const [bad, setBad] = useState(!SPRITES);
-  if (!bad) {
+  const ok = useSprite('/pet/island.png');
+  if (ok) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src="/pet/island.png" alt="" onError={() => setBad(true)} className="w-full h-full object-contain" />;
+    return <img src="/pet/island.png" alt="" draggable={false} className="w-full h-full object-contain" />;
   }
   return (
     <svg viewBox="0 0 400 345" className="w-full h-full">
@@ -186,7 +200,7 @@ export default function PetPage() {
   const owned = (n: string) => pets.filter(p => p.name === n).length;
 
   return (
-    <div className="min-h-screen max-w-md mx-auto relative overflow-hidden text-slate-800" style={{ background: 'linear-gradient(180deg,#86c8e8 0%,#a9dcef 50%,#c4e6f4 100%)' }}>
+    <div onContextMenu={e => e.preventDefault()} className="min-h-screen max-w-md mx-auto relative overflow-hidden text-slate-800 select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]" style={{ background: 'linear-gradient(180deg,#86c8e8 0%,#a9dcef 50%,#c4e6f4 100%)' }}>
       <style>{CSS}</style>
       <div className="absolute top-20 right-4 w-24 h-24 rounded-full bg-yellow-100" style={{ animation: 'kzSun 5s ease-in-out infinite' }} />
       <div className="absolute top-[22%] -left-6 w-56 h-72 rounded-full bg-white/30" style={{ animation: 'kzDrift 14s ease-in-out infinite alternate' }} />
@@ -226,13 +240,13 @@ export default function PetPage() {
                   <div className="flex flex-col items-center" style={{ animation: (ok ? 'kzHop 1.1s' : 'kzBob 2.6s') + ' ease-in-out ' + (i % 5) * 0.35 + 's infinite' }}>
                     <button
                       onClick={() => ok && claim([p.id])}
-                      className={'mb-0.5 rounded-full pl-2 pr-3 py-1 text-sm font-extrabold shadow-md flex items-center gap-1 ' + (ok ? 'bg-emerald-500 text-white' : 'bg-white text-slate-700')}
+                      className={'mb-0.5 rounded-full pl-2 pr-2.5 py-0.5 text-xs font-extrabold shadow-md flex items-center gap-1 ' + (ok ? 'bg-emerald-500 text-white' : 'bg-white text-slate-700')}
                     >
                       <span className={ok ? 'text-white' : 'text-sky-300'}>✦</span>{now ? fmt(left) : '...'}
                     </button>
-                    <span className="drop-shadow-md"><PetArt s={p} size={72} /></span>
-                    <span className="-mt-1 flex items-center gap-1 rounded-full bg-white/90 pl-1 pr-3 py-0.5 text-base font-extrabold shadow" style={{ color: '#2f4a3a' }}>
-                      <span className="w-6 h-6 rounded-full text-xs flex items-center justify-center" style={{ background: RAR[p.r].bg, color: RAR[p.r].fg }}>{RAR[p.r].l}</span>
+                    <span className="drop-shadow-md"><PetArt s={p} size={64} /></span>
+                    <span className="-mt-1 flex items-center gap-1 rounded-full bg-white/90 pl-1 pr-2.5 py-0.5 text-sm font-extrabold shadow" style={{ color: '#2f4a3a' }}>
+                      <span className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center" style={{ background: RAR[p.r].bg, color: RAR[p.r].fg }}>{RAR[p.r].l}</span>
                       {short(p.name)}
                     </span>
                   </div>
