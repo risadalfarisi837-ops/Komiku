@@ -210,6 +210,7 @@ type DevReset = typeof DEV_RESETS[number][0];
 type GType = 'koin' | 'level' | 'exp' | 'poin';
 const GIFT_TYPES: [GType, string][] = [['koin', 'Crystal'], ['level', 'Level up'], ['exp', 'EXP'], ['poin', 'Poin musim']];
 const GIFT_PRESETS: Record<GType, number[]> = { koin: [100, 500, 1000, 5000], level: [1, 3, 5, 10], exp: [100, 200, 1000, 5000], poin: [50, 100, 300, 700] };
+const DEV_PLAN_DAYS: Record<string, { nama: string; days: number }> = { mingguan: { nama: 'Mingguan', days: 7 }, bulanan: { nama: 'Bulanan', days: 30 } };
 const GIFT_UNIT: Record<GType, string> = { koin: 'Crystal', level: 'Level', exp: 'EXP', poin: 'Poin' };
 const DEV_REASONS = ['Kompensasi', 'Server down', 'Hadiah event', 'Bonus spesial'];
 
@@ -217,7 +218,8 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   open: boolean; onClose: () => void;
   uid: string; db: any; userData: any; onUpdate: (d: any) => void;
 }) {
-  const [tab, setTab]       = useState<'user'|'global'>('user');
+  const [tab, setTab]       = useState<'user'|'global'|'bayar'>('user');
+  const [orders, setOrders]     = useState<any[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [gift, setGift]     = useState<{ title: string; sub?: string } | null>(null);
   const [toast, setToast]   = useState<{msg:string; type:'success'|'error'}|null>(null);
@@ -306,6 +308,70 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       showToast(`Poin ${target.name} sekarang ${fmt(total)}.`, 'success');
       if (mode === 'add') setGift({ title: 'Gift terkirim!', sub: '+' + n + ' poin untuk ' + target.name });
     } catch (e: any) { showToast('Gagal: ' + e.message + ' (cek aturan database leaderboard)', 'error'); }
+    setSaving(false);
+  };
+
+  // ── Pembayaran Premium manual ──
+  const loadOrders = async () => {
+    try {
+      const snap = await db.ref('premiumOrders').orderByChild('status').equalTo('pending').get();
+      const arr: any[] = [];
+      snap.forEach((c: any) => { arr.push({ id: String(c.key), ...(c.val() || {}) }); });
+      setOrders(arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+    } catch (e: any) { showToast('Gagal memuat pesanan: ' + e.message + ' (cek aturan premiumOrders)', 'error'); setOrders([]); }
+  };
+  useEffect(() => { if (tab === 'bayar') loadOrders(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const approveOrder = async (o: any) => {
+    const plan = DEV_PLAN_DAYS[o.plan];
+    if (!plan) { showToast('Paket tidak dikenal.', 'error'); return; }
+    if (!window.confirm(`Setujui ${o.name} · Rp ${Number(o.amount).toLocaleString('id-ID')}? Pastikan dana sudah masuk di DANA.`)) return;
+    setSaving(true);
+    try {
+      const u = (await db.ref('users/' + o.uid).get()).val() || {};
+      const now = Date.now();
+      const from = u.role === 'Komiku Premium' && Number(u.premiumUntil) > now ? Number(u.premiumUntil) : now;
+      const until = from + plan.days * 86400000;
+      const upd: Record<string, any> = {};
+      upd[`users/${o.uid}/premiumUntil`] = until;
+      upd[`users/${o.uid}/premiumPlan`] = o.plan;
+      if (u.role !== 'Developer') upd[`users/${o.uid}/role`] = 'Komiku Premium';
+      upd[`premiumOrders/${o.id}/status`] = 'approved';
+      upd[`premiumOrders/${o.id}/approvedAt`] = now;
+      upd[`premiumOrders/${o.id}/until`] = until;
+      await db.ref().update(upd);
+      setOrders(prev => prev && prev.filter(x => x.id !== o.id));
+      showToast(`Premium ${o.name} aktif sampai ${new Date(until).toLocaleDateString('id-ID')}.`, 'success');
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
+    setSaving(false);
+  };
+
+  const rejectOrder = async (o: any) => {
+    if (!window.confirm(`Tolak pesanan ${o.name}?`)) return;
+    setSaving(true);
+    try {
+      await db.ref(`premiumOrders/${o.id}`).update({ status: 'rejected', rejectedAt: Date.now() });
+      setOrders(prev => prev && prev.filter(x => x.id !== o.id));
+      showToast('Pesanan ditolak.', 'success');
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
+    setSaving(false);
+  };
+
+  // Turunkan Premium yang masa aktifnya sudah habis (Premium manual tanpa batas waktu tidak disentuh)
+  const sweepPremium = async () => {
+    setSaving(true);
+    try {
+      const snap = await db.ref('users').get();
+      const now = Date.now();
+      const upd: Record<string, string> = {};
+      snap.forEach((c: any) => {
+        const v = c.val() || {};
+        if (v.role === 'Komiku Premium' && Number(v.premiumUntil) > 0 && Number(v.premiumUntil) < now) upd[`users/${c.key}/role`] = 'Member';
+      });
+      const n = Object.keys(upd).length;
+      if (n) await db.ref().update(upd);
+      showToast(n ? `${n} Premium habis diturunkan jadi Member.` : 'Tidak ada Premium yang habis.', 'success');
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
 
@@ -476,7 +542,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
       {/* Tab */}
       <div style={{ display: 'flex', gap: 4, background: '#1F1E24', borderRadius: 14, padding: 4, marginBottom: 14 }}>
-        {([['user', 'Kelola user'], ['global', 'Hadiah semua user']] as const).map(([k, l]) => (
+        {([['user', 'Kelola user'], ['global', 'Hadiah semua'], ['bayar', 'Pembayaran']] as const).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{ flex: 1, border: 0, borderRadius: 11, padding: '10px 0', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', background: tab === k ? '#2A2931' : 'transparent', color: tab === k ? '#fff' : '#8F8D9B' }}>{l}</button>
         ))}
       </div>
@@ -601,6 +667,41 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'bayar' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={LABEL}>Pesanan menunggu{orders ? ` (${orders.length})` : ''}</label>
+            <button onClick={loadOrders} style={{ ...chip(false), padding: '6px 14px' }}>Muat ulang</button>
+          </div>
+          {orders === null && <div style={{ color: '#8F8D9B', fontWeight: 700, padding: 10 }}>Memuat...</div>}
+          {orders && orders.length === 0 && <div style={{ color: '#8F8D9B', fontWeight: 700, lineHeight: 1.4, padding: 10 }}>Belum ada pesanan. Pesanan muncul di sini saat user memilih paket Premium.</div>}
+          {orders && orders.map(o => {
+            const kembar = orders.filter(x => x.amount === o.amount).length > 1;
+            const mnt = Math.max(0, Math.round((Date.now() - (o.createdAt || 0)) / 60000));
+            return (
+              <div key={o.id} style={{ background: '#1F1E24', borderRadius: 18, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ fontSize: 17, fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name || 'User'}</div>
+                  {o.claimed && <span style={{ background: 'rgba(111,214,178,.15)', color: '#6FD6B2', fontSize: 12.5, fontWeight: 800, padding: '3px 10px', borderRadius: 99, whiteSpace: 'nowrap' }}>Sudah bayar ✓</span>}
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: '#F5C84B', marginTop: 4 }}>Rp {Number(o.amount).toLocaleString('id-ID')}</div>
+                <div style={{ color: '#8F8D9B', fontSize: 14, fontWeight: 700, marginTop: 2 }}>{DEV_PLAN_DAYS[o.plan]?.nama || o.plan} · {mnt < 60 ? `${mnt} menit lalu` : `${Math.floor(mnt / 60)} jam lalu`}</div>
+                {kembar && <div style={{ color: '#FF7A7A', fontSize: 13.5, fontWeight: 800, marginTop: 6 }}>Ada pesanan lain dengan nominal sama. Cocokkan dengan nama pengirim di DANA.</div>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button onClick={() => approveOrder(o)} disabled={saving} style={{ ...BTN, flex: 1, width: 'auto', background: '#0E8A6A', color: '#fff', opacity: saving ? 0.5 : 1 }}>Setujui</button>
+                  <button onClick={() => rejectOrder(o)} disabled={saving} style={{ ...BTN, flex: 1, width: 'auto', background: 'rgba(255,92,92,.12)', color: '#FF7A7A', opacity: saving ? 0.5 : 1 }}>Tolak</button>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 14, marginTop: 6 }}>
+            <label style={LABEL}>Perawatan Premium</label>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, marginBottom: 10 }}>Turunkan semua Premium yang masa aktifnya sudah habis jadi Member. Premium dari Panel Developer tanpa batas waktu tidak ikut diturunkan.</div>
+            <button onClick={sweepPremium} disabled={saving} style={{ ...BTN, background: '#1F1E24', color: '#fff', opacity: saving ? 0.5 : 1 }}>Turunkan Premium yang habis</button>
+          </div>
         </div>
       )}
 

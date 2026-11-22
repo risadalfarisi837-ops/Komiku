@@ -23,6 +23,10 @@ const Crown = ({ size = 22, color = GOLD, filled = true }: { size?: number; colo
   </svg>
 );
 
+const K_ORDER = 'komiku-premium-order';
+const ORDER_TTL = 24 * 60 * 60 * 1000; // pesanan berlaku 24 jam
+const BASE_PRICE: Record<Plan, number> = { mingguan: 7000, bulanan: 25000 };
+
 const FEATURES = [
   { text: 'Bebas iklan di seluruh aplikasi', icon: <path d="M6 6l12 12M18 6L6 18" /> },
   { text: 'Unduh satu volume sekaligus', icon: <><path d="M12 4v11M7 11l5 5 5-5" /><path d="M5 20h14" /></> },
@@ -34,6 +38,12 @@ export default function PremiumPage() {
   const [plan, setPlan] = useState<Plan>('bulanan');
   const [isPremium, setIsPremium] = useState(false);
   const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [until, setUntil] = useState(0);
+  const [pay, setPay] = useState<null | { orderId: string; amount: number; plan: Plan; createdAt: number; before: number; claimed: boolean }>(null);
+  const [payState, setPayState] = useState<'wait' | 'ok' | 'rejected' | 'expired'>('wait');
+  const [qrMissing, setQrMissing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -43,7 +53,20 @@ export default function PremiumPage() {
         if (!u) return;
         const { db } = await getFirebase();
         const v = (await db.ref(`users/${u.uid}/role`).get()).val();
-        if (alive && (v === 'Komiku Premium' || v === 'Developer')) setIsPremium(true);
+        const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
+        // aktif kalau role Premium dan (tanpa batas waktu atau belum lewat)
+        const aktif = v === 'Developer' || (v === 'Komiku Premium' && (!pu || pu > Date.now()));
+        // lanjutkan pesanan yang masih menunggu
+        try {
+          const oid = localStorage.getItem(K_ORDER);
+          if (oid) {
+            const o = (await db.ref(`premiumOrders/${oid}`).get()).val();
+            if (o && o.status === 'pending' && Date.now() - o.createdAt < ORDER_TTL) {
+              if (alive) { setPay({ orderId: oid, amount: o.amount, plan: o.plan, createdAt: o.createdAt, before: pu, claimed: !!o.claimed }); setPayState('wait'); }
+            } else localStorage.removeItem(K_ORDER);
+          }
+        } catch {}
+        if (alive) { setUntil(pu); setIsPremium(aktif); }
       } catch {}
     })();
     return () => { alive = false; };
@@ -51,9 +74,81 @@ export default function PremiumPage() {
 
   const current = PLANS.find((p) => p.id === plan)!;
 
-  // Pembelian Google Play belum tersedia di versi web — jangan pura-pura sukses.
-  const lanjut = () => setMsg('Pembelian lewat Google Play belum aktif di versi web ini.');
-  const pulihkan = () => setMsg('Tidak ada pembelian yang bisa dipulihkan di versi web ini.');
+  const fmtDate = (ms: number) => new Date(ms).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Buat pesanan dengan nominal unik (harga + 3 digit) supaya pembayarannya mudah dicocokkan admin
+  const lanjut = async () => {
+    setMsg('');
+    setBusy(true);
+    try {
+      const u: any = await getUser();
+      if (!u) { setMsg('Masuk dulu lewat halaman Profil.'); setBusy(false); return; }
+      const { db } = await getFirebase();
+      const amount = BASE_PRICE[plan] + 100 + Math.floor(Math.random() * 900);
+      const ref = db.ref('premiumOrders').push();
+      const createdAt = Date.now();
+      await ref.set({ uid: u.uid, name: u.displayName || 'User', plan, amount, base: BASE_PRICE[plan], status: 'pending', createdAt });
+      try { localStorage.setItem(K_ORDER, String(ref.key)); } catch {}
+      setPay({ orderId: String(ref.key), amount, plan, createdAt, before: until, claimed: false });
+      setPayState('wait');
+      setQrMissing(false);
+    } catch (e: any) { setMsg('Gagal membuat pesanan: ' + (e?.message || 'coba lagi')); }
+    setBusy(false);
+  };
+
+  const sudahBayar = async () => {
+    if (!pay) return;
+    try {
+      const { db } = await getFirebase();
+      await db.ref(`premiumOrders/${pay.orderId}/claimed`).set(true);
+      setPay({ ...pay, claimed: true });
+    } catch { setMsg('Gagal mengirim. Coba lagi.'); }
+  };
+
+  const salinNominal = () => {
+    if (!pay) return;
+    try { navigator.clipboard.writeText(String(pay.amount)); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
+  };
+
+  // Cek ulang status akun
+  const pulihkan = async () => {
+    setMsg('');
+    try {
+      const u: any = await getUser();
+      if (!u) { setMsg('Masuk dulu lewat halaman Profil.'); return; }
+      const { db } = await getFirebase();
+      const v = (await db.ref(`users/${u.uid}/role`).get()).val();
+      const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
+      setUntil(pu);
+      const aktif = v === 'Developer' || (v === 'Komiku Premium' && (!pu || pu > Date.now()));
+      setIsPremium(aktif);
+      setMsg(aktif ? 'Premium kamu aktif.' : 'Belum ada pembayaran yang disetujui.');
+    } catch { setMsg('Gagal memeriksa status. Coba lagi.'); }
+  };
+
+  // Pantau pesanan: saat admin menyetujui, status berubah dan layar ini ikut berubah
+  useEffect(() => {
+    if (!pay || payState !== 'wait') return;
+    let alive = true;
+    const poll = setInterval(async () => {
+      try {
+        if (Date.now() - pay.createdAt > ORDER_TTL) { setPayState('expired'); try { localStorage.removeItem(K_ORDER); } catch {} return; }
+        const { db } = await getFirebase();
+        const o = (await db.ref(`premiumOrders/${pay.orderId}`).get()).val();
+        if (!alive || !o) return;
+        if (o.status === 'approved') {
+          const u: any = await getUser();
+          const pu = u ? Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0 : 0;
+          setUntil(pu); setIsPremium(true); setPayState('ok');
+          try { localStorage.removeItem(K_ORDER); } catch {}
+        } else if (o.status === 'rejected') {
+          setPayState('rejected');
+          try { localStorage.removeItem(K_ORDER); } catch {}
+        }
+      } catch {}
+    }, 4000);
+    return () => { alive = false; clearInterval(poll); };
+  }, [pay, payState]);
 
   return (
     <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh', paddingBottom: 40 }}>
@@ -106,20 +201,67 @@ export default function PremiumPage() {
 
       {/* Tombol lanjut */}
       <div style={{ padding: '22px 14px 0' }}>
-        <button onClick={lanjut} disabled={isPremium} style={{ width: '100%', height: 56, borderRadius: 28, background: GOLD_BG, border: `1.5px solid ${GOLD_LINE}`, color: GOLD, fontSize: 22, fontWeight: 800, letterSpacing: -0.7, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: isPremium ? 0.6 : 1 }}>
-          <Crown size={22} />{isPremium ? 'Premium aktif' : `Lanjutkan dengan ${current.label}`}
+        {isPremium && until > Date.now() && <div style={{ textAlign: 'center', color: GOLD, fontSize: 17, fontWeight: 800, letterSpacing: -0.4, marginBottom: 10 }}>Premium aktif sampai {fmtDate(until)}</div>}
+        <button onClick={lanjut} disabled={busy} style={{ width: '100%', height: 56, borderRadius: 28, background: GOLD_BG, border: `1.5px solid ${GOLD_LINE}`, color: GOLD, fontSize: 22, fontWeight: 800, letterSpacing: -0.7, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: busy ? 0.6 : 1 }}>
+          <Crown size={22} />{busy ? 'Membuat QRIS...' : isPremium ? `Perpanjang (${current.label})` : `Lanjutkan dengan ${current.label}`}
         </button>
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 28 }}>
-        <button onClick={pulihkan} style={{ background: 'none', border: 0, color: '#fff', fontSize: 21, fontWeight: 800, letterSpacing: -0.6, padding: 8 }}>Pulihkan pembelian</button>
+        <button onClick={pulihkan} style={{ background: 'none', border: 0, color: '#fff', fontSize: 21, fontWeight: 800, letterSpacing: -0.6, padding: 8 }}>Cek status pembayaran</button>
       </div>
 
       {msg && <div style={{ textAlign: 'center', color: GOLD, fontSize: 16, fontWeight: 800, letterSpacing: -0.3, padding: '4px 28px 0' }}>{msg}</div>}
 
       <div style={{ textAlign: 'center', color: MUTED, fontSize: 17, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.35, padding: '22px 22px 0' }}>
-        Diperpanjang otomatis sampai dibatalkan. Batalkan kapan saja lewat Google Play.
+        Bayar sekali sesuai paket, tidak diperpanjang otomatis. Bayar lagi sebelum habis untuk menambah masa aktif.
       </div>
+
+      {/* Lembar pembayaran manual (QRIS + nominal unik) */}
+      {pay && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div onClick={() => payState !== 'ok' && setPay(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.65)' }} />
+          <div style={{ position: 'relative', background: '#16151A', borderRadius: '28px 28px 0 0', padding: '16px 20px 28px', width: 'min(100%, 448px)', margin: '0 auto', textAlign: 'center', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.2)', margin: '0 auto 14px' }} />
+            {payState === 'ok' ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'center' }}><Crown size={56} /></div>
+                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: GOLD, marginTop: 10 }}>Premium aktif!</div>
+                {until > 0 && <div style={{ color: '#D6D4DE', fontSize: 17, fontWeight: 700, marginTop: 6 }}>Berlaku sampai {fmtDate(until)}</div>}
+                <button onClick={() => setPay(null)} style={{ marginTop: 22, width: '100%', height: 52, borderRadius: 26, border: 0, background: GOLD, color: '#2A2208', fontSize: 19, fontWeight: 800 }}>Selesai</button>
+              </>
+            ) : payState === 'rejected' || payState === 'expired' ? (
+              <>
+                <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.8 }}>{payState === 'rejected' ? 'Pembayaran ditolak' : 'Pesanan kedaluwarsa'}</div>
+                <div style={{ color: MUTED, fontSize: 16, fontWeight: 700, marginTop: 6, lineHeight: 1.4 }}>{payState === 'rejected' ? 'Admin belum menemukan pembayaran dengan nominal itu. Kalau kamu sudah bayar, hubungi admin.' : 'Pesanan berlaku 24 jam. Buat pesanan baru kalau belum bayar.'}</div>
+                <button onClick={() => setPay(null)} style={{ marginTop: 20, width: '100%', height: 52, borderRadius: 26, border: 0, background: '#2A2931', color: '#fff', fontSize: 18, fontWeight: 800 }}>Tutup</button>
+              </>
+            ) : (
+              <>
+                <div style={{ color: MUTED, fontSize: 15, fontWeight: 800 }}>Bayar TEPAT sebesar</div>
+                <button onClick={salinNominal} style={{ background: 'none', border: 0, color: GOLD, fontSize: 36, fontWeight: 800, letterSpacing: -1.5, marginTop: 2 }}>Rp {pay.amount.toLocaleString('id-ID')}</button>
+                <div style={{ color: MUTED, fontSize: 13.5, fontWeight: 700, lineHeight: 1.4 }}>{copied ? 'Nominal disalin ✓' : 'Tap nominal untuk menyalin. 3 digit terakhir dipakai untuk mencocokkan pembayaranmu.'}</div>
+                <div style={{ background: '#fff', borderRadius: 20, padding: 12, margin: '14px auto 0', width: 250, minHeight: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {qrMissing
+                    ? <span style={{ color: '#333', fontWeight: 700, fontSize: 14 }}>Gambar QRIS belum dipasang (public/qris.png)</span>
+                    // eslint-disable-next-line @next/next/no-img-element
+                    : <img src="/qris.png" alt="QRIS" onError={() => setQrMissing(true)} style={{ width: '100%', objectFit: 'contain' }} />}
+                </div>
+                <div style={{ color: '#D6D4DE', fontSize: 14.5, fontWeight: 700, lineHeight: 1.5, marginTop: 12, textAlign: 'left' }}>
+                  1. Scan QRIS dengan DANA atau e-wallet apa saja<br />
+                  2. Isi nominal persis seperti di atas<br />
+                  3. Setelah bayar, tap “Saya sudah bayar”<br />
+                  Admin akan mengecek lalu mengaktifkan Premium. Layar ini berubah sendiri.
+                </div>
+                {pay.claimed
+                  ? <div style={{ marginTop: 16, color: '#6FD6B2', fontWeight: 800, fontSize: 16 }}>✓ Menunggu persetujuan admin</div>
+                  : <button onClick={sudahBayar} style={{ marginTop: 16, width: '100%', height: 52, borderRadius: 26, border: 0, background: GOLD, color: '#2A2208', fontSize: 19, fontWeight: 800 }}>Saya sudah bayar</button>}
+                <button onClick={() => setPay(null)} style={{ marginTop: 10, width: '100%', height: 46, borderRadius: 23, border: 0, background: '#2A2931', color: '#fff', fontSize: 16, fontWeight: 800 }}>Tutup (pesanan tetap tersimpan)</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
