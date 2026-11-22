@@ -353,6 +353,7 @@ function MangaDetailContent() {
   const [detail, setDetail]           = useState<any>(null);
   const [loading, setLoading]         = useState(!!url);
   const [error, setError]             = useState<string | null>(url ? null : 'URL tidak valid');
+  const [officialUrl, setOfficialUrl]   = useState<string | null>(null);
   const [activeTab, setActiveTab]     = useState('Chapters');
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [mounted, setMounted]         = useState(false);
@@ -369,7 +370,7 @@ function MangaDetailContent() {
         const res  = await fetch(`/api/manga/detail?url=${encodeURIComponent(url as string)}`);
         const json = await res.json();
         if (json.success) setDetail(json.data);
-        else setError(json.message || 'Gagal memuat detail manga');
+        else { setError(json.message || 'Gagal memuat detail manga'); if (json.officialUrl) setOfficialUrl(json.officialUrl); }
       } catch (e: any) { setError(e.message || 'Terjadi kesalahan sistem'); }
       finally { setLoading(false); }
     })();
@@ -384,6 +385,9 @@ function MangaDetailContent() {
   if (error || !detail) return (
     <div className="px-6 py-20 text-center bg-[#1B1A20] min-h-screen">
       <p className="text-gray-400 mb-4">{error || 'Manga tidak ditemukan'}</p>
+      {officialUrl && (
+        <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="inline-block mr-2 px-6 py-2 bg-[#2A2931] text-white rounded-full">Buka situs resmi</a>
+      )}
       <button onClick={() => router.back()} className="px-6 py-2 bg-[#2A2931] text-white rounded-full">Kembali</button>
     </div>
   );

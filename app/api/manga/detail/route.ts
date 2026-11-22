@@ -17,6 +17,6 @@ export async function GET(request: Request) {
             },
         });
     } catch (error: any) {
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, message: error.message, officialUrl: error.officialUrl }, { status: error.officialUrl ? 200 : 500 });
     }
 }
