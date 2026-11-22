@@ -4,7 +4,9 @@ import { useEffect, useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, targetsFor, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS, Track } from '@/lib/season';
-import { fetchTop, pushSeasonScore, getUser, Row } from '@/lib/leaderboard';
+import { fetchTop, pushSeasonScore, getUser, getFirebase, Row } from '@/lib/leaderboard';
+import { findLencana, heldLencana, loadEquipped, TRACK_COLOR } from '@/lib/lencana';
+import { LencanaIcon } from '@/components/LencanaBadge';
 
 const CORAL = '#FF6B6B';
 const CARD = '#2A2931';
@@ -55,11 +57,12 @@ function Avatar({ name, photo, size = 40 }: { name: string; photo?: string; size
   );
 }
 
-function RankPill({ points }: { points: number }) {
-  const { rank } = rankFor(points);
+// Lencana yang dipakai pemain; kalau belum memilih, pakai lencana yang dipegang dari poinnya.
+function RankPill({ points, lencana }: { points: number; lencana?: string | null }) {
+  const l = findLencana(lencana) || heldLencana(points);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 12px 3px 5px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.3, alignSelf: 'flex-start' }}>
-      <Shield color={rank.bg} size={17} />{rank.name}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: TRACK_COLOR[l.track], padding: '3px 12px 3px 5px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.3, alignSelf: 'flex-start' }}>
+      <LencanaIcon l={l} size={20} />{l.name}
     </span>
   );
 }
@@ -87,6 +90,7 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [me, setMe] = useState<any>(null);
+  const [myLen, setMyLen] = useState<string | null>(null);
   const [tab, setTab] = useState<'Semua' | Track>('Semua');
   const [sheet, setSheet] = useState(false);
 
@@ -99,7 +103,14 @@ export default function RankingPage() {
         const u = await getUser();
         if (!alive) return;
         setMe(u || null);
-        if (u) await pushSeasonScore();   // sinkronkan poin lokal dulu
+        if (u) {
+          try {
+            const { db } = await getFirebase();
+            const v = (await db.ref(`users/${u.uid}/lencana`).get()).val();
+            if (alive) setMyLen(v ? String(v) : loadEquipped());
+          } catch { if (alive) setMyLen(loadEquipped()); }
+          await pushSeasonScore();   // sinkronkan poin lokal dulu
+        }
         const top = await fetchTop(season.id);
         if (alive) setRows(top);
       } catch (e: any) {
@@ -118,7 +129,8 @@ export default function RankingPage() {
   const { next } = rankFor(pts);
   const targets = targetsFor(pts);
 
-  const list = tab === 'Semua' ? rows : rows.filter((r) => rankFor(r.points).rank.track === tab);
+  const lenOf = (r: Row) => (me && r.uid === me.uid && myLen ? myLen : r.lencana) || null;
+  const list = tab === 'Semua' ? rows : rows.filter((r) => (findLencana(lenOf(r)) || heldLencana(r.points)).track === tab);
   const myIndex = me ? rows.findIndex((r) => r.uid === me.uid) : -1;
   const myRank = myIndex >= 0 ? String(myIndex + 1) : me && pts > 0 ? '100+' : '–';
 
@@ -205,7 +217,7 @@ export default function RankingPage() {
               <Avatar name={r.name} photo={r.photo} />
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                <RankPill points={r.points} />
+                <RankPill points={r.points} lencana={lenOf(r)} />
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmt(r.points)}</div>
@@ -224,7 +236,7 @@ export default function RankingPage() {
             <Avatar name={me.displayName || 'Kamu'} photo={me.photoURL} size={36} />
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
               <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Kamu · {me.displayName || 'Pembaca'}</div>
-              <RankPill points={pts} />
+              <RankPill points={pts} lencana={myLen} />
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmt(pts)}</div>

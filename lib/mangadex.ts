@@ -389,6 +389,27 @@ export async function getDetail(url: string) {
 }
 
 // ---------- Chapter (gambar + prev/next) ----------
+// Daftar nomor chapter untuk prev/next. Pakai endpoint aggregate (1 request kecil) dan disimpan sebentar di memori,
+// jauh lebih cepat daripada mengunduh seluruh feed chapter setiap kali membuka chapter.
+type NavItem = { num: string; ids: string[] };
+const navCache = new Map<string, { t: number; list: NavItem[] }>();
+async function navList(mangaId: string, lang: string, fresh = false): Promise<NavItem[]> {
+    const key = `${mangaId}:${lang}`;
+    const hit = navCache.get(key);
+    if (!fresh && hit && Date.now() - hit.t < 5 * 60_000) return hit.list;
+    const json: any = await md(`/manga/${mangaId}/aggregate`, { 'translatedLanguage[]': [lang] });
+    const list: NavItem[] = [];
+    for (const vol of Object.values<any>(json.volumes || {})) {
+        for (const c of Object.values<any>(vol?.chapters || {})) {
+            list.push({ num: String(c.chapter ?? ''), ids: [c.id, ...(Array.isArray(c.others) ? c.others : [])] });
+        }
+    }
+    list.sort((x, y) => (parseFloat(x.num) || 0) - (parseFloat(y.num) || 0)); // terlama -> terbaru
+    navCache.set(key, { t: Date.now(), list });
+    if (navCache.size > 200) navCache.delete(navCache.keys().next().value as string);
+    return list;
+}
+
 export async function getChapter(url: string) {
     const id = idFromLink(url);
     const [chRes, server] = await Promise.all([
@@ -412,11 +433,20 @@ export async function getChapter(url: string) {
     let next: string | null = null;
     if (mangaId) {
         try {
-            const feed = await fetchFeed(mangaId, [a.translatedLanguage]);
-            const list = dedupe(feed).reverse(); // terlama -> terbaru
-            const i = list.findIndex((c) => c.id === id);
-            if (i > 0) prev = chapterLinkOf(list[i - 1].id);
-            if (i !== -1 && i < list.length - 1) next = chapterLinkOf(list[i + 1].id);
+            let list = await navList(mangaId, a.translatedLanguage);
+            let i = list.findIndex((c) => c.ids.includes(id));
+            if (i === -1) { list = await navList(mangaId, a.translatedLanguage, true); i = list.findIndex((c) => c.ids.includes(id)); }
+            if (i !== -1) {
+                if (i > 0) prev = chapterLinkOf(list[i - 1].ids[0]);
+                if (i < list.length - 1) next = chapterLinkOf(list[i + 1].ids[0]);
+            } else {
+                // cadangan: cara lama lewat feed penuh
+                const feed = await fetchFeed(mangaId, [a.translatedLanguage]);
+                const full = dedupe(feed).reverse(); // terlama -> terbaru
+                const j = full.findIndex((c) => c.id === id);
+                if (j > 0) prev = chapterLinkOf(full[j - 1].id);
+                if (j !== -1 && j < full.length - 1) next = chapterLinkOf(full[j + 1].id);
+            }
         } catch { /* navigasi opsional, jangan gagalkan chapter */ }
     }
 

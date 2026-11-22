@@ -88,6 +88,9 @@ export default function LencanaPage() {
       if (!user) return;
       const { db } = await getFirebase();
       await db.ref(`users/${user.uid}`).update({ lencana: l.id });
+      // Perbarui baris papan peringkat musim ini (kalau sudah ada)
+      const lb = db.ref(`leaderboard/s${season.id}/${user.uid}`);
+      if ((await lb.get()).exists()) await lb.child('lencana').set(l.id);
     } catch {}
   };
 

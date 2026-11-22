@@ -46,7 +46,7 @@ export async function getUser(): Promise<any> {
   });
 }
 
-export interface Row { uid: string; name: string; photo: string; points: number; chapters: number; streak: number; night: number }
+export interface Row { uid: string; name: string; photo: string; points: number; chapters: number; streak: number; night: number; lencana?: string }
 
 // Kirim skor musim ini ke Firebase (hanya kalau sudah login)
 export async function pushSeasonScore(): Promise<void> {
@@ -58,14 +58,19 @@ export async function pushSeasonScore(): Promise<void> {
     if (s.id !== currentSeason().id || s.points <= 0) return;
     let name: string = user.displayName || 'User';
     let photo: string = user.photoURL || '';
+    let lencana = '';
     try {
       const prof = (await db.ref(`users/${user.uid}`).get()).val();
       if (prof?.displayName) name = prof.displayName;
       if (prof?.photoURL) photo = prof.photoURL;
+      if (prof?.lencana) lencana = String(prof.lencana);
     } catch {}
-    await db.ref(`leaderboard/s${s.id}/${user.uid}`).set({
+    const ref = db.ref(`leaderboard/s${s.id}/${user.uid}`);
+    await ref.update({
       name, photo, points: s.points, chapters: s.chapters, streak: s.streak, night: s.night, t: Date.now(),
     });
+    // Lencana yang dipakai ditulis terpisah supaya skor tetap masuk walau aturan database menolak field ini
+    if (lencana) { try { await ref.child('lencana').set(lencana); } catch {} }
   } catch {}
 }
 
@@ -76,7 +81,7 @@ export async function fetchTop(seasonId: number): Promise<Row[]> {
   const rows: Row[] = [];
   snap.forEach((c: any) => {
     const v = c.val() || {};
-    rows.push({ uid: String(c.key), name: v.name || 'User', photo: v.photo || '', points: Number(v.points) || 0, chapters: Number(v.chapters) || 0, streak: Number(v.streak) || 0, night: Number(v.night) || 0 });
+    rows.push({ uid: String(c.key), name: v.name || 'User', photo: v.photo || '', points: Number(v.points) || 0, chapters: Number(v.chapters) || 0, streak: Number(v.streak) || 0, night: Number(v.night) || 0, lencana: v.lencana ? String(v.lencana) : '' });
   });
   return rows.sort((a, b) => b.points - a.points).slice(0, 100);
 }
