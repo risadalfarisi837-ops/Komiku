@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
+import PetSvg from '@/components/PetArt';
 
 type Rar = 'Common' | 'Rare' | 'Epic' | 'Legend' | 'Mythic';
 type Species = { name: string; r: Rar; e: string };
@@ -81,7 +82,7 @@ function useSprite(src: string) {
 function PetArt({ s, size }: { s: Species; size: number }) {
   const src = '/pet/' + short(s.name).toLowerCase() + '.png';
   const ok = useSprite(src);
-  if (!ok) return <span style={{ fontSize: size * 0.8, lineHeight: 1 }}>{s.e}</span>;
+  if (!ok) return <span style={{ fontSize: size * 0.8, lineHeight: 1, display: 'inline-flex' }}><PetSvg e={s.e} ground={size >= 64} /></span>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={s.name} draggable={false} style={{ width: size, height: size, objectFit: 'contain' }} />
