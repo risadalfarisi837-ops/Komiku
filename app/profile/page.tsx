@@ -352,6 +352,27 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     setSaving(false);
   };
 
+  // Isi peringkat musim ini dari akun lama: poin awal = EXP (disimpan sebagai bonus supaya tidak tertimpa saat user baca chapter)
+  const seedBoard = async () => {
+    setSaving(true);
+    try {
+      const sid = currentSeason().id;
+      const [usersSnap, lbSnap] = await Promise.all([db.ref('users').get(), db.ref(`leaderboard/s${sid}`).get()]);
+      const upd: Record<string, any> = {};
+      let n = 0;
+      usersSnap.forEach((c: any) => {
+        const v = c.val() || {};
+        const exp = Math.floor(Number(v.exp) || 0);
+        if (exp <= 0 || lbSnap.hasChild(String(c.key))) return;
+        upd[`leaderboard/s${sid}/${c.key}`] = { name: v.displayName || 'User', photo: v.photoURL || '', points: exp, bonus: exp, chapters: 0, streak: 0, night: 0, t: Date.now() };
+        n++;
+      });
+      if (n) await db.ref().update(upd);
+      showToast(n ? `${n} akun dimasukkan ke peringkat.` : 'Tidak ada akun baru untuk dimasukkan.', 'success');
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
+    setSaving(false);
+  };
+
   // Hapus entri peringkat akun yang tidak aktif (lebih dari ACTIVE_DAYS hari)
   const cleanBoard = async () => {
     setSaving(true);
@@ -633,6 +654,8 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
             <label style={LABEL}>Perawatan peringkat</label>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, marginBottom: 10 }}>Hapus akun yang tidak aktif lebih dari {ACTIVE_DAYS} hari dari peringkat musim ini.</div>
             <button onClick={cleanBoard} disabled={saving} style={{ ...BTN, background: '#1F1E24', color: '#fff', opacity: saving ? 0.5 : 1 }}>Bersihkan akun tidak aktif</button>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, margin: '14px 0 10px' }}>Masukkan semua akun lama yang punya EXP ke peringkat musim ini (poin awal = EXP). Akun yang sudah ada di peringkat dilewati.</div>
+            <button onClick={seedBoard} disabled={saving} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving ? 0.5 : 1 }}>{saving ? 'Memproses...' : 'Isi peringkat dari akun lama'}</button>
           </div>
         </div>
       )}
