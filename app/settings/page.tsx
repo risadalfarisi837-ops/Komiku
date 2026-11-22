@@ -373,7 +373,7 @@ export default function SettingsPage() {
           <>
             <Label>Developer</Label>
             <Group>
-              <Row icon={<Wrench size={22} color={ICON} />} title="Panel Developer" sub="Atur user dan kirim hadiah" chevron onClick={() => router.push('/profile?dev=1')} />
+              <Row icon={<Wrench size={22} color={ICON} />} title="Panel Developer" sub="Kelola user, item, dan hadiah" chevron onClick={() => router.push('/profile?dev=1')} />
             </Group>
           </>
         )}

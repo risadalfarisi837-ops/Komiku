@@ -7,6 +7,8 @@ import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore } from '@/lib/leaderboard';
 import ProfileEffect from '@/components/ProfileEffect';
+import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
+import { EFFECT_CATALOG } from '@/lib/effects';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -185,7 +187,24 @@ function AvatarWithBorder({
   );
 }
 
-// ─── Border Shop Modal ────────────────────────────────────────────────────────
+// ─── Panel Developer ──────────────────────────────────────────────────────────
+// Semua aksi pakai pilihan (chip / dropdown / daftar user) biar nggak perlu ngetik UID manual.
+const DEV_ITEMS = {
+  border:    { label: 'Border', owned: 'ownedBorders',    active: 'activeBorder',    items: Object.entries(BORDER_CATALOG).map(([key, v]) => ({ key, nama: v.nama })) },
+  wallpaper: { label: 'Wallpaper', owned: 'ownedWallpapers', active: 'activeWallpaper', items: Object.entries(WALLPAPER_CATALOG).map(([key, v]) => ({ key, nama: v.nama + ' · ' + v.rarity })) },
+  effect:    { label: 'Effect', owned: 'ownedEffects',    active: 'activeEffect',    items: Object.entries(EFFECT_CATALOG).map(([key, v]) => ({ key, nama: v.nama })) },
+} as const;
+type ItemCat = keyof typeof DEV_ITEMS;
+type DevUser = { uid: string; name: string; photo: string; level: number; koin: number; role: string };
+const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['role', 'Role'], ['item', 'Item']] as const;
+type DevAct = typeof DEV_ACTS[number][0];
+const DEV_MODES = [['add', 'Tambah'], ['sub', 'Kurangi'], ['set', 'Set jadi']] as const;
+type DevMode = typeof DEV_MODES[number][0];
+const DEV_PRESETS: Record<'koin' | 'level' | 'exp', number[]> = { koin: [100, 500, 1000, 5000, 10000], level: [1, 5, 10, 50], exp: [100, 200, 1000, 5000] };
+const DEV_UNIT: Record<'koin' | 'level' | 'exp', string> = { koin: 'Crystal', level: 'level', exp: 'EXP' };
+const DEV_ROLES = ['Member', 'Komiku Premium', 'Developer'];
+const DEV_REASONS = ['Kompensasi', 'Server down', 'Hadiah event', 'Bonus spesial'];
+
 function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   open: boolean; onClose: () => void;
   uid: string; db: any; userData: any; onUpdate: (d: any) => void;
@@ -193,68 +212,110 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [tab, setTab]       = useState<'user'|'global'>('user');
   const [saving, setSaving] = useState(false);
   const [toast, setToast]   = useState<{msg:string; type:'success'|'error'}|null>(null);
+
+  // Tab: User
+  const [users, setUsers]               = useState<DevUser[] | null>(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [q, setQ]                       = useState('');
+  const [target, setTarget]             = useState<DevUser | null>(null);
+  const [tData, setTData]               = useState<any>(null);
+  const [act, setAct]                   = useState<DevAct>('koin');
+  const [mode, setMode]                 = useState<DevMode>('add');
+  const [amount, setAmount]             = useState('');
+  const [rolePick, setRolePick]         = useState('Member');
+  const [itemCat, setItemCat]           = useState<ItemCat>('border');
+  const [itemKey, setItemKey]           = useState('');
+
+  // Tab: Semua user
+  const [gType, setGType]   = useState<'koin'|'level'>('koin');
+  const [gVal, setGVal]     = useState('');
+  const [gSender, setGSender] = useState('Sistem Komiku');
+  const [gMsg, setGMsg]     = useState('Kompensasi');
   const [confirmGlobal, setConfirmGlobal] = useState(false);
-
-  // Tab: Manajemen User
-  const [targetUid, setTargetUid] = useState('');
-  const [uLvl,  setULvl]  = useState('');
-  const [uExp,  setUExp]  = useState('');
-  const [uKoin, setUKoin] = useState('');
-  const [uRole, setURole] = useState('');
-
-  // Tab: Global Gift
-  const [giftType,   setGiftType]   = useState<'koin'|'level'>('koin');
-  const [giftVal,    setGiftVal]    = useState('');
-  const [giftSender, setGiftSender] = useState('Sistem Komiku');
-  const [giftMsg,    setGiftMsg]    = useState('Kompensasi Spesial');
-
-  useEffect(() => { if (!open) setConfirmGlobal(false); }, [open]);
 
   const showToast = (msg: string, type: 'success'|'error') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const applyToUser = async () => {
-    const uidInput = targetUid.trim().replace('#','').toUpperCase();
-    if (!uidInput) { showToast('UID target harus diisi.', 'error'); return; }
-    const nKoin = parseInt(uKoin), nLvl = parseInt(uLvl), nExp = parseInt(uExp);
-    if ((uKoin !== '' && isNaN(nKoin)) || (uLvl !== '' && isNaN(nLvl)) || (uExp !== '' && isNaN(nExp))) {
-      showToast('Angka tidak valid.', 'error'); return;
-    }
-    setSaving(true);
+  const loadUsers = async () => {
+    setLoadingUsers(true);
     try {
       const snap = await db.ref('users').get();
-      const keys: string[] = [];
-      snap.forEach((child: any) => { keys.push(child.key); });
-      const matches = keys.filter(k => k.toUpperCase() === uidInput || k.substring(0,6).toUpperCase() === uidInput);
-      if (matches.length === 0) { showToast('User tidak ditemukan.', 'error'); setSaving(false); return; }
-      if (matches.length > 1)  { showToast('UID ambigu, pakai UID lengkap.', 'error'); setSaving(false); return; }
-      const targetFullUid = matches[0];
+      const arr: DevUser[] = [];
+      snap.forEach((c: any) => {
+        const v = c.val() || {};
+        arr.push({ uid: String(c.key), name: v.displayName || 'User', photo: v.photoURL || '', level: Number(v.level) || 1, koin: Number(v.koin) || 0, role: v.role || 'Member' });
+      });
+      setUsers(arr);
+    } catch (e: any) { showToast('Gagal memuat user: ' + e.message, 'error'); }
+    setLoadingUsers(false);
+  };
 
-      const updates: any = {};
-      if (uKoin !== '') updates.koin = nKoin;
-      if (uRole !== '') updates.role = uRole;
-      if (uLvl  !== '') { updates.level = nLvl; if (uExp === '') updates.exp = (nLvl - 1) * 200; }
-      if (uExp  !== '') { updates.exp = nExp;   if (uLvl === '') updates.level = Math.floor(nExp / 200) + 1; }
-      if (Object.keys(updates).length === 0) { showToast('Isi minimal 1 data.', 'error'); setSaving(false); return; }
+  const pick = async (u: DevUser) => {
+    setTarget(u); setQ('');
+    try { setTData((await db.ref('users/' + u.uid).get()).val() || {}); } catch { setTData({}); }
+  };
 
-      await db.ref(`users/${targetFullUid}`).update(updates);
-      if (targetFullUid === uid) onUpdate(updates);
-      showToast('Berhasil diterapkan.', 'success');
-      setTargetUid(''); setULvl(''); setUExp(''); setUKoin(''); setURole('');
+  useEffect(() => { if (open && !users && !loadingUsers) loadUsers(); if (!open) setConfirmGlobal(false); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (users && !target) { const me = users.find(u => u.uid === uid); if (me) pick(me); } }, [users]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Jalankan perubahan ke user terpilih: baca data terbaru -> hitung -> simpan -> muat ulang.
+  const run = async (fn: (cur: any) => any, okMsg: string) => {
+    if (!target) { showToast('Pilih user dulu.', 'error'); return; }
+    setSaving(true);
+    try {
+      const cur = (await db.ref('users/' + target.uid).get()).val() || {};
+      const patch = fn(cur);
+      await db.ref('users/' + target.uid).update(patch);
+      const fresh = (await db.ref('users/' + target.uid).get()).val() || {};
+      setTData(fresh);
+      if (target.uid === uid) onUpdate(fresh);
+      setUsers(prev => prev && prev.map(x => x.uid === target.uid ? { ...x, name: fresh.displayName || x.name, level: Number(fresh.level) || 1, koin: Number(fresh.koin) || 0, role: fresh.role || 'Member' } : x));
+      showToast(okMsg, 'success');
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
 
+  const applyNumber = () => {
+    if (act !== 'koin' && act !== 'level' && act !== 'exp') return;
+    const n = parseInt(amount);
+    if (isNaN(n) || n < 0) { showToast('Isi angka yang benar.', 'error'); return; }
+    const calc = (c: number) => (mode === 'add' ? c + n : mode === 'sub' ? c - n : n);
+    run((cur) => {
+      const lvl = Number(cur.level) || 1;
+      if (act === 'koin') return { koin: Math.max(0, calc(Number(cur.koin) || 0)) };
+      if (act === 'level') { const l = Math.max(1, calc(lvl)); return { level: l, exp: (l - 1) * 200 }; }
+      const e = Math.max(0, calc(Number.isFinite(Number(cur.exp)) ? Number(cur.exp) : (lvl - 1) * 200));
+      return { exp: e, level: Math.floor(e / 200) + 1 };
+    }, 'Berhasil diterapkan.');
+  };
+
+  const applyRole = () => {
+    if (target?.uid === uid && rolePick !== 'Developer') { showToast('Role Developer akun sendiri nggak bisa dicabut dari sini.', 'error'); return; }
+    run(() => ({ role: rolePick }), 'Role diubah jadi ' + rolePick + '.');
+  };
+
+  const applyItem = (give: boolean) => {
+    if (!itemKey) { showToast('Pilih item dulu.', 'error'); return; }
+    const c = DEV_ITEMS[itemCat];
+    const nama = c.items.find(i => i.key === itemKey)?.nama || itemKey;
+    run((cur) => {
+      const p: any = {};
+      if (give) p[c.owned + '/' + itemKey] = itemCat === 'wallpaper' ? (Number(cur.ownedWallpapers?.[itemKey]) || 0) + 1 : true;
+      else { p[c.owned + '/' + itemKey] = null; if (cur[c.active] === itemKey) p[c.active] = ''; }
+      return p;
+    }, give ? nama + ' diberikan.' : nama + ' dicabut.');
+  };
+
   const askGlobal = () => {
-    const val = parseInt(giftVal);
+    const val = parseInt(gVal);
     if (!val || val <= 0) { showToast('Masukkan angka yang benar.', 'error'); return; }
     setConfirmGlobal(true);
   };
 
   const sendGlobal = async () => {
-    const val = parseInt(giftVal);
+    const val = parseInt(gVal);
     setConfirmGlobal(false);
     setSaving(true);
     try {
@@ -263,21 +324,22 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       let count = 0;
       let mine: any = null;
       snap.forEach((child: any) => {
-        const u = child.key; const d = child.val();
-        if (giftType === 'koin') updates[`users/${u}/koin`] = (d.koin || 0) + val;
+        const u = child.key; const d = child.val() || {};
+        if (gType === 'koin') updates[`users/${u}/koin`] = (d.koin || 0) + val;
         else {
           const newLvl = (d.level || 1) + val;
           updates[`users/${u}/level`] = newLvl;
           updates[`users/${u}/exp`]   = (newLvl - 1) * 200;
         }
-        updates[`users/${u}/newGift`] = { from: giftSender, itemName: giftType === 'koin' ? `${val} Crystal` : `+${val} Level`, cat: giftType, isKompensasi: true, timestamp: Date.now() };
-        if (u === uid) mine = giftType === 'koin' ? { koin: (d.koin || 0) + val } : { level: (d.level || 1) + val, exp: ((d.level || 1) + val - 1) * 200 };
+        updates[`users/${u}/newGift`] = { from: gSender, message: gMsg, itemName: gType === 'koin' ? `${val} Crystal` : `+${val} Level`, cat: gType, isKompensasi: true, timestamp: Date.now() };
+        if (u === uid) mine = gType === 'koin' ? { koin: (d.koin || 0) + val } : { level: (d.level || 1) + val, exp: ((d.level || 1) + val - 1) * 200 };
         count++;
       });
       await db.ref().update(updates);
       if (mine) onUpdate(mine);
       showToast(`Terkirim ke ${count} user.`, 'success');
-      setGiftVal('');
+      setGVal('');
+      setUsers(null); // daftar user dimuat ulang saat panel dibuka lagi
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
@@ -285,80 +347,167 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const FIELD: React.CSSProperties = { width: '100%', boxSizing: 'border-box', background: '#1F1E24', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: '13px 14px', color: '#fff', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', outline: 'none' };
   const LABEL: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 800, color: '#8F8D9B', letterSpacing: -0.2, textTransform: 'uppercase', margin: '0 0 6px 2px' };
   const BTN: React.CSSProperties = { width: '100%', border: 0, borderRadius: 16, padding: '14px 0', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
+  const ROW: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap' };
+  const chip = (on: boolean): React.CSSProperties => ({ border: 0, borderRadius: 99, padding: '9px 14px', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', background: on ? '#0E8A6A' : '#1F1E24', color: on ? '#fff' : '#B5B3C0' });
+
+  const ql = q.trim().replace('#', '').toLowerCase();
+  const matches = (users || []).filter(u => !ql || u.name.toLowerCase().includes(ql) || u.uid.toLowerCase().startsWith(ql)).slice(0, 6);
+  const cnt = (o: any) => Object.keys(o || {}).length;
+  const numAct = act === 'koin' || act === 'level' || act === 'exp';
+  const modeLabel = DEV_MODES.find(m => m[0] === mode)![1];
+  const catDef = DEV_ITEMS[itemCat];
+  const nameOf = (cat: ItemCat, key: string) => DEV_ITEMS[cat].items.find(i => i.key === key)?.nama || '';
+  const Avatar = ({ src, size }: { src: string; size: number }) => src
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={src} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+    : <div style={{ width: size, height: size, borderRadius: '50%', background: '#2A2931', flexShrink: 0 }} />;
 
   return (
     <Sheet open={open} onClose={onClose} title="Panel Developer">
       {toast && (
-        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 15, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6AE' : '#FF7A7A' }}>
+        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 15, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6A0' : '#FF7A7A' }}>
           {toast.msg}
         </div>
       )}
 
       {/* Tab */}
       <div style={{ display: 'flex', gap: 4, background: '#1F1E24', borderRadius: 14, padding: 4, marginBottom: 14 }}>
-        {([['user', 'Manajemen user'], ['global', 'Hadiah global']] as const).map(([k, l]) => (
+        {([['user', 'Kelola user'], ['global', 'Hadiah semua user']] as const).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{ flex: 1, border: 0, borderRadius: 11, padding: '10px 0', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', background: tab === k ? '#2A2931' : 'transparent', color: tab === k ? '#fff' : '#8F8D9B' }}>{l}</button>
         ))}
       </div>
 
       {tab === 'user' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* 1. Pilih user */}
           <div>
-            <label style={LABEL}>UID target</label>
-            <input style={{ ...FIELD, fontFamily: 'monospace', letterSpacing: 3 }} value={targetUid} onChange={e => setTargetUid(e.target.value)} placeholder="#XXXXXX" autoCapitalize="characters" />
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={LABEL}>Set crystal</label>
-              <input style={FIELD} value={uKoin} onChange={e => setUKoin(e.target.value)} type="number" inputMode="numeric" placeholder="0" />
+            <label style={LABEL}>1 · Pilih user</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input style={FIELD} value={q} onChange={e => setQ(e.target.value)} placeholder={loadingUsers ? 'Memuat user...' : 'Cari nama atau UID'} />
+              <button onClick={() => { const me = (users || []).find(u => u.uid === uid); if (me) pick(me); }} style={{ ...chip(false), borderRadius: 14, padding: '0 16px' }}>Saya</button>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={LABEL}>Set level</label>
-              <input style={FIELD} value={uLvl} onChange={e => setULvl(e.target.value)} type="number" inputMode="numeric" placeholder="1" />
+
+            {q && (
+              <div style={{ marginTop: 8, background: '#1F1E24', borderRadius: 14, overflow: 'hidden' }}>
+                {matches.length === 0 && <div style={{ padding: 14, fontSize: 15, fontWeight: 700, color: '#8F8D9B' }}>{loadingUsers ? 'Memuat...' : 'User tidak ditemukan.'}</div>}
+                {matches.map(u => (
+                  <button key={u.uid} onClick={() => pick(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, borderTop: '1px solid rgba(255,255,255,.06)', background: 'none', color: '#fff', padding: '10px 12px', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
+                    <Avatar src={u.photo} size={34} />
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 16, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
+                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#8F8D9B' }}>{getShortUid(u.uid)} · Lv {u.level} · {u.role}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!q && target && tData && (
+              <div style={{ marginTop: 8, background: '#1F1E24', borderRadius: 16, padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Avatar src={tData.photoURL || target.photo} size={40} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 17, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tData.displayName || target.name}{target.uid === uid ? ' (kamu)' : ''}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B', fontFamily: 'monospace', letterSpacing: 1 }}>{getShortUid(target.uid)}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', marginTop: 10, textAlign: 'center' }}>
+                  {[['Crystal', (Number(tData.koin) || 0).toLocaleString('id-ID')], ['Level', String(Number(tData.level) || 1)], ['EXP', (Number(tData.exp) || 0).toLocaleString('id-ID')], ['Role', tData.role || 'Member']].map(([l, v], i) => (
+                    <div key={l} style={{ flex: 1, minWidth: 0, borderLeft: i ? '1px solid rgba(255,255,255,.08)' : 'none' }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>{v}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#8F8D9B' }}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.5 }}>
+                  Punya: {cnt(tData.ownedBorders)} border · {cnt(tData.ownedWallpapers)} wallpaper · {cnt(tData.ownedEffects)} effect<br />
+                  Dipakai: {tData.activeBorder ? nameOf('border', tData.activeBorder) || tData.activeBorder : '–'} · {tData.activeWallpaper ? nameOf('wallpaper', tData.activeWallpaper) || tData.activeWallpaper : '–'} · {tData.activeEffect ? nameOf('effect', tData.activeEffect) || tData.activeEffect : '–'}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Pilih aksi */}
+          <div>
+            <label style={LABEL}>2 · Mau ngapain?</label>
+            <div style={ROW}>
+              {DEV_ACTS.map(([k, l]) => <button key={k} onClick={() => { setAct(k); setAmount(''); }} style={chip(act === k)}>{l}</button>)}
             </div>
           </div>
-          <div>
-            <label style={LABEL}>Set EXP</label>
-            <input style={FIELD} value={uExp} onChange={e => setUExp(e.target.value)} type="number" inputMode="numeric" placeholder="0" />
-          </div>
-          <div>
-            <label style={LABEL}>Ubah role</label>
-            <select style={FIELD} value={uRole} onChange={e => setURole(e.target.value)}>
-              <option value="">Biarkan tetap</option>
-              <option value="Member">Member</option>
-              <option value="Komiku Premium">Komiku Premium</option>
-              <option value="Developer">Developer</option>
-            </select>
-          </div>
-          <button onClick={applyToUser} disabled={saving} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving ? 0.5 : 1, marginTop: 4 }}>
-            {saving ? 'Memproses...' : 'Terapkan ke user'}
-          </button>
+
+          {/* 3. Detail aksi */}
+          {numAct && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={ROW}>
+                {DEV_MODES.map(([k, l]) => <button key={k} onClick={() => setMode(k)} style={chip(mode === k)}>{l}</button>)}
+              </div>
+              <div style={ROW}>
+                {DEV_PRESETS[act as 'koin' | 'level' | 'exp'].map(n => (
+                  <button key={n} onClick={() => setAmount(String(n))} style={chip(amount === String(n))}>{n.toLocaleString('id-ID')}</button>
+                ))}
+              </div>
+              <input style={FIELD} value={amount} onChange={e => setAmount(e.target.value)} type="number" inputMode="numeric" placeholder="Atau ketik jumlah sendiri" />
+              <button onClick={applyNumber} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
+                {saving ? 'Memproses...' : `${modeLabel} ${amount || '…'} ${DEV_UNIT[act as 'koin' | 'level' | 'exp']}`}
+              </button>
+            </div>
+          )}
+
+          {act === 'role' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={ROW}>
+                {DEV_ROLES.map(r => <button key={r} onClick={() => setRolePick(r)} style={chip(rolePick === r)}>{r}</button>)}
+              </div>
+              <button onClick={applyRole} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
+                {saving ? 'Memproses...' : `Jadikan ${rolePick}`}
+              </button>
+            </div>
+          )}
+
+          {act === 'item' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={ROW}>
+                {(Object.keys(DEV_ITEMS) as ItemCat[]).map(k => <button key={k} onClick={() => { setItemCat(k); setItemKey(''); }} style={chip(itemCat === k)}>{DEV_ITEMS[k].label}</button>)}
+              </div>
+              <select style={FIELD} value={itemKey} onChange={e => setItemKey(e.target.value)}>
+                <option value="">Pilih {catDef.label.toLowerCase()}...</option>
+                {catDef.items.map(i => <option key={i.key} value={i.key}>{i.nama}</option>)}
+              </select>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => applyItem(true)} disabled={saving || !target} style={{ ...BTN, flex: 1, width: 'auto', background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>Beri</button>
+                <button onClick={() => applyItem(false)} disabled={saving || !target} style={{ ...BTN, flex: 1, width: 'auto', background: 'rgba(255,92,92,.12)', color: '#FF7A7A', opacity: saving || !target ? 0.5 : 1 }}>Cabut</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {tab === 'global' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4 }}>Hadiah ini dikirim ke semua user sekaligus dan tidak bisa dibatalkan.</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={LABEL}>Pengirim</label>
-              <input style={FIELD} value={giftSender} onChange={e => setGiftSender(e.target.value)} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={LABEL}>Jenis</label>
-              <select style={FIELD} value={giftType} onChange={e => setGiftType(e.target.value as 'koin'|'level')}>
-                <option value="koin">Crystal</option>
-                <option value="level">Level up</option>
-              </select>
+          <div>
+            <label style={LABEL}>Jenis hadiah</label>
+            <div style={ROW}>
+              {([['koin', 'Crystal'], ['level', 'Level up']] as const).map(([k, l]) => <button key={k} onClick={() => { setGType(k); setGVal(''); setConfirmGlobal(false); }} style={chip(gType === k)}>{l}</button>)}
             </div>
           </div>
           <div>
-            <label style={LABEL}>{giftType === 'koin' ? 'Jumlah crystal' : 'Naik berapa level'}</label>
-            <input style={FIELD} value={giftVal} onChange={e => setGiftVal(e.target.value)} type="number" inputMode="numeric" placeholder={giftType === 'koin' ? 'Cth: 500' : 'Cth: 5'} />
+            <label style={LABEL}>{gType === 'koin' ? 'Jumlah crystal' : 'Naik berapa level'}</label>
+            <div style={{ ...ROW, marginBottom: 8 }}>
+              {(gType === 'koin' ? [100, 500, 1000, 5000] : [1, 3, 5, 10]).map(n => <button key={n} onClick={() => { setGVal(String(n)); setConfirmGlobal(false); }} style={chip(gVal === String(n))}>{n.toLocaleString('id-ID')}</button>)}
+            </div>
+            <input style={FIELD} value={gVal} onChange={e => { setGVal(e.target.value); setConfirmGlobal(false); }} type="number" inputMode="numeric" placeholder="Atau ketik jumlah sendiri" />
           </div>
           <div>
-            <label style={LABEL}>Pesan / alasan</label>
-            <input style={FIELD} value={giftMsg} onChange={e => setGiftMsg(e.target.value)} placeholder="Cth: Server down" />
+            <label style={LABEL}>Alasan</label>
+            <div style={{ ...ROW, marginBottom: 8 }}>
+              {DEV_REASONS.map(r => <button key={r} onClick={() => setGMsg(r)} style={chip(gMsg === r)}>{r}</button>)}
+            </div>
+            <input style={FIELD} value={gMsg} onChange={e => setGMsg(e.target.value)} placeholder="Atau tulis sendiri" />
+          </div>
+          <div>
+            <label style={LABEL}>Pengirim</label>
+            <input style={FIELD} value={gSender} onChange={e => setGSender(e.target.value)} />
           </div>
 
           {!confirmGlobal ? (
@@ -368,9 +517,9 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           ) : (
             <div style={{ background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 18, padding: 14, marginTop: 4 }}>
               <div style={{ fontSize: 17, fontWeight: 800, color: GOLD, letterSpacing: -0.4 }}>
-                Kirim {giftType === 'koin' ? `${giftVal} crystal` : `+${giftVal} level`} ke SEMUA user?
+                Kirim {gType === 'koin' ? `${gVal} crystal` : `+${gVal} level`} ke SEMUA user?
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{giftMsg}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{gMsg}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 <button onClick={() => setConfirmGlobal(false)} style={{ ...BTN, flex: 1, width: 'auto', background: '#2A2931', color: '#fff' }}>Batal</button>
                 <button onClick={sendGlobal} style={{ ...BTN, flex: 1, width: 'auto', background: GOLD, color: '#2E2615' }}>Ya, kirim</button>
