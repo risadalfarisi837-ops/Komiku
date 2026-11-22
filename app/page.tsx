@@ -394,7 +394,7 @@ function GenreSection({ categories }: { categories: { category: string; items: a
 
 function OriginSection({ all }: { all: any[] }) {
   const tabs = ['Manhwa', 'Manhua', 'Manga'];
-  const [tab, setTab] = useState('Manhwa');
+  const [tab, setTab] = useState('Manga');
   const list = all.filter(m => typeLabel(m) === tab).slice(0, 12);
   return (
     <>
