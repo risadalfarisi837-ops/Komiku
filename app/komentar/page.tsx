@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getFirebase } from '@/lib/leaderboard';
 import { findLencana } from '@/lib/lencana';
 import { LencanaIcon } from '@/components/LencanaBadge';
+import WallpaperBg from '@/components/WallpaperBg';
+import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 
 const CORAL = '#FF6B6B';
 const MUTED = '#8F8D9B';
@@ -13,7 +15,7 @@ const fmtDate = (t: number) => { const d = new Date(t); return `${d.getDate()} $
 
 interface C {
   id: string; uid: string; nama: string; foto: string; role?: string; level?: number;
-  teks: string; waktu: number; parentId?: string; lencana?: string; likes?: Record<string, boolean>;
+  teks: string; waktu: number; parentId?: string; lencana?: string; likes?: Record<string, boolean>; activeWallpaper?: string;
 }
 
 const Back = () => (
@@ -138,8 +140,14 @@ function KomentarContent() {
     const gold = c.role === 'Developer' || c.role === 'Wibu Premium' || c.role === 'Komiku Premium';
     const likes = Object.keys(c.likes || {}).length;
     const liked = !!(me && c.likes?.[me.uid]);
+    const hasWp = !!(c.activeWallpaper && WALLPAPER_CATALOG[c.activeWallpaper]);
     return (
-      <div style={{ display: 'flex', gap: 14, padding: small ? '10px 0 0' : '16px 0 0' }}>
+      <WallpaperBg
+        wpKey={c.activeWallpaper}
+        style={hasWp
+          ? { display: 'flex', gap: 14, padding: small ? '10px 12px' : '14px 12px', marginTop: small ? 10 : 14, borderRadius: 18, borderWidth: 1, borderStyle: 'solid' }
+          : { display: 'flex', gap: 14, padding: small ? '10px 0 0' : '16px 0 0' }}
+      >
         <Avatar src={c.foto} size={small ? 32 : 42} gold={gold} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 28 }}>
@@ -160,7 +168,7 @@ function KomentarContent() {
         <button onClick={() => setMenu(c)} aria-label="Menu" style={{ background: 'none', border: 0, color: '#fff', alignSelf: 'flex-start', padding: '4px 8px', height: 32 }}>
           <svg width={20} height={20} viewBox="0 0 24 24" fill="#fff"><circle cx={12} cy={5} r={1.8} /><circle cx={12} cy={12} r={1.8} /><circle cx={12} cy={19} r={1.8} /></svg>
         </button>
-      </div>
+      </WallpaperBg>
     );
   };
 
