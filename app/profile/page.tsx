@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, LogOut } from 'lucide-react';
+import { X, Check, Wrench, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, LogOut } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore } from '@/lib/leaderboard';
@@ -390,10 +390,10 @@ function BorderShopModal({
 }
 
 // ─── Dev Panel ────────────────────────────────────────────────────────────────
-function DevPanel({ uid, db, userData, onUpdate }: {
+function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
+  open: boolean; onClose: () => void;
   uid: string; db: any; userData: any; onUpdate: (d: any) => void;
 }) {
-  const [open, setOpen]   = useState(false);
   const [tab, setTab]     = useState<'user'|'global'>('user');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{msg:string; type:'success'|'error'}|null>(null);
@@ -475,15 +475,8 @@ function DevPanel({ uid, db, userData, onUpdate }: {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="badge-dev-anim text-[10px] font-black px-2.5 py-1 rounded-md uppercase active:scale-95 transition-transform"
-      >
-        DEV
-      </button>
-
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center" onClick={() => onClose()}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
           <div
             className="relative w-full max-w-md bg-[#0a0a0a] rounded-t-3xl border-t-2 border-blue-500 flex flex-col"
@@ -505,7 +498,7 @@ function DevPanel({ uid, db, userData, onUpdate }: {
                 </div>
                 <h3 className="text-white font-black text-lg">Panel Developer</h3>
               </div>
-              <button onClick={() => setOpen(false)} className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-400">
+              <button onClick={() => onClose()} className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-400">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -714,6 +707,7 @@ export default function ProfilePage() {
   const [borderShopOpen, setBorderShopOpen]   = useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [sheet, setSheet] = useState<null | 'edit' | 'badges' | 'settings'>(null);
+  const [devOpen, setDevOpen] = useState(false);
   const [seasonRank, setSeasonRank] = useState<number | null>(null);
   const [newChapters, setNewChapters] = useState(0);
   const dbRef = useRef<any>(null);
@@ -915,11 +909,6 @@ export default function ProfilePage() {
 
   return (
     <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh', paddingBottom: 130 }}>
-      <style>{`
-        @keyframes devPulse { 0%,100% { transform:scale(1); box-shadow:0 0 8px rgba(220,38,38,0.6); } 50% { transform:scale(1.06); box-shadow:0 0 16px rgba(239,68,68,1); } }
-        @keyframes shimmerPremium { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
-        .badge-dev-anim { background:linear-gradient(90deg,#9ca3af,#7f1d1d,#9ca3af); background-size:200% 100%; color:#fff; border:1px solid #fca5a5; animation:devPulse 2s infinite ease-in-out, shimmerPremium 3s infinite linear; box-shadow:0 0 10px rgba(220,38,38,0.8); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; text-transform:uppercase; cursor:pointer; }
-      `}</style>
 
       {/* Header */}
       <div style={{ position: 'relative', padding: '24px 16px 0', textAlign: 'center' }}>
@@ -943,9 +932,6 @@ export default function ProfilePage() {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
             <Emblem t={rank.track} fill={rank.bg} size={18} />{rank.name}
           </span>
-          {isDev && dbRef.current && (
-            <DevPanel uid={user.uid} db={dbRef.current} userData={userData} onUpdate={(patch) => setUserData((prev: any) => ({ ...prev, ...patch }))} />
-          )}
           {isPremium && !isDev && (
             <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>PREMIUM</span>
           )}
@@ -961,7 +947,7 @@ export default function ProfilePage() {
         ].map((x, i) => (
           <div key={x.l} style={{ flex: 1, textAlign: 'center', borderLeft: i ? '1px solid rgba(255,255,255,.08)' : 'none', margin: '2px 0', minWidth: 0 }}>
             <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.2 }}>{x.v}</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: MUTED, letterSpacing: -0.6, whiteSpace: 'nowrap' }}>{x.l}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, letterSpacing: -0.4, whiteSpace: 'nowrap', padding: '0 4px' }}>{x.l}</div>
           </div>
         ))}
       </div>
@@ -1051,7 +1037,23 @@ export default function ProfilePage() {
         </div>
       </Sheet>
 
+      {isDev && dbRef.current && (
+        <DevPanel
+          open={devOpen}
+          onClose={() => setDevOpen(false)}
+          uid={user.uid}
+          db={dbRef.current}
+          userData={userData}
+          onUpdate={(patch) => setUserData((prev: any) => ({ ...prev, ...patch }))}
+        />
+      )}
+
       <Sheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Pengaturan">
+        {isDev && (
+          <div style={{ background: '#1F1E24', borderRadius: 16, overflow: 'hidden', marginBottom: 12 }}>
+            <MenuRow icon={<Wrench size={20} color={ICON} />} title="Panel Developer" sub="Atur user dan kirim hadiah" onClick={() => { setSheet(null); setDevOpen(true); }} />
+          </div>
+        )}
         <div style={{ background: '#1F1E24', borderRadius: 16, padding: '12px 18px', marginBottom: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: MUTED }}>ID akun</div>
           <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{getShortUid(user.uid)}</div>
