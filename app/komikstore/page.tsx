@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Sparkles, Shield, PawPrint, Mic, Fish, Smile, Info } from 'lucide-react';
+import { getFirebase } from '@/lib/firebase-client';
 
 type Tile = {
   title: string;
@@ -34,22 +35,23 @@ export default function KomikStorePage() {
 
   useEffect(() => {
     let stop = false;
-    let tries = 0;
-    const attach = () => {
-      const fb = (window as any).firebase;
-      if (!fb) return false;
-      try {
-        fb.auth().onAuthStateChanged((u: any) => {
-          if (stop) return;
-          setName(u?.displayName || '');
-          setPhoto(u?.photoURL || '');
-        });
-        return true;
-      } catch { return false; }
-    };
-    if (attach()) return () => { stop = true; };
-    const t = setInterval(() => { tries++; if (attach() || tries > 20) clearInterval(t); }, 300);
-    return () => { stop = true; clearInterval(t); };
+    let off: (() => void) | undefined;
+    getFirebase().then(({ auth, db }: any) => {
+      if (stop) return;
+      off = auth.onAuthStateChanged(async (u: any) => {
+        if (stop) return;
+        setName(u?.displayName || '');
+        setPhoto(u?.photoURL || '');
+        if (!u) return;
+        try {
+          const v = (await db.ref('users/' + u.uid).get()).val();
+          if (stop || !v) return;
+          if (typeof v.displayName === 'string' && v.displayName) setName(v.displayName);
+          if (typeof v.photoURL === 'string' && v.photoURL) setPhoto(v.photoURL);
+        } catch {}
+      });
+    }).catch(() => {});
+    return () => { stop = true; if (off) off(); };
   }, []);
 
   return (
