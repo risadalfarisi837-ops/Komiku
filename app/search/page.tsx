@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, Loader2, BookOpen, X, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Loader2, BookOpen, X, SlidersHorizontal, ChevronDown, ChevronUp, ArrowLeft, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface MangaResult {
@@ -150,6 +150,9 @@ function SearchContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialQ = searchParams.get('q') || '';
+    const gp = searchParams.get('genre');
+    const initialGenre = gp && GENRES.includes(gp) ? gp : null;
+    const RECENT_KEY = 'komiku_recent_search';
 
     const [inputVal, setInputVal] = useState(initialQ);
     const [results, setResults] = useState<MangaResult[]>([]);
@@ -165,10 +168,10 @@ function SearchContent() {
     const [genreOpen, setGenreOpen] = useState(true);
     const [formatOpen, setFormatOpen] = useState(false);
     const [statusOpen, setStatusOpen] = useState(false);
-    const [pendingGenre, setPendingGenre] = useState<string | null>('Action');
+    const [pendingGenre, setPendingGenre] = useState<string | null>(initialGenre);
     const [pendingFormat, setPendingFormat] = useState<string | null>(null);
     const [pendingStatus, setPendingStatus] = useState<string | null>(null);
-    const [appliedGenre, setAppliedGenre] = useState<string | null>('Action');
+    const [appliedGenre, setAppliedGenre] = useState<string | null>(initialGenre);
     const [appliedFormat, setAppliedFormat] = useState<string | null>(null);
     const [appliedStatus, setAppliedStatus] = useState<string | null>(null);
 
@@ -227,8 +230,13 @@ function SearchContent() {
     }, []);
 
     // Mount pertama — langsung fetch Action tanpa nunggu dependency change
+    const [recent, setRecent] = useState<string[]>([]);
     useEffect(() => {
-        fetchResults('', 'Action', null, null, 1, false);
+        try {
+            const raw = localStorage.getItem(RECENT_KEY);
+            const arr = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(arr)) setRecent(arr.filter((x: any) => typeof x === 'string').slice(0, 10));
+        } catch {}
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load hasil saat query/filter berubah
@@ -275,6 +283,7 @@ function SearchContent() {
     const handleSubmit = () => {
         const q = inputVal.trim();
         setActiveQuery(q);
+        saveRecent(q);
         if (q) router.replace(`/search?q=${encodeURIComponent(q)}`);
         else router.replace('/search');
     };
@@ -296,21 +305,66 @@ function SearchContent() {
 
     const hasFilter = appliedGenre || appliedFormat || appliedStatus;
 
+    const saveRecent = (q: string) => {
+        if (!q) return;
+        setRecent(prev => {
+            const next = [q, ...prev.filter(x => x.toLowerCase() !== q.toLowerCase())].slice(0, 10);
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
+            return next;
+        });
+    };
+    const removeRecent = (q: string) => {
+        setRecent(prev => {
+            const next = prev.filter(x => x !== q);
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
+            return next;
+        });
+    };
+    const clearRecent = () => {
+        setRecent([]);
+        try { localStorage.removeItem(RECENT_KEY); } catch {}
+    };
+    const pickRecent = (q: string) => {
+        setInputVal(q);
+        setActiveQuery(q);
+        saveRecent(q);
+        router.replace('/search?q=' + encodeURIComponent(q));
+    };
+    const pickChip = (c: string) => {
+        setInputVal('');
+        setActiveQuery('');
+        setAppliedGenre(null); setPendingGenre(null);
+        if (c === 'Tamat') { setAppliedFormat(null); setPendingFormat(null); setAppliedStatus('Completed'); setPendingStatus('Completed'); }
+        else { setAppliedStatus(null); setPendingStatus(null); setAppliedFormat(c); setPendingFormat(c); }
+    };
+    const goBack = () => {
+        if (activeQuery.trim() || hasFilter) {
+            setInputVal(''); setActiveQuery('');
+            setAppliedGenre(null); setAppliedFormat(null); setAppliedStatus(null);
+            setPendingGenre(null); setPendingFormat(null); setPendingStatus(null);
+            router.replace('/search');
+        } else router.back();
+    };
+
     return (
         <div className="min-h-screen bg-[#1B1A20] text-white pb-28 max-w-md mx-auto">
             {/* Header */}
             <div className="sticky top-0 z-40 bg-[#1B1A20]/95 backdrop-blur-sm px-4 pt-0 pb-3 space-y-3">
-                <div className="flex items-center gap-2 pt-3">
-                    <div className="flex-1 flex items-center gap-2 bg-[#2A2931] border border-white/10 rounded-2xl px-4 py-2.5">
-                        <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                <div className="flex items-center gap-3 pt-3">
+                    <button onClick={goBack} aria-label="Kembali" className="w-10 h-10 flex items-center justify-center shrink-0">
+                        <ArrowLeft className="w-6 h-6 text-white" />
+                    </button>
+                    <div className="flex-1 flex items-center gap-2 bg-[#2A2931] rounded-full px-4 py-3">
+                        <Search className="w-5 h-5 text-gray-400 shrink-0" />
                         <input
                             ref={inputRef}
                             type="text"
-                            placeholder="Search..."
+                            autoFocus
+                            placeholder="Cari manga, manhwa, manhua..."
                             value={inputVal}
                             onChange={(e) => setInputVal(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-                            className="bg-transparent outline-none text-white flex-1 text-sm placeholder-gray-500"
+                            className="bg-transparent outline-none text-white flex-1 text-base font-semibold placeholder-gray-500"
                         />
                         {inputVal && (
                             <button onClick={() => { setInputVal(''); setActiveQuery(''); router.replace('/search'); }}>
@@ -318,18 +372,6 @@ function SearchContent() {
                             </button>
                         )}
                     </div>
-                    <button
-                        className={`w-10 h-10 flex items-center justify-center rounded-2xl border shrink-0 ${hasFilter ? 'bg-[#2A2931] border-white/20' : 'bg-[#2A2931] border-white/10'}`}
-                        onClick={() => setShowSheet(true)}
-                    >
-                        <SlidersHorizontal className="w-4 h-4 text-gray-300" />
-                    </button>
-                    <button
-                        className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#2A2931] border border-white/10 shrink-0"
-                        onClick={handleSubmit}
-                    >
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </button>
                 </div>
 
                 {/* Active filter chips */}
@@ -360,11 +402,33 @@ function SearchContent() {
                     </div>
                 )}
 
-                {!loading && results.length === 0 && !fetchError && !activeQuery.trim() && !appliedGenre && !appliedFormat && !appliedStatus && (
-                    <div className="flex flex-col items-center justify-center py-20 gap-3">
-                        <Search className="w-12 h-12 text-[#8F94A3]" />
-                        <p className="text-sm font-bold text-white">Cari komik favorit kamu</p>
-                        <p className="text-xs text-[#8F94A3]">Atau pilih filter untuk browse</p>
+                {!activeQuery.trim() && !hasFilter && (
+                    <div className="pt-4">
+                        {recent.length > 0 && (
+                            <>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className="text-lg font-bold text-white">Pencarian terakhir</h2>
+                                    <button onClick={clearRecent} className="text-sm font-bold text-[#FF6B6B]">Hapus semua</button>
+                                </div>
+                                <ul>
+                                    {recent.map(q => (
+                                        <li key={q} className="flex items-center gap-4 py-3">
+                                            <Clock className="w-5 h-5 text-gray-400 shrink-0" />
+                                            <button onClick={() => pickRecent(q)} className="flex-1 text-left text-white font-bold truncate">{q}</button>
+                                            <button onClick={() => removeRecent(q)} aria-label="Hapus" className="p-1">
+                                                <X className="w-5 h-5 text-white" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                        <h3 className="text-base font-bold text-[#8F94A3] mt-6 mb-3">Jelajahi saja</h3>
+                        <div className="flex flex-wrap gap-3">
+                            {['Manhwa', 'Manhua', 'Manga', 'Tamat'].map(c => (
+                                <button key={c} onClick={() => pickChip(c)} className="px-5 py-2.5 rounded-full bg-[#2A2931] border border-white/10 text-white font-bold">{c}</button>
+                            ))}
+                        </div>
                     </div>
                 )}
 
