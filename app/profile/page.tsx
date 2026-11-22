@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Heart, LogOut, BookOpen, ShoppingBag, X, Check } from 'lucide-react';
-import { useFavorites, useHistory } from '@/lib/store';
+import Link from 'next/link';
+import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, LogOut } from 'lucide-react';
+import { useFavorites, useHistory, useUserStats } from '@/lib/store';
+import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
+import { pushSeasonScore } from '@/lib/leaderboard';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -51,92 +54,6 @@ async function getFirebase() {
     return { auth: window.firebase.auth(), db: window.firebase.database() };
   })();
   return _fbPromise;
-}
-
-// ─── Rank System ──────────────────────────────────────────────────────────────
-const RANK_TIERS = [
-  { name: 'Mortal',      minLvl: 0,     maxLvl: 49,      color: '#9ca3af', icon: '' },
-  { name: 'Disciple',    minLvl: 50,    maxLvl: 149,     color: '#cd7f32', icon: '' },
-  { name: 'Warrior',     minLvl: 150,   maxLvl: 499,     color: '#bdc3c7', icon: '' },
-  { name: 'Cultivator',  minLvl: 500,   maxLvl: 2499,    color: '#f1c40f', icon: '' },
-  { name: 'Sword Master',minLvl: 2500,  maxLvl: 4999,    color: '#2ecc71', icon: '' },
-  { name: 'Grand Elder', minLvl: 5000,  maxLvl: 9999,    color: '#3498db', icon: '' },
-  { name: 'Sect Leader', minLvl: 10000, maxLvl: 19999,   color: '#9b59b6', icon: '' },
-  { name: 'Immortal',    minLvl: 20000, maxLvl: Infinity, color: '#ef4444', icon: '' },
-];
-function getRankInfo(level: number) {
-  return RANK_TIERS.find(r => level >= r.minLvl && level <= r.maxLvl) || RANK_TIERS[0];
-}
-function getShortUid(uid: string) { return '#' + uid.substring(0, 6).toUpperCase(); }
-function joinMonthsAgo(ts: number) { return Math.max(1, Math.floor((Date.now() - ts) / (1000*60*60*24*30))); }
-
-// ─── Level Badge (animated, inline styles so Tailwind JIT won't strip) ────────
-const LEVEL_BADGE_STYLES: Record<string, React.CSSProperties> = {
-  mortal:         { background: 'rgba(168,162,158,0.15)', color: '#a8a29e', border: '1px solid rgba(168,162,158,0.3)' },
-  disciple:       { background: 'rgba(180,83,9,0.15)',    color: '#d97706', border: '1px solid rgba(180,83,9,0.3)' },
-  warrior:        { background: 'rgba(226,232,240,0.15)', color: '#e2e8f0', border: '1px solid rgba(226,232,240,0.3)' },
-  cultivator:     { background: 'rgba(251,191,36,0.15)',  color: '#facc15', border: '1px solid rgba(251,191,36,0.4)' },
-  'sword master': { background: 'rgba(16,185,129,0.15)',  color: '#10b981', border: '1px solid rgba(16,185,129,0.4)' },
-  'grand elder':  { background: 'rgba(6,182,212,0.25)',   color: '#22d3ee', border: '1px solid #06b6d4', animation: 'pulseGlowCyan 2s infinite alternate' },
-  'sect leader':  { background: 'rgba(236,72,153,0.25)',  color: '#f472b6', border: '1px solid #ec4899', animation: 'pulseGlowPink 1.5s infinite alternate' },
-  immortal:       { background: 'linear-gradient(90deg,#ef4444,#eab308,#ef4444)', backgroundSize: '200% 100%', color: '#fff', border: 'none', animation: 'shimmerPremium 2s infinite linear, mythicPulse 1s infinite alternate' },
-};
-
-function LevelBadge({ level, rank, onClick }: { level: number; rank: typeof RANK_TIERS[0]; onClick: () => void }) {
-  const key = rank.name.toLowerCase();
-  const style: React.CSSProperties = {
-    padding: '3px 10px',
-    borderRadius: '6px',
-    fontSize: '10px',
-    fontWeight: 800,
-    display: 'inline-flex',
-    alignItems: 'center',
-    letterSpacing: '0.2px',
-    cursor: 'pointer',
-    textTransform: 'uppercase',
-    ...(LEVEL_BADGE_STYLES[key] || LEVEL_BADGE_STYLES.mortal),
-  };
-  return (
-    <button onClick={onClick} style={style}>
-      Lvl. {level}
-    </button>
-  );
-}
-
-// ─── Rank Tiers Modal ─────────────────────────────────────────────────────────
-function RankModal({ open, onClose, currentLevel }: { open: boolean; onClose: () => void; currentLevel: number }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60" />
-      <div
-        className="relative w-full max-w-md bg-[#2A2931] rounded-t-3xl px-5 pt-5 pb-28 border-t border-white/10 overflow-y-auto"
-        style={{ maxHeight: '85vh' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4" />
-        <h3 className="text-base font-black text-white text-center mb-4">Rank Tiers</h3>
-        <div className="space-y-2">
-          {RANK_TIERS.map(tier => {
-            const isActive = currentLevel >= tier.minLvl && currentLevel <= tier.maxLvl;
-            return (
-              <div key={tier.name}
-                className={`flex items-center justify-between px-4 py-3 rounded-2xl border transition-all ${isActive ? 'border-white/30 bg-white/10' : 'border-white/5 bg-white/2'}`}
-              >
-                <div>
-                  <p className="text-sm font-black" style={{ color: tier.color }}>{tier.name}</p>
-                  <p className="text-[10px] text-gray-500 font-bold">
-                    Lvl {tier.minLvl.toLocaleString()} – {tier.maxLvl === Infinity ? '∞' : tier.maxLvl.toLocaleString()}
-                  </p>
-                </div>
-                {isActive && <span className="text-[10px] font-black text-white bg-white/10 px-2 py-0.5 rounded-full">Kamu</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── Rename Modal ─────────────────────────────────────────────────────────────
@@ -682,23 +599,123 @@ function DevPanel({ uid, db, userData, onUpdate }: {
   );
 }
 
+// ─── Tampilan profil (musim) ──────────────────────────────────────────────────
+const CARD = '#2A2931';
+const MUTED = '#8F8D9B';
+const GREEN = '#0E8A6A';
+const MAROON = '#4A2A33';
+const GOLD = '#F2C14E';
+const ICON = '#C8C6D2';
+
+function getShortUid(uid: string) { return '#' + uid.substring(0, 6).toUpperCase(); }
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const uuidOf = (l: string) => (l || '').match(UUID_RE)?.[0].toLowerCase() || l;
+const numOf = (v: string) => { const m = String(v || '').match(/\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; };
+
+function Emblem({ t, fill, size = 20 }: { t: Track; fill: string; size?: number }) {
+  const outline = { stroke: 'rgba(255,255,255,.45)', strokeWidth: 1.2, strokeLinejoin: 'round' as const };
+  const mark = '#fff';
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      {t === 'Noble' && <><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6l8-3z" fill={fill} {...outline} /><path d="M7.5 14.5V9.5l2.2 2L12 8l2.3 3.5 2.2-2v5z" fill={mark} /></>}
+      {t === 'Murim' && <><path d="M8.5 2.5h7l6 6v7l-6 6h-7l-6-6v-7z" fill={fill} {...outline} /><circle cx={12} cy={9.3} r={1.9} fill={mark} /><path d="M7.8 16.5c0-2.6 1.9-4.2 4.2-4.2s4.2 1.6 4.2 4.2z" fill={mark} /></>}
+      {t === 'Demon' && <><path d="M3.5 3l4.5 3h8l4.5-3-1.2 8c0 5.5-3.2 9.2-7.3 10.5C7.9 20.2 4.7 16.5 4.7 11z" fill={fill} {...outline} /><circle cx={9} cy={11} r={1.5} fill={mark} /><circle cx={15} cy={11} r={1.5} fill={mark} /></>}
+    </svg>
+  );
+}
+
+function LockedEmblem({ size = 46 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M8.5 2.5h7l6 6v7l-6 6h-7l-6-6v-7z" fill="#2D2C33" stroke="#4A4953" strokeWidth={1.2} strokeLinejoin="round" />
+      <path d="M8.9 4.2h6.2l4.7 4.7v6.2l-4.7 4.7H8.9l-4.7-4.7V8.9z" fill="none" stroke="#3B3A42" strokeWidth={0.8} strokeDasharray="1.2 1.6" />
+      <rect x={9} y={11.2} width={6} height={5} rx={1.2} fill="#8F8D9B" />
+      <path d="M10.2 11.2V9.9a1.8 1.8 0 013.6 0v1.3" stroke="#8F8D9B" strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MiniStat({ icon, label, value, target, unit }: { icon: React.ReactNode; label: string; value: number; target: number; unit?: string }) {
+  const pct = Math.min(100, (value / target) * 100);
+  return (
+    <div style={{ flex: 1, minWidth: 0, background: '#1F1E24', borderRadius: 14, padding: '12px 12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: MUTED, fontSize: 15, fontWeight: 800 }}>{icon}{label}</div>
+      <div style={{ marginTop: 8, fontSize: 22, fontWeight: 800, letterSpacing: -0.8 }}>
+        {fmt(value)}<span style={{ fontSize: 14, color: MUTED, letterSpacing: -0.2 }}>/ {fmt(target)}{unit ? ` ${unit}` : ''}</span>
+      </div>
+      <div style={{ height: 4, borderRadius: 2, background: MAROON, marginTop: 10 }}>
+        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: GREEN }} />
+      </div>
+    </div>
+  );
+}
+
+function HexIcon({ size = 22, color = ICON }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinejoin="round">
+      <path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z" /><circle cx={12} cy={12} r={3.2} />
+    </svg>
+  );
+}
+
+function MenuRow({ icon, title, sub, right, onClick, href, border }: {
+  icon: React.ReactNode; title: string; sub?: string; right?: string;
+  onClick?: () => void; href?: string; border?: boolean;
+}) {
+  const inner = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 18px', minHeight: 57, borderTop: border ? '1px solid rgba(255,255,255,.08)' : 'none' }}>
+      <span style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, color: '#fff' }}>{title}</div>
+        {sub && <div style={{ fontSize: 17, fontWeight: 700, color: MUTED, letterSpacing: -0.5, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>}
+      </div>
+      {right && <span style={{ fontSize: 20, fontWeight: 800, color: MUTED, letterSpacing: -0.6 }}>{right}</span>}
+      <ChevronRight size={20} color={MUTED} style={{ flexShrink: 0 }} />
+    </div>
+  );
+  if (href) return <Link href={href} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>{inner}</Link>;
+  return (
+    <button onClick={onClick} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 0, padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>
+      {inner}
+    </button>
+  );
+}
+
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ fontSize: 16, fontWeight: 800, color: '#B5B3C0', letterSpacing: -0.3, margin: '26px 16px 10px', textTransform: 'uppercase' }}>{children}</div>
+);
+
+function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.65)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: CARD, borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', padding: '12px 16px 36px', border: '1px solid rgba(255,255,255,.06)' }}>
+        <div style={{ width: 40, height: 4, background: '#444', borderRadius: 2, margin: '0 auto 14px' }} />
+        <div style={{ fontSize: 18, fontWeight: 800, textAlign: 'center', marginBottom: 12, letterSpacing: -0.5 }}>{title}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
-type Tab = 'all' | 'comments' | 'history';
 interface UserState { uid: string; displayName: string | null; photoURL: string | null; }
 
 export default function ProfilePage() {
+  const season = currentSeason();
+  const mine = useUserStats((st) => st.season);
   const { favorites } = useFavorites();
   const { history } = useHistory();
   const [mounted, setMounted]           = useState(false);
   const [user, setUser]                 = useState<UserState | null>(null);
   const [userData, setUserData]         = useState<any>(null);
-  const [comments, setComments]         = useState<any[]>([]);
-  const [activeTab, setActiveTab]       = useState<Tab>('all');
   const [loadingAuth, setLoadingAuth]   = useState(true);
   const [loadingLogin, setLoadingLogin] = useState(false);
-  const [borderShopOpen, setBorderShopOpen] = useState(false);
-  const [rankModalOpen, setRankModalOpen]   = useState(false);
+  const [borderShopOpen, setBorderShopOpen]   = useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [sheet, setSheet] = useState<null | 'edit' | 'badges' | 'settings'>(null);
+  const [seasonRank, setSeasonRank] = useState<number | null>(null);
+  const [newChapters, setNewChapters] = useState(0);
   const dbRef = useRef<any>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -707,14 +724,7 @@ export default function ProfilePage() {
     let unsub: any = null;
     getFirebase().then(async ({ auth, db }) => {
       dbRef.current = db;
-
-      // Handle hasil redirect login (misal dari signInWithRedirect)
-      try {
-        const result = await auth.getRedirectResult();
-        // Jika ada result, onAuthStateChanged di bawah akan otomatis terpanggil
-        if (result?.user) { /* sudah ditangani oleh listener */ }
-      } catch (_) { /* abaikan error redirect */ }
-
+      try { await auth.getRedirectResult(); } catch (_) { /* abaikan error redirect */ }
       unsub = auth.onAuthStateChanged(async (fu: any) => {
         setLoadingAuth(false);
         if (!fu) { setUser(null); setUserData(null); return; }
@@ -727,21 +737,54 @@ export default function ProfilePage() {
           await db.ref(`users/${fu.uid}`).set(nd);
           setUserData(nd);
         }
-        const cSnap = await db.ref('mangaComments').get();
-        if (cSnap.exists()) {
-          const all: any[] = [];
-          cSnap.forEach((mangaNode: any) => {
-            mangaNode.forEach((c: any) => {
-              const v = c.val();
-              if (v.uid === fu.uid) all.push({ id: c.key, ...v });
-            });
-          });
-          setComments(all.sort((a, b) => (b.waktu || 0) - (a.waktu || 0)));
-        }
       });
     }).catch(() => setLoadingAuth(false));
     return () => { if (unsub) unsub(); };
   }, []);
+
+  const pts      = mounted && mine.id === season.id ? mine.points : 0;
+  const chapters = mounted && mine.id === season.id ? mine.chapters : 0;
+  const night    = mounted && mine.id === season.id ? mine.night : 0;
+  const streak   = mounted ? mine.streak : 0;
+  const { rank, next } = rankFor(pts);
+
+  // Peringkat musim = jumlah pemain dengan poin lebih tinggi + 1
+  useEffect(() => {
+    if (!user || !mounted || pts <= 0) { setSeasonRank(null); return; }
+    let alive = true;
+    (async () => {
+      try {
+        await pushSeasonScore();
+        const { db } = await getFirebase();
+        const snap = await db.ref(`leaderboard/s${season.id}`).orderByChild('points').startAt(pts + 1).get();
+        if (alive) setSeasonRank(snap.numChildren() + 1);
+      } catch { /* biarkan tampil "–" */ }
+    })();
+    return () => { alive = false; };
+  }, [user, mounted, pts, season.id]);
+
+  // Jumlah favorit yang punya chapter baru (data cache dari halaman Koleksi)
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      const meta = JSON.parse(localStorage.getItem('komiku-fav-meta') || '{}');
+      let n = 0;
+      for (const f of favorites) {
+        const m = meta[f.link];
+        if (!m || m.latestNum == null) continue;
+        const id = uuidOf(f.link);
+        let readNum: number | null = null;
+        for (const h of history) {
+          if ((h.mangaLink && uuidOf(h.mangaLink) === id) || h.mangaTitle === f.title) {
+            const v = numOf(h.chapterNumber);
+            if (v != null) readNum = readNum == null ? v : Math.max(readNum, v);
+          }
+        }
+        if (readNum != null && Math.floor(m.latestNum) > Math.floor(readNum)) n++;
+      }
+      setNewChapters(n);
+    } catch { /* abaikan */ }
+  }, [mounted, favorites, history]);
 
   const handleLogin = useCallback(async () => {
     setLoadingLogin(true);
@@ -818,72 +861,19 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  const level      = userData?.level ?? 1;
-  const role       = userData?.role ?? 'Member';
-  const rank       = getRankInfo(level);
-  const isDev      = role === 'Developer';
-  const isPremium  = role === 'Komiku Premium';
-  const totalMenit = userData?.menitMenonton ?? 0;
-  const joinMonths = userData?.joinedAt ? joinMonthsAgo(userData.joinedAt) : 0;
-  const favCount   = mounted ? favorites.length : 0;
-  const histCount  = mounted ? history.length : 0;
-  const koin       = userData?.koin ?? 0;
+  const role         = userData?.role ?? 'Member';
+  const isDev        = role === 'Developer';
+  const isPremium    = role === 'Komiku Premium';
+  const level        = userData?.level ?? 1;
+  const koin         = userData?.koin ?? 0;
   const freeRenameUsed = userData?.freeRenameUsed ?? false;
   const activeBorder = userData?.activeBorder ?? '';
   const ownedBorders = userData?.ownedBorders ? Object.keys(userData.ownedBorders) : [];
-  const photoURL   = user?.photoURL || '';
-
-  const renderTab = () => {
-    if (activeTab === 'comments') {
-      if (!comments.length) return <p className="text-center text-gray-500 text-sm mt-8">Belum ada aktivitas komentar.</p>;
-      return comments.map(c => (
-        <div key={c.id} className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-3">
-          <img src={photoURL || ''} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-400 font-semibold mb-1">{c.mangaTitle || 'Komik'}</p>
-            <p className="text-sm text-white font-medium leading-snug">{c.teks || c.text}</p>
-          </div>
-        </div>
-      ));
-    }
-    if (activeTab === 'history') {
-      if (!mounted || !history.length) return <p className="text-center text-gray-500 text-sm mt-8">Belum ada riwayat baca.</p>;
-      return history.slice(0, 20).map((h, i) => (
-        <div key={i} className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
-          <img src={h.mangaThumb} alt="" className="w-16 h-22 rounded-xl object-cover flex-shrink-0" style={{height:'88px', width:'64px'}} />
-          <div className="flex-1 min-w-0">
-            <p className="text-base text-white font-bold leading-tight line-clamp-2">{h.mangaTitle}</p>
-            <p className="text-sm text-gray-300 font-semibold mt-1.5">{h.chapterTitle}</p>
-          </div>
-        </div>
-      ));
-    }
-    const histItems = mounted ? history.slice(0, 5) : [];
-    const favItems  = mounted ? favorites.slice(0, 5) : [];
-    if (!histItems.length && !favItems.length) return <p className="text-center text-gray-500 text-sm mt-8">Belum ada aktivitas.</p>;
-    return (
-      <>
-        {histItems.map((h, i) => (
-          <div key={i} className="bg-[#2A2931] rounded-2xl p-4 border border-white/5 flex gap-4 items-center">
-            <img src={h.mangaThumb} alt="" className="w-16 rounded-xl object-cover flex-shrink-0" style={{height:'88px', width:'64px'}} />
-            <div className="flex-1 min-w-0">
-              <p className="text-base text-white font-bold leading-tight line-clamp-2">{h.mangaTitle}</p>
-              <p className="text-sm text-gray-300 font-semibold mt-1.5">{h.chapterTitle}</p>
-            </div>
-          </div>
-        ))}
-        {favItems.map((f, i) => (
-          <div key={i} className="bg-[#2A2931] rounded-2xl p-3 border border-white/5 flex gap-3 items-center">
-            <img src={f.thumb} alt="" className="w-12 h-16 rounded-xl object-cover flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-white font-bold leading-tight line-clamp-2">{f.title}</p>
-              <p className="text-xs text-gray-300 font-semibold mt-1">❤ Favorit</p>
-            </div>
-          </div>
-        ))}
-      </>
-    );
-  };
+  const photoURL     = user?.photoURL || '';
+  const unlocked     = RANKS.filter(r => pts >= r.min).length;
+  const target       = next ? next.min : Math.max(pts, 1);
+  const barPct       = Math.min(100, (pts / target) * 100);
+  const soon = () => alert('Fitur Premium segera hadir.');
 
   if (loadingAuth) return (
     <div className="min-h-screen bg-[#1B1A20] flex items-center justify-center">
@@ -924,100 +914,153 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#1B1A20] pb-28">
+    <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh', paddingBottom: 130 }}>
       <style>{`
-        @keyframes pulseGlowCyan { 0% { box-shadow:0 0 4px rgba(6,182,212,0.4); } 100% { box-shadow:0 0 14px rgba(6,182,212,0.9); } }
-        @keyframes pulseGlowPink { 0% { box-shadow:0 0 4px rgba(236,72,153,0.4); } 100% { box-shadow:0 0 16px rgba(236,72,153,0.9); } }
-        @keyframes mythicPulse   { 0% { transform:scale(1);    box-shadow:0 0 8px rgba(239,68,68,0.5); } 100% { transform:scale(1.05); box-shadow:0 0 18px rgba(239,68,68,1); } }
-        @keyframes shimmerPremium{ 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
-        @keyframes devPulse      { 0%,100% { transform:scale(1);    box-shadow:0 0 8px rgba(220,38,38,0.6); } 50% { transform:scale(1.06); box-shadow:0 0 16px rgba(239,68,68,1); } }
-        .badge-dev-anim { background:linear-gradient(90deg,#9ca3af,#7f1d1d,#9ca3af); background-size:200% 100%; color:#fff; border:1px solid #fca5a5; animation:devPulse 2s infinite ease-in-out, shimmerPremium 3s infinite linear; box-shadow:0 0 10px rgba(220,38,38,0.8); text-shadow:0 0 4px rgba(255,255,255,0.5); padding:3px 10px; border-radius:6px; font-size:10px; font-weight:800; display:inline-flex; align-items:center; letter-spacing:0.2px; text-transform:uppercase; cursor:pointer; }
-        .badge-premium-anim { background:linear-gradient(90deg,#2563eb,#06b6d4,#2563eb); background-size:200% 100%; color:#fff; border:none; animation:shimmerPremium 2.5s infinite linear; box-shadow:0 0 8px rgba(59,130,246,0.5); padding:3px 10px; border-radius:6px; font-size:10px; font-weight:800; display:inline-flex; align-items:center; letter-spacing:0.2px; text-transform:uppercase; }
+        @keyframes devPulse { 0%,100% { transform:scale(1); box-shadow:0 0 8px rgba(220,38,38,0.6); } 50% { transform:scale(1.06); box-shadow:0 0 16px rgba(239,68,68,1); } }
+        @keyframes shimmerPremium { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+        .badge-dev-anim { background:linear-gradient(90deg,#9ca3af,#7f1d1d,#9ca3af); background-size:200% 100%; color:#fff; border:1px solid #fca5a5; animation:devPulse 2s infinite ease-in-out, shimmerPremium 3s infinite linear; box-shadow:0 0 10px rgba(220,38,38,0.8); padding:4px 12px; border-radius:99px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; text-transform:uppercase; cursor:pointer; }
       `}</style>
+
       {/* Header */}
-      <div className="pt-12 pb-6 px-6 flex flex-col items-center text-center relative">
-        <button onClick={handleLogout} className="absolute top-12 right-5 p-2 rounded-xl bg-[#2A2931] border border-white/5 text-gray-400 active:scale-95 transition-all">
-          <LogOut className="w-4 h-4" />
-        </button>
-
-        {/* Clickable Avatar with border */}
-        <div className="mb-1">
-          <AvatarWithBorder
-            src={photoURL}
-            size={90}
-            borderKey={activeBorder || undefined}
-            onClick={() => setBorderShopOpen(true)}
-            showEditHint
-          />
+      <div style={{ position: 'relative', padding: '24px 16px 0', textAlign: 'center' }}>
+        <div style={{ position: 'absolute', top: 14, right: 10, display: 'flex', gap: 2 }}>
+          <Link href="/history" aria-label="Notifikasi" style={{ position: 'relative', padding: 8, color: '#fff', display: 'flex' }}>
+            <Bell size={26} strokeWidth={1.8} />
+            {newChapters > 0 && <span style={{ position: 'absolute', top: 7, right: 9, width: 11, height: 11, borderRadius: '50%', background: '#FF5C5C' }} />}
+          </Link>
+          <button onClick={() => setSheet('settings')} aria-label="Pengaturan" style={{ background: 'none', border: 0, padding: 8, display: 'flex', cursor: 'pointer' }}>
+            <HexIcon size={26} color="#fff" />
+          </button>
         </div>
-        <button
-          onClick={() => setBorderShopOpen(true)}
-          className="flex items-center gap-1.5 text-[11px] text-gray-300 font-bold mb-3 active:opacity-70"
-        >
-          <ShoppingBag size={11} /> Ganti Border
-        </button>
 
-        {/* Name — clickable to rename */}
-        <button
-          onClick={() => setRenameModalOpen(true)}
-          className="mb-2 active:opacity-70"
-        >
-          <h2 className="text-xl font-black text-white tracking-tight">{userData?.displayName || user.displayName || 'User'}</h2>
-        </button>
+        <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => setBorderShopOpen(true)} />
 
-        {/* Badges */}
-        <div className="flex gap-2 justify-center flex-wrap mb-3">
-          {isDev && dbRef.current ? (
-            <DevPanel
-              uid={user.uid}
-              db={dbRef.current}
-              userData={userData}
-              onUpdate={(patch) => setUserData((prev: any) => ({ ...prev, ...patch }))}
-            />
-          ) : isDev ? (
-            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/20/30 uppercase">DEV</span>
-          ) : null}
+        <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
+          {userData?.displayName || user.displayName || 'User'}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
+            <Emblem t={rank.track} fill={rank.bg} size={18} />{rank.name}
+          </span>
+          {isDev && dbRef.current && (
+            <DevPanel uid={user.uid} db={dbRef.current} userData={userData} onUpdate={(patch) => setUserData((prev: any) => ({ ...prev, ...patch }))} />
+          )}
           {isPremium && !isDev && (
-            <span className="badge-premium-anim text-[10px] font-black px-2.5 py-1 rounded-md uppercase">Komiku Premium</span>
+            <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>PREMIUM</span>
           )}
-          {!isDev && !isPremium && (
-            <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-white/5 text-gray-400 border border-white/10 uppercase">Komiku Biasa</span>
-          )}
-          <LevelBadge level={level} rank={rank} onClick={() => setRankModalOpen(true)} />
-          <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10 uppercase">{getShortUid(user.uid)}</span>
-        </div>
-
-        {/* Stats */}
-        <div className="flex w-full justify-around border-t border-b border-white/5 py-4">
-          <div className="text-center">
-            <p className="text-lg font-black text-white">{totalMenit.toLocaleString()}</p>
-            <p className="text-[10px] text-gray-500 font-bold uppercase leading-tight">menit<br />menonton</p>
-          </div>
-          <div className="text-center border-l border-r border-white/5 px-4">
-            <p className="text-lg font-black text-white">{comments.length}</p>
-            <p className="text-[10px] text-gray-500 font-bold uppercase leading-tight">jumlah<br />komentar</p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-black text-white">{joinMonths}</p>
-            <p className="text-[10px] text-gray-500 font-bold uppercase leading-tight">bulan<br />bergabung</p>
-          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="px-4">
-        <div className="flex border-b border-white/5 mb-4">
-          {(['all', 'comments', 'history'] as Tab[]).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 text-sm font-bold transition-all ${activeTab === tab ? 'text-white border-b-2 border-white/20' : 'text-gray-500'}`}>
-              {tab === 'all' ? 'All' : tab === 'comments' ? 'Comments' : 'History'}
-            </button>
-          ))}
-        </div>
-        <div className="space-y-3 pb-4">{renderTab()}</div>
+      {/* Ringkasan: peringkat / tingkat / poin */}
+      <div style={{ margin: '16px 26px 0', background: CARD, borderRadius: 18, display: 'flex', padding: '14px 0' }}>
+        {[
+          { v: seasonRank != null ? `#${fmt(seasonRank)}` : '–', l: 'Peringkat musim' },
+          { v: String(level), l: 'Tingkat' },
+          { v: fmt(pts), l: 'Poin' },
+        ].map((x, i) => (
+          <div key={x.l} style={{ flex: 1, textAlign: 'center', borderLeft: i ? '1px solid rgba(255,255,255,.08)' : 'none', margin: '2px 0', minWidth: 0 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.2 }}>{x.v}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: MUTED, letterSpacing: -0.6, whiteSpace: 'nowrap' }}>{x.l}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Border Shop Modal */}
+      {/* Kartu musim */}
+      <div style={{ margin: '32px 16px 0', background: CARD, borderRadius: 22, padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {next ? <LockedEmblem size={46} /> : <Emblem t={rank.track} fill={rank.bg} size={46} />}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: MUTED, letterSpacing: -0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }}>
+              Musim {season.id} · {next ? 'Lencana berikutnya' : 'Lencana tertinggi'}
+            </div>
+            <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {next ? next.name : rank.name}
+            </div>
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1, whiteSpace: 'nowrap' }}>
+            {fmt(pts)}{next && <span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}> / {fmt(next.min)}</span>}
+          </div>
+        </div>
+        <div style={{ height: 8, borderRadius: 4, background: MAROON, marginTop: 14 }}>
+          <div style={{ width: `${barPct}%`, height: '100%', borderRadius: 4, background: GREEN }} />
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <MiniStat icon={<BookOpen size={16} color={ICON} />} label="Chapter" value={chapters} target={TARGETS.chapter} />
+          <MiniStat icon={<Flame size={16} color={ICON} />} label="Streak" value={streak} target={TARGETS.streak} unit="hari" />
+          <MiniStat icon={<Moon size={16} color={ICON} />} label="Malam" value={night} target={TARGETS.night} />
+        </div>
+      </div>
+
+      {/* Premium */}
+      {!isPremium && (
+        <div style={{ margin: '16px 16px 0', background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 22, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0, color: GOLD }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>
+              <Crown size={16} fill={GOLD} color={GOLD} /> KOMIKID PREMIUM
+            </div>
+            <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.9, lineHeight: 1.2, marginTop: 4 }}>Baca tanpa iklan</div>
+            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.4, marginTop: 2 }}>Plus unduh massal dan cincin profil emas.</div>
+          </div>
+          <button onClick={soon} style={{ background: GOLD, color: '#2E2615', border: 0, borderRadius: 99, padding: '0 22px', height: 38, fontSize: 19, fontWeight: 800, letterSpacing: -0.5, flexShrink: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Upgrade
+          </button>
+        </div>
+      )}
+
+      {/* Menu: Kamu */}
+      <SectionLabel>Kamu</SectionLabel>
+      <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
+        <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => setSheet('edit')} />
+        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => setSheet('badges')} />
+        <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/history" />
+        {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={soon} />}
+      </div>
+
+      {/* Menu: Aplikasi */}
+      <SectionLabel>Aplikasi</SectionLabel>
+      <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
+        <MenuRow icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun dan keluar" onClick={() => setSheet('settings')} />
+        <MenuRow border icon={<Bug size={20} color={ICON} />} title="Laporkan bug" onClick={() => window.open('https://github.com/risadalfarisi837-ops/Komiku/issues/new', '_blank')} />
+      </div>
+
+      {/* Sheets */}
+      <Sheet open={sheet === 'edit'} onClose={() => setSheet(null)} title="Edit profil">
+        <div style={{ background: '#1F1E24', borderRadius: 16, overflow: 'hidden' }}>
+          <MenuRow icon={<Pencil size={20} color={ICON} />} title="Ganti nama" sub={freeRenameUsed ? 'Biaya 500 koin' : '1x gratis tersedia'} onClick={() => { setSheet(null); setRenameModalOpen(true); }} />
+          <MenuRow border icon={<Crown size={20} color={ICON} />} title="Ganti border avatar" sub={`${fmt(koin)} koin`} onClick={() => { setSheet(null); setBorderShopOpen(true); }} />
+        </div>
+      </Sheet>
+
+      <Sheet open={sheet === 'badges'} onClose={() => setSheet(null)} title="Lencana musim">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {RANKS.map(r => {
+            const open = pts >= r.min;
+            const current = r.name === rank.name;
+            return (
+              <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#1F1E24', borderRadius: 16, padding: '10px 14px', border: current ? '1px solid rgba(255,255,255,.3)' : '1px solid transparent', opacity: open ? 1 : 0.6 }}>
+                <Emblem t={r.track} fill={open ? r.bg : '#3A3940'} size={30} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>{r.name}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: MUTED }}>{fmt(r.min)} poin</div>
+                </div>
+                {current ? <span style={{ fontSize: 13, fontWeight: 800, background: 'rgba(255,255,255,.1)', padding: '3px 10px', borderRadius: 99 }}>Dipakai</span> : !open && <Lock size={16} color={MUTED} />}
+              </div>
+            );
+          })}
+        </div>
+      </Sheet>
+
+      <Sheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Pengaturan">
+        <div style={{ background: '#1F1E24', borderRadius: 16, padding: '12px 18px', marginBottom: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED }}>ID akun</div>
+          <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{getShortUid(user.uid)}</div>
+        </div>
+        <button onClick={() => { setSheet(null); handleLogout(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'rgba(255,92,92,.12)', color: '#FF7A7A', border: 0, borderRadius: 16, padding: '14px 0', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <LogOut size={18} /> Keluar
+        </button>
+      </Sheet>
+
       <BorderShopModal
         open={borderShopOpen}
         onClose={() => setBorderShopOpen(false)}
@@ -1030,10 +1073,6 @@ export default function ProfilePage() {
         onBuy={handleBuyBorder}
       />
 
-      {/* Rank Tiers Modal */}
-      <RankModal open={rankModalOpen} onClose={() => setRankModalOpen(false)} currentLevel={level} />
-
-      {/* Rename Modal */}
       <RenameModal
         open={renameModalOpen}
         onClose={() => setRenameModalOpen(false)}
