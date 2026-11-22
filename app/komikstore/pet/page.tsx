@@ -283,10 +283,10 @@ export default function PetPage() {
       <div className="fixed bottom-3 left-0 right-0 max-w-md mx-auto px-3 z-20">
         <div className="flex gap-2.5 rounded-[28px] bg-white/95 p-3 shadow-xl">
           <button onClick={gacha} className="flex-[1.15] rounded-2xl text-white py-3.5 text-xl font-extrabold flex items-center justify-center gap-2 active:translate-y-1" style={{ background: 'linear-gradient(180deg,#a66cf0,#7a3fd0)', ...btn3d('#5b2aa8') }}>
-            <span className="w-6 h-8 rounded-[50%] bg-gradient-to-b from-yellow-200 to-yellow-500" style={{ animation: 'kzWiggle 2.4s ease-in-out infinite' }} /> Gacha
+            Gacha
           </button>
           <button onClick={() => setSheet(s => (s === 'kelola' ? '' : 'kelola'))} className="relative flex-[1.5] rounded-2xl text-white py-3 text-xl font-extrabold flex items-center justify-center gap-2 active:translate-y-1" style={{ background: 'linear-gradient(180deg,#2fd3a6,#14a98a)', ...btn3d('#0d7d68') }}>
-            {pets[0] ? <PetArt s={pets[0]} size={40} /> : <span className="text-3xl">🥚</span>} Kelola
+            Kelola
             <span className="rounded-xl bg-white/90 text-slate-800 px-2.5 text-lg">{pets.length}/{MAX}</span>
             <span className="absolute -top-2 -right-1 min-w-[26px] h-[26px] rounded-full bg-red-500 text-white text-sm flex items-center justify-center border-2 border-white">{ready.length}</span>
           </button>
