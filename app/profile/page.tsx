@@ -860,7 +860,7 @@ export default function ProfilePage() {
   const freeRenameUsed = userData?.freeRenameUsed ?? false;
   const activeBorder = userData?.activeBorder ?? '';
   const ownedBorders = userData?.ownedBorders ? Object.keys(userData.ownedBorders) : [];
-  const photoURL     = user?.photoURL || '';
+  const photoURL = (userData?.photoURL ?? user?.photoURL) || '';
   const unlocked     = RANKS.filter(r => pts >= r.min).length;
   const target       = next ? next.min : Math.max(pts, 1);
   const barPct       = Math.min(100, (pts / target) * 100);
@@ -910,7 +910,7 @@ export default function ProfilePage() {
       {/* Header */}
       <div style={{ position: 'relative', padding: '24px 16px 0', textAlign: 'center' }}>
         <div style={{ position: 'absolute', top: 14, right: 10, display: 'flex', gap: 2 }}>
-          <Link href="/history" aria-label="Notifikasi" style={{ position: 'relative', padding: 8, color: '#fff', display: 'flex' }}>
+          <Link href="/notifikasi" aria-label="Notifikasi" style={{ position: 'relative', padding: 8, color: '#fff', display: 'flex' }}>
             <Bell size={26} strokeWidth={1.8} />
             {newChapters > 0 && <span style={{ position: 'absolute', top: 7, right: 9, width: 11, height: 11, borderRadius: '50%', background: '#FF5C5C' }} />}
           </Link>
@@ -996,7 +996,7 @@ export default function ProfilePage() {
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
         <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => { window.location.assign('/profile/edit'); }} />
         <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
-        <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/history" />
+        <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/notifikasi" />
         {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={soon} />}
       </div>
 
