@@ -4,28 +4,45 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
 
-type Rar = 'C' | 'R' | 'E';
-type Species = { name: string; r: Rar; e: string; img?: string };
+type Rar = 'Common' | 'Rare' | 'Epic' | 'Legend' | 'Mythic';
+type Species = { name: string; r: Rar; e: string };
 type Pet = Species & { id: number; readyAt: number };
 
-const ISLAND_IMG = '';
+const SPRITES = true;
 const CD = (16 * 60 + 42) * 60000;
+const DAY = 86400000;
 const MAX = 15;
 const COST = 100;
-const REWARD = 25;
-const RC: Record<Rar, string> = { C: '#64748b', R: '#0ea5e9', E: '#a855f7' };
+const KEY = 'kz-pet-v1';
+const ORDER: Rar[] = ['Common', 'Rare', 'Epic', 'Legend', 'Mythic'];
+const RAR: Record<Rar, { l: string; bg: string; fg: string; rate: number; w: number }> = {
+  Common: { l: 'C', bg: '#64748b', fg: '#fff', rate: 50, w: 50 },
+  Rare: { l: 'R', bg: '#0ea5e9', fg: '#fff', rate: 100, w: 28 },
+  Epic: { l: 'E', bg: '#8b5cf6', fg: '#fff', rate: 200, w: 14 },
+  Legend: { l: 'L', bg: 'linear-gradient(135deg,#fde047,#f59e0b)', fg: '#713f12', rate: 500, w: 6 },
+  Mythic: { l: 'M', bg: 'linear-gradient(135deg,#f472b6,#8b5cf6)', fg: '#fff', rate: 1200, w: 2 },
+};
 const POOL: Species[] = [
-  { name: 'Ceruh', r: 'C', e: '🐍' },
-  { name: 'Glacius', r: 'R', e: '🐉' },
-  { name: 'Blazon', r: 'R', e: '🦁' },
-  { name: 'Mochi', r: 'C', e: '🐱' }, { name: 'Bubu', r: 'C', e: '🐸' },
-  { name: 'Nocta', r: 'E', e: '🦉' }, { name: 'Pyra', r: 'E', e: '🦊' },
+  { name: 'Ceruh the Dragon', r: 'Common', e: '🐲' }, { name: 'Drako the Dragon', r: 'Common', e: '🦎' },
+  { name: 'Kova the Dragon', r: 'Common', e: '🐋' }, { name: 'Hijau the Pokemon', r: 'Common', e: '🐸' },
+  { name: 'Frosta the Mini', r: 'Common', e: '🐧' }, { name: 'Luna the Mini', r: 'Common', e: '🐈‍⬛' },
+  { name: 'Ignis the Fire', r: 'Rare', e: '🦖' }, { name: 'Glacius the Ice', r: 'Rare', e: '🐉' },
+  { name: 'Blazon the Rare', r: 'Rare', e: '🦁' }, { name: 'Stormo the Rare', r: 'Rare', e: '🦄' },
+  { name: 'Eran the Dragon', r: 'Epic', e: '🐍' }, { name: 'Sylax the Dragon', r: 'Epic', e: '🦋' },
+  { name: 'Nexar the Dragon', r: 'Epic', e: '🦕' }, { name: 'Vreth the Dragon', r: 'Epic', e: '🐊' },
+  { name: 'Volt the Legend', r: 'Legend', e: '🐅' }, { name: 'Verdra the Legend', r: 'Legend', e: '🦜' },
+  { name: 'Purplex the Legend', r: 'Legend', e: '🦇' },
+  { name: 'Bara the Dragon', r: 'Mythic', e: '🦂' }, { name: 'Kurama the Fox', r: 'Mythic', e: '🦊' },
+  { name: 'Shukaku the Tanuki', r: 'Mythic', e: '🦝' }, { name: 'Matatabi the Cat', r: 'Mythic', e: '🐱' },
 ];
+const START = ['Glacius the Ice', 'Blazon the Rare', 'Ceruh the Dragon'];
 const POS: number[][] = [
   [48, 30], [70, 34], [28, 38], [58, 46], [18, 50], [78, 50], [40, 54], [66, 58],
   [34, 32], [84, 44], [14, 42], [50, 40], [60, 28], [26, 56], [74, 54],
 ];
 
+const short = (n: string) => n.split(' ')[0];
+const reward = (s: Species) => Math.round((RAR[s.r].rate * CD) / DAY);
 const fmt = (ms: number) => {
   if (ms <= 0) return 'Klaim';
   const m = Math.floor(ms / 60000);
@@ -33,10 +50,41 @@ const fmt = (ms: number) => {
 };
 const btn3d = (c: string) => ({ boxShadow: '0 5px 0 ' + c });
 
-function Island() {
-  if (ISLAND_IMG) {
+const CSS = `
+@keyframes kzBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes kzHop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-16px) scale(1.07)}60%{transform:translateY(0) scale(.96)}}
+@keyframes kzFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes kzDrift{0%{transform:translateX(-14px)}100%{transform:translateX(28px)}}
+@keyframes kzSun{0%,100%{box-shadow:0 0 0 22px rgba(254,249,195,.35)}50%{box-shadow:0 0 0 36px rgba(254,249,195,.15)}}
+@keyframes kzPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes kzWiggle{0%,60%,100%{transform:rotate(0)}70%{transform:rotate(-14deg)}85%{transform:rotate(14deg)}}
+@keyframes kzPop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+@keyframes kzToast{0%{transform:translate(-50%,10px);opacity:0}15%,80%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-14px);opacity:0}}
+@keyframes kzSpin{to{transform:rotate(360deg)}}
+@keyframes kzUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes kzTwinkle{0%,100%{opacity:.35}50%{opacity:1}}
+`;
+
+function PetArt({ s, size }: { s: Species; size: number }) {
+  const [bad, setBad] = useState(!SPRITES);
+  if (bad) return <span style={{ fontSize: size * 0.8, lineHeight: 1 }}>{s.e}</span>;
+  return (
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={ISLAND_IMG} alt="" className="w-full h-full object-contain" />;
+    <img src={'/pet/' + short(s.name).toLowerCase() + '.png'} alt={s.name} onError={() => setBad(true)} style={{ width: size, height: size, objectFit: 'contain' }} />
+  );
+}
+
+function Chip({ r, big }: { r: Rar; big?: boolean }) {
+  return (
+    <span className={'inline-block rounded-full font-extrabold ' + (big ? 'px-3 py-1 text-sm' : 'px-2.5 py-0.5 text-xs')} style={{ background: RAR[r].bg, color: RAR[r].fg }}>{r}</span>
+  );
+}
+
+function Island() {
+  const [bad, setBad] = useState(!SPRITES);
+  if (!bad) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src="/pet/island.png" alt="" onError={() => setBad(true)} className="w-full h-full object-contain" />;
   }
   return (
     <svg viewBox="0 0 400 345" className="w-full h-full">
@@ -66,137 +114,197 @@ export default function PetPage() {
   const [coins, setCoins] = useState(300);
   const [now, setNow] = useState(0);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [sheet, setSheet] = useState<'' | 'kelola' | 'katalog'>('');
-  const [toast, setToast] = useState('');
-  const [music, setMusic] = useState(true);
+  const [toast, setToast] = useState<{ m: string; k: number } | null>(null);
+  const [reveal, setReveal] = useState<Pet | null>(null);
 
   useEffect(() => {
     const t = Date.now();
     setNow(t);
-    setPets([POOL[1], POOL[2], POOL[0]].map((s, i) => ({ ...s, id: i + 1, readyAt: t + CD })));
-    const iv = setInterval(() => setNow(Date.now()), 30000);
+    let c = 300;
+    let list: Pet[] | null = null;
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as { coins?: number; pets?: { n: string; id: number; at: number }[] };
+        if (typeof d.coins === 'number') c = d.coins;
+        if (Array.isArray(d.pets)) {
+          const out: Pet[] = [];
+          for (const x of d.pets) {
+            const s = POOL.find(p => p.name === x.n);
+            if (s) out.push({ ...s, id: x.id, readyAt: x.at });
+          }
+          list = out;
+        }
+      }
+    } catch {}
+    if (!list) {
+      list = START.map((n, i) => ({ ...(POOL.find(p => p.name === n) as Species), id: i + 1, readyAt: t + CD }));
+    }
+    setCoins(c);
+    setPets(list);
+    setLoaded(true);
+    const iv = setInterval(() => setNow(Date.now()), 15000);
     return () => clearInterval(iv);
   }, []);
 
-  const say = (s: string) => { setToast(s); setTimeout(() => setToast(''), 2500); };
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ coins, pets: pets.map(p => ({ n: p.name, id: p.id, at: p.readyAt })) }));
+    } catch {}
+  }, [coins, pets, loaded]);
+
+  const say = (m: string) => setToast({ m, k: Date.now() });
   const ready = pets.filter(p => p.readyAt <= now);
 
   const claim = (ids: number[]) => {
-    if (!ids.length) return;
+    const g = pets.filter(p => ids.includes(p.id));
+    if (!g.length) return;
+    const total = g.reduce((a, p) => a + reward(p), 0);
     const t = Date.now();
-    setCoins(c => c + ids.length * REWARD);
+    setCoins(c => c + total);
     setPets(ps => ps.map(p => (ids.includes(p.id) ? { ...p, readyAt: t + CD } : p)));
-    say('+' + ids.length * REWARD + ' sparkle');
+    say('+' + total + ' ✦');
   };
 
   const gacha = () => {
     if (pets.length >= MAX) { say('Kandang penuh (' + MAX + '/' + MAX + ')'); return; }
     if (coins < COST) { say('Sparkle kurang (butuh ' + COST + ')'); return; }
-    const roll = Math.random() * 100;
-    const r: Rar = roll < 10 ? 'E' : roll < 40 ? 'R' : 'C';
+    let roll = Math.random() * 100;
+    let r: Rar = 'Common';
+    for (const k of ORDER) { roll -= RAR[k].w; if (roll < 0) { r = k; break; } }
     const list = POOL.filter(s => s.r === r);
     const s = list[Math.floor(Math.random() * list.length)];
+    const p: Pet = { ...s, id: Date.now(), readyAt: Date.now() + CD };
     setCoins(c => c - COST);
-    setPets(ps => [...ps, { ...s, id: Date.now(), readyAt: Date.now() + CD }]);
-    say('Dapat ' + s.name + ' (' + r + ')!');
+    setPets(ps => [...ps, p]);
+    setReveal(p);
   };
+
+  const owned = (n: string) => pets.filter(p => p.name === n).length;
 
   return (
     <div className="min-h-screen max-w-md mx-auto relative overflow-hidden text-slate-800" style={{ background: 'linear-gradient(180deg,#86c8e8 0%,#a9dcef 50%,#c4e6f4 100%)' }}>
-      <div className="absolute top-20 right-4 w-24 h-24 rounded-full bg-yellow-100" style={{ boxShadow: '0 0 0 22px rgba(254,249,195,.35)' }} />
-      <div className="absolute top-[22%] -left-6 w-56 h-72 rounded-full bg-white/30" />
-      <div className="absolute top-[30%] left-[28%] w-40 h-80 rounded-full bg-white/30" />
-      <div className="absolute top-[26%] -right-10 w-52 h-80 rounded-full bg-white/30" />
+      <style>{CSS}</style>
+      <div className="absolute top-20 right-4 w-24 h-24 rounded-full bg-yellow-100" style={{ animation: 'kzSun 5s ease-in-out infinite' }} />
+      <div className="absolute top-[22%] -left-6 w-56 h-72 rounded-full bg-white/30" style={{ animation: 'kzDrift 14s ease-in-out infinite alternate' }} />
+      <div className="absolute top-[30%] left-[28%] w-40 h-80 rounded-full bg-white/30" style={{ animation: 'kzDrift 18s ease-in-out infinite alternate-reverse' }} />
+      <div className="absolute top-[26%] -right-10 w-52 h-80 rounded-full bg-white/30" style={{ animation: 'kzDrift 16s ease-in-out infinite alternate' }} />
+      {[[12, 14], [30, 8], [62, 12], [44, 20]].map((q, i) => (
+        <span key={i} className="absolute text-white text-sm" style={{ left: q[0] + '%', top: q[1] + '%', animation: 'kzTwinkle 2.4s ease-in-out ' + i * 0.6 + 's infinite' }}>✦</span>
+      ))}
 
-      <div className="relative z-20 flex items-center gap-2 px-4 pt-6">
-        <button onClick={() => router.back()} aria-label="Kembali" className="p-1 -ml-1"><ArrowLeft className="w-6 h-6" style={{ color: '#1b4a6b' }} /></button>
-        <h1 className="text-[26px] leading-none font-extrabold" style={{ color: '#1b4a6b' }}>KomikZoo</h1>
-        <button
-          onClick={() => setMusic(m => !m)}
-          aria-label="Musik"
-          className={'w-9 h-9 rounded-full bg-white flex items-center justify-center text-lg shadow ' + (music ? 'text-slate-700' : 'text-slate-300 line-through')}
-        >♪</button>
+      <div className="relative z-20 flex items-center gap-1.5 px-3 pt-6">
+        <button onClick={() => router.back()} aria-label="Kembali" className="p-1 shrink-0"><ArrowLeft className="w-6 h-6" style={{ color: '#1b4a6b' }} /></button>
+        <h1 className="text-xl leading-none font-extrabold whitespace-nowrap shrink-0" style={{ color: '#1b4a6b' }}>KomikZoo</h1>
         <div className="flex-1" />
         <button
           onClick={() => claim(ready.map(p => p.id))}
-          className={'rounded-full pl-3 pr-1.5 py-1.5 text-sm font-extrabold flex items-center gap-1.5 ' + (ready.length ? 'bg-orange-400 text-white' : 'bg-orange-200/70 text-amber-800/70')}
-          style={btn3d(ready.length ? '#d97706' : 'rgba(180,120,60,.25)')}
+          className={'rounded-full pl-3 pr-1.5 py-1.5 text-[13px] font-extrabold whitespace-nowrap flex items-center gap-1.5 shrink-0 ' + (ready.length ? 'bg-orange-400 text-white' : 'bg-orange-200/70 text-amber-800/70')}
+          style={{ ...btn3d(ready.length ? '#d97706' : 'rgba(180,120,60,.25)'), animation: ready.length ? 'kzPulse 1.2s ease-in-out infinite' : undefined }}
         >
           Klaim Semua
           <span className={'min-w-[22px] h-[22px] rounded-full text-xs flex items-center justify-center text-white ' + (ready.length ? 'bg-red-500' : 'bg-rose-400/70')}>{ready.length}</span>
         </button>
-        <div className="rounded-full px-3 py-1.5 text-lg font-extrabold text-white flex items-center gap-1.5" style={{ background: 'linear-gradient(180deg,#4fb4ee,#2f95dc)', boxShadow: '0 4px 0 #2478b5' }}>
-          <span className="text-base">✦</span>{coins}
+        <div className="rounded-full px-3 py-1.5 text-base font-extrabold text-white flex items-center gap-1 shrink-0" style={{ background: 'linear-gradient(180deg,#4fb4ee,#2f95dc)', boxShadow: '0 4px 0 #2478b5' }}>
+          <span className="text-sm">✦</span>{coins}
         </div>
       </div>
 
-      <div className="relative z-10" style={{ height: 'calc(100vh - 230px)' }}>
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 aspect-[400/345]">
-          <Island />
-          {pets.map((p, i) => {
-            const [x, y] = POS[i % POS.length];
-            const left = p.readyAt - now;
-            const ok = left <= 0;
-            return (
-              <div key={p.id} className="absolute -translate-x-1/2 -translate-y-[70%] flex flex-col items-center" style={{ left: x + '%', top: y + '%' }}>
-                <button
-                  onClick={() => ok && claim([p.id])}
-                  className={'mb-0.5 rounded-full pl-2 pr-3 py-1 text-sm font-extrabold shadow-md flex items-center gap-1 ' + (ok ? 'bg-emerald-500 text-white' : 'bg-white text-slate-700')}
-                >
-                  <span className={ok ? 'text-white' : 'text-sky-300'}>✦</span>{now ? fmt(left) : '...'}
-                </button>
-                {p.img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.img} alt={p.name} className="w-24 h-24 object-contain" />
-                ) : (
-                  <span className="text-6xl leading-none drop-shadow-md">{p.e}</span>
-                )}
-                <span className="-mt-1 flex items-center gap-1 rounded-full bg-white/90 pl-1 pr-3 py-0.5 text-base font-extrabold shadow" style={{ color: '#2f4a3a' }}>
-                  <span className="w-6 h-6 rounded-full text-xs text-white flex items-center justify-center" style={{ background: RC[p.r] }}>{p.r}</span>
-                  {p.name}
-                </span>
+      <div className="relative z-[5]" style={{ height: 'calc(100vh - 230px)' }}>
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
+          <div className="relative w-full aspect-[400/345]" style={{ animation: 'kzFloat 7s ease-in-out infinite' }}>
+            <Island />
+            {pets.map((p, i) => {
+              const [x, y] = POS[i % POS.length];
+              const left = p.readyAt - now;
+              const ok = !!now && left <= 0;
+              return (
+                <div key={p.id} className="absolute -translate-x-1/2 -translate-y-[70%]" style={{ left: x + '%', top: y + '%', zIndex: Math.round(y) }}>
+                  <div className="flex flex-col items-center" style={{ animation: (ok ? 'kzHop 1.1s' : 'kzBob 2.6s') + ' ease-in-out ' + (i % 5) * 0.35 + 's infinite' }}>
+                    <button
+                      onClick={() => ok && claim([p.id])}
+                      className={'mb-0.5 rounded-full pl-2 pr-3 py-1 text-sm font-extrabold shadow-md flex items-center gap-1 ' + (ok ? 'bg-emerald-500 text-white' : 'bg-white text-slate-700')}
+                    >
+                      <span className={ok ? 'text-white' : 'text-sky-300'}>✦</span>{now ? fmt(left) : '...'}
+                    </button>
+                    <span className="drop-shadow-md"><PetArt s={p} size={72} /></span>
+                    <span className="-mt-1 flex items-center gap-1 rounded-full bg-white/90 pl-1 pr-3 py-0.5 text-base font-extrabold shadow" style={{ color: '#2f4a3a' }}>
+                      <span className="w-6 h-6 rounded-full text-xs flex items-center justify-center" style={{ background: RAR[p.r].bg, color: RAR[p.r].fg }}>{RAR[p.r].l}</span>
+                      {short(p.name)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {toast && <div key={toast.k} className="fixed top-24 left-1/2 z-40 rounded-full bg-slate-900/85 text-white px-4 py-2 text-sm font-bold" style={{ animation: 'kzToast 2.4s ease forwards' }}>{toast.m}</div>}
+
+      {sheet && (
+        <>
+          <div className="fixed inset-0 z-10 bg-slate-900/20" onClick={() => setSheet('')} />
+          <div className="fixed left-0 right-0 bottom-0 top-[110px] max-w-md mx-auto z-10 rounded-t-[28px] bg-white overflow-y-auto px-4 pb-40" style={{ animation: 'kzUp .25s ease-out' }}>
+            <div className="sticky top-0 bg-white pt-3 pb-3 z-10">
+              <div className="mx-auto w-14 h-1.5 rounded-full bg-slate-300 mb-3" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold">{sheet === 'kelola' ? 'Kelola Pet (' + pets.length + '/' + MAX + ')' : 'Katalog Pet'}</h2>
+                <button onClick={() => setSheet('')} aria-label="Tutup" className="w-11 h-11 rounded-xl bg-slate-100 text-2xl font-extrabold leading-none">×</button>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {toast && <div className="fixed top-24 left-1/2 -translate-x-1/2 z-40 rounded-full bg-slate-900/85 text-white px-4 py-2 text-sm font-bold">{toast}</div>}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {(sheet === 'kelola' ? pets : POOL).map((p, i) => {
+                const pet = p as Pet;
+                return (
+                  <div key={i} className="rounded-2xl border border-slate-200 bg-[#fbfbf6] p-2.5 flex gap-2.5 items-center">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-white flex items-center justify-center"><PetArt s={p} size={40} /></div>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-extrabold leading-tight">{p.name}</p>
+                      <div className="mt-1"><Chip r={p.r} /></div>
+                      <p className="mt-1 inline-block rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-800 whitespace-nowrap">
+                        HASILKAN ✦ {RAR[p.r].rate}/hari
+                      </p>
+                      {sheet === 'katalog' && owned(p.name) > 0 && <p className="text-[11px] font-bold text-emerald-600">Dimiliki ×{owned(p.name)}</p>}
+                      {sheet === 'kelola' && <p className="text-[11px] font-bold text-slate-500">{now ? (pet.readyAt - now <= 0 ? 'Siap klaim' : fmt(pet.readyAt - now)) : ''}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {sheet === 'kelola' && !pets.length && <p className="text-center text-slate-500 py-8">Belum punya pet. Coba Gacha dulu.</p>}
+          </div>
+        </>
+      )}
 
       <div className="fixed bottom-3 left-0 right-0 max-w-md mx-auto px-3 z-20">
         <div className="flex gap-2.5 rounded-[28px] bg-white/95 p-3 shadow-xl">
-          <button onClick={gacha} className="flex-[1.15] rounded-2xl text-white py-3.5 text-xl font-extrabold flex items-center justify-center gap-2" style={{ background: 'linear-gradient(180deg,#a66cf0,#7a3fd0)', ...btn3d('#5b2aa8') }}>
-            <span className="w-6 h-8 rounded-[50%] bg-gradient-to-b from-yellow-200 to-yellow-500" /> Gacha
+          <button onClick={gacha} className="flex-[1.15] rounded-2xl text-white py-3.5 text-xl font-extrabold flex items-center justify-center gap-2 active:translate-y-1" style={{ background: 'linear-gradient(180deg,#a66cf0,#7a3fd0)', ...btn3d('#5b2aa8') }}>
+            <span className="w-6 h-8 rounded-[50%] bg-gradient-to-b from-yellow-200 to-yellow-500" style={{ animation: 'kzWiggle 2.4s ease-in-out infinite' }} /> Gacha
           </button>
-          <button onClick={() => setSheet('kelola')} className="relative flex-[1.5] rounded-2xl text-white py-3.5 text-xl font-extrabold flex items-center justify-center gap-2" style={{ background: 'linear-gradient(180deg,#2fd3a6,#14a98a)', ...btn3d('#0d7d68') }}>
-            <span className="text-3xl leading-none">{pets[0]?.e ?? '🥚'}</span> Kelola
+          <button onClick={() => setSheet(s => (s === 'kelola' ? '' : 'kelola'))} className="relative flex-[1.5] rounded-2xl text-white py-3 text-xl font-extrabold flex items-center justify-center gap-2 active:translate-y-1" style={{ background: 'linear-gradient(180deg,#2fd3a6,#14a98a)', ...btn3d('#0d7d68') }}>
+            {pets[0] ? <PetArt s={pets[0]} size={40} /> : <span className="text-3xl">🥚</span>} Kelola
             <span className="rounded-xl bg-white/90 text-slate-800 px-2.5 text-lg">{pets.length}/{MAX}</span>
             <span className="absolute -top-2 -right-1 min-w-[26px] h-[26px] rounded-full bg-red-500 text-white text-sm flex items-center justify-center border-2 border-white">{ready.length}</span>
           </button>
-          <button onClick={() => setSheet('katalog')} className="flex-1 rounded-2xl bg-white text-slate-800 py-2 text-base font-extrabold flex flex-col items-center justify-center border border-slate-200" style={btn3d('#e2e8f0')}>
+          <button onClick={() => setSheet(s => (s === 'katalog' ? '' : 'katalog'))} className="flex-1 rounded-2xl bg-white text-slate-800 py-2 text-base font-extrabold flex flex-col items-center justify-center border border-slate-200 active:translate-y-1" style={btn3d('#e2e8f0')}>
             <FileText className="w-7 h-7 text-violet-500" /> Katalog
           </button>
         </div>
       </div>
 
-      {sheet && (
-        <div className="fixed inset-0 z-30 bg-black/50 flex items-end" onClick={() => setSheet('')}>
-          <div className="w-full max-w-md mx-auto max-h-[70vh] overflow-y-auto rounded-t-3xl bg-white p-5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-extrabold">{sheet === 'kelola' ? 'Kelola Pet (' + pets.length + '/' + MAX + ')' : 'Katalog Pet'}</h2>
-              <button onClick={() => setSheet('')} aria-label="Tutup" className="text-2xl leading-none px-2">×</button>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {(sheet === 'kelola' ? pets : POOL).map((p, i) => (
-                <div key={i} className="rounded-2xl border border-slate-200 p-3 flex flex-col items-center text-center">
-                  <span className="text-4xl">{p.e}</span>
-                  <span className="mt-1 text-sm font-extrabold">{p.name}</span>
-                  <span className="mt-1 rounded-full px-2 text-[10px] font-extrabold text-white" style={{ background: RC[p.r] }}>{p.r}</span>
-                  {sheet === 'katalog' && pets.some(x => x.name === p.name) && <span className="mt-1 text-[10px] font-bold text-emerald-600">Dimiliki</span>}
-                </div>
-              ))}
-            </div>
-            {sheet === 'kelola' && !pets.length && <p className="text-center text-slate-500 py-6">Belum punya pet. Coba Gacha dulu.</p>}
+      {reveal && (
+        <div className="fixed inset-0 z-40 bg-black/65 flex items-center justify-center" onClick={() => setReveal(null)}>
+          <div className="relative flex flex-col items-center" style={{ animation: 'kzPop .5s ease-out' }}>
+            <div className="absolute w-80 h-80 rounded-full opacity-60" style={{ background: 'conic-gradient(from 0deg,transparent,rgba(253,224,71,.8),transparent,rgba(253,224,71,.8),transparent,rgba(253,224,71,.8),transparent)', animation: 'kzSpin 6s linear infinite', maskImage: 'radial-gradient(circle,#000 30%,transparent 70%)', WebkitMaskImage: 'radial-gradient(circle,#000 30%,transparent 70%)' }} />
+            <div className="relative" style={{ animation: 'kzBob 2s ease-in-out infinite' }}><PetArt s={reveal} size={150} /></div>
+            <p className="relative mt-3 text-3xl font-extrabold text-white">{reveal.name}</p>
+            <div className="relative mt-2"><Chip r={reveal.r} big /></div>
+            <p className="relative mt-2 text-white/90 font-bold">✦ {RAR[reveal.r].rate}/hari</p>
+            <p className="relative mt-5 text-white/60 text-sm">Ketuk untuk tutup</p>
           </div>
         </div>
       )}
