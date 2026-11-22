@@ -54,6 +54,17 @@ export function recordHeld(held: Lencana): Record<TrackName, number> {
   try { localStorage.setItem(K_BEST, JSON.stringify(best)); } catch {}
   return best;
 }
+// Gabungkan tingkat terbaik dari server (users/{uid}/lencanaBest, mis. diberi developer) ke data lokal.
+export function mergeBest(remote: unknown): Record<TrackName, number> {
+  const best = loadBest();
+  const r = (remote && typeof remote === 'object' ? remote : {}) as Record<string, unknown>;
+  (['Noble', 'Murim', 'Demon'] as TrackName[]).forEach((t) => {
+    const n = Number(r[t]);
+    if (Number.isFinite(n) && n >= 1 && n <= 10 && n < best[t]) best[t] = Math.floor(n);
+  });
+  try { localStorage.setItem(K_BEST, JSON.stringify(best)); } catch {}
+  return best;
+}
 export const isUnlocked = (l: Lencana, best: Record<TrackName, number>) => best[l.track] <= 10 && l.tier >= best[l.track];
 
 export function loadEquipped(): string | null { try { return localStorage.getItem(K_EQUIP); } catch { return null; } }

@@ -10,6 +10,7 @@ import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
+import { TRACKS, byTrack, findLencana } from '@/lib/lencana';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -197,7 +198,7 @@ const DEV_ITEMS = {
 } as const;
 type ItemCat = keyof typeof DEV_ITEMS;
 type DevUser = { uid: string; name: string; photo: string; level: number; koin: number; role: string };
-const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['role', 'Role'], ['item', 'Item']] as const;
+const DEV_ACTS = [['koin', 'Crystal'], ['level', 'Level'], ['exp', 'EXP'], ['role', 'Role'], ['item', 'Item'], ['lencana', 'Lencana']] as const;
 type DevAct = typeof DEV_ACTS[number][0];
 const DEV_MODES = [['add', 'Tambah'], ['sub', 'Kurangi'], ['set', 'Set jadi']] as const;
 type DevMode = typeof DEV_MODES[number][0];
@@ -227,6 +228,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [rolePick, setRolePick]         = useState('Member');
   const [itemCat, setItemCat]           = useState<ItemCat>('border');
   const [itemKey, setItemKey]           = useState('');
+  const [lenId, setLenId]               = useState('');
 
   // Tab: Semua user
   const [gType, setGType]   = useState<'koin'|'level'>('koin');
@@ -309,6 +311,27 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       else { p[c.owned + '/' + itemKey] = null; if (cur[c.active] === itemKey) p[c.active] = ''; }
       return p;
     }, give ? nama + ' diberikan.' : nama + ' dicabut.', give ? { title: 'Gift terkirim!', sub: nama + ' untuk ' + (target?.name || 'user') } : undefined);
+  };
+
+  // Lencana: dibuka lewat server (users/{uid}/lencanaBest), user melihatnya saat membuka halaman Lencana.
+  const applyLencana = (mode: 'max' | 'open' | 'wear') => {
+    const l = findLencana(lenId);
+    if (mode !== 'max' && !l) { showToast('Pilih lencana dulu.', 'error'); return; }
+    if (mode === 'max') {
+      run(() => {
+        const p: any = {};
+        TRACKS.forEach(t => { p['lencanaBest/' + t] = 1; });
+        return p;
+      }, 'Semua lencana dibuka.', { title: 'Gift terkirim!', sub: 'Semua lencana untuk ' + (target?.name || 'user') });
+      return;
+    }
+    run((cur) => {
+      const p: any = {};
+      const have = Number(cur.lencanaBest?.[l!.track]) || 11;
+      p['lencanaBest/' + l!.track] = Math.min(have, l!.tier);
+      if (mode === 'wear') p.lencana = l!.id;
+      return p;
+    }, mode === 'wear' ? l!.name + ' dibuka dan dipakai.' : 'Dibuka sampai ' + l!.name + '.', { title: 'Gift terkirim!', sub: l!.name + ' untuk ' + (target?.name || 'user') });
   };
 
   const askGlobal = () => {
@@ -426,7 +449,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
                 </div>
                 <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.5 }}>
                   Punya: {cnt(tData.ownedBorders)} border · {cnt(tData.ownedWallpapers)} wallpaper · {cnt(tData.ownedEffects)} effect<br />
-                  Dipakai: {tData.activeBorder ? nameOf('border', tData.activeBorder) || tData.activeBorder : '–'} · {tData.activeWallpaper ? nameOf('wallpaper', tData.activeWallpaper) || tData.activeWallpaper : '–'} · {tData.activeEffect ? nameOf('effect', tData.activeEffect) || tData.activeEffect : '–'}
+                  Dipakai: {tData.activeBorder ? nameOf('border', tData.activeBorder) || tData.activeBorder : '–'} · {tData.activeWallpaper ? nameOf('wallpaper', tData.activeWallpaper) || tData.activeWallpaper : '–'} · {tData.activeEffect ? nameOf('effect', tData.activeEffect) || tData.activeEffect : '–'} · {tData.lencana ? findLencana(tData.lencana)?.name || tData.lencana : '–'}
                 </div>
               </div>
             )}
@@ -466,6 +489,27 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
               <button onClick={applyRole} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
                 {saving ? 'Memproses...' : `Jadikan ${rolePick}`}
               </button>
+            </div>
+          )}
+
+          {act === 'lencana' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button onClick={() => applyLencana('max')} disabled={saving || !target} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>
+                {saving ? 'Memproses...' : 'MAX · buka semua 30 lencana'}
+              </button>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B' }}>Atau pilih satu lencana:</div>
+              <select style={FIELD} value={lenId} onChange={e => setLenId(e.target.value)}>
+                <option value="">Pilih lencana...</option>
+                {TRACKS.map(t => (
+                  <optgroup key={t} label={t}>
+                    {byTrack(t).map(l => <option key={l.id} value={l.id}>{l.name} · Tingkat {l.tier}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => applyLencana('open')} disabled={saving || !target} style={{ ...BTN, flex: 1, width: 'auto', background: '#1F1E24', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>Buka sampai sini</button>
+                <button onClick={() => applyLencana('wear')} disabled={saving || !target} style={{ ...BTN, flex: 1, width: 'auto', background: '#0E8A6A', color: '#fff', opacity: saving || !target ? 0.5 : 1 }}>Buka & pakai</button>
+              </div>
             </div>
           )}
 

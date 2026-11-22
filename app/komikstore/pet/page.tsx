@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
 import PetSvg from '@/components/PetArt';
+import { getFirebase, loginWithGoogle } from '@/lib/firebase-client';
 
 type Rar = 'Common' | 'Rare' | 'Epic' | 'Legend' | 'Mythic';
 type Species = { name: string; r: Rar; e: string };
@@ -14,6 +15,7 @@ const CD = (16 * 60 + 42) * 60000;
 const DAY = 86400000;
 const MAX = 15;
 const COST = 100;
+const MIGRATE_CAP = 5000; // saldo ✦ lama dipindah ke Crystal sekali per akun, maksimal segini
 const KEY = 'kz-pet-v1';
 const ORDER: Rar[] = ['Common', 'Rare', 'Epic', 'Legend', 'Mythic'];
 const RAR: Record<Rar, { l: string; bg: string; fg: string; rate: number; w: number }> = {
@@ -126,7 +128,12 @@ function Island() {
 
 export default function PetPage() {
   const router = useRouter();
-  const [coins, setCoins] = useState(300);
+  const [koin, setKoin] = useState(0);   // Crystal akun (users/{uid}/koin), sama dengan toko lain
+  const [uid, setUid] = useState('');
+  const [fb, setFb] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const legacy = useRef(0);               // saldo ✦ lama dari localStorage, menunggu dipindah ke Crystal
   const [now, setNow] = useState(0);
   const [pets, setPets] = useState<Pet[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -137,13 +144,12 @@ export default function PetPage() {
   useEffect(() => {
     const t = Date.now();
     setNow(t);
-    let c = 300;
     let list: Pet[] | null = null;
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const d = JSON.parse(raw) as { coins?: number; pets?: { n: string; id: number; at: number }[] };
-        if (typeof d.coins === 'number') c = d.coins;
+        if (typeof d.coins === 'number' && d.coins > 0) legacy.current = Math.floor(d.coins);
         if (Array.isArray(d.pets)) {
           const out: Pet[] = [];
           for (const x of d.pets) {
@@ -157,7 +163,6 @@ export default function PetPage() {
     if (!list) {
       list = START.map((n, i) => ({ ...(POOL.find(p => p.name === n) as Species), id: i + 1, readyAt: t + CD }));
     }
-    setCoins(c);
     setPets(list);
     setLoaded(true);
     const iv = setInterval(() => setNow(Date.now()), 15000);
@@ -167,35 +172,91 @@ export default function PetPage() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(KEY, JSON.stringify({ coins, pets: pets.map(p => ({ n: p.name, id: p.id, at: p.readyAt })) }));
+      localStorage.setItem(KEY, JSON.stringify({ coins: legacy.current, pets: pets.map(p => ({ n: p.name, id: p.id, at: p.readyAt })) }));
     } catch {}
-  }, [coins, pets, loaded]);
+  }, [pets, loaded]);
+
+  // Login + saldo Crystal. Saldo ✦ lama (kalau ada) dipindah ke Crystal satu kali per akun.
+  useEffect(() => {
+    let stop = false;
+    let off: (() => void) | undefined;
+    getFirebase().then((f: any) => {
+      if (stop) return;
+      setFb(f);
+      off = f.auth.onAuthStateChanged(async (u: any) => {
+        if (stop) return;
+        if (!u) { setUid(''); setKoin(0); return; }
+        setUid(u.uid);
+        const ref = f.db.ref('users/' + u.uid);
+        try {
+          if (legacy.current > 0) {
+            const flag = await ref.child('petMigrated').transaction((cur: any) => (cur ? undefined : true));
+            if (flag.committed && flag.snapshot.val() === true) {
+              const add = Math.min(legacy.current, MIGRATE_CAP);
+              await ref.child('koin').transaction((cur: any) => (typeof cur === 'number' ? cur : 0) + add);
+              say('Saldo ✦ lamamu jadi +' + add + ' Crystal');
+            }
+            legacy.current = 0;
+            try {
+              const d = JSON.parse(localStorage.getItem(KEY) || '{}');
+              d.coins = 0;
+              localStorage.setItem(KEY, JSON.stringify(d));
+            } catch {}
+          }
+          const v = (await ref.child('koin').get()).val();
+          if (!stop) setKoin(typeof v === 'number' ? v : 0);
+        } catch {}
+      });
+    }).catch(() => {});
+    return () => { stop = true; if (off) off(); };
+  }, []);
 
   const say = (m: string) => setToast({ m, k: Date.now() });
   const ready = pets.filter(p => p.readyAt <= now);
 
-  const claim = (ids: number[]) => {
-    const g = pets.filter(p => ids.includes(p.id));
+  const needLogin = () => { say('Login dulu buat pakai Crystal'); };
+
+  const claim = async (ids: number[]) => {
+    if (lock.current) return;
+    if (!uid || !fb) { needLogin(); return; }
+    const t = Date.now();
+    const g = pets.filter(p => ids.includes(p.id) && p.readyAt <= t);
     if (!g.length) return;
     const total = g.reduce((a, p) => a + reward(p), 0);
-    const t = Date.now();
-    setCoins(c => c + total);
-    setPets(ps => ps.map(p => (ids.includes(p.id) ? { ...p, readyAt: t + CD } : p)));
-    say('+' + total + ' ✦');
+    lock.current = true; setBusy(true);
+    try {
+      const res = await fb.db.ref('users/' + uid + '/koin').transaction((cur: any) => (typeof cur === 'number' ? cur : 0) + total);
+      if (!res.committed) throw new Error('x');
+      const got = g.map(p => p.id);
+      setKoin(Number(res.snapshot.val()) || 0);
+      setPets(ps => ps.map(p => (got.includes(p.id) ? { ...p, readyAt: Date.now() + CD } : p)));
+      say('+' + total.toLocaleString('id-ID') + ' Crystal');
+    } catch { say('Gagal klaim, coba lagi'); }
+    lock.current = false; setBusy(false);
   };
 
-  const gacha = () => {
+  const gacha = async () => {
+    if (lock.current) return;
+    if (!uid || !fb) { needLogin(); return; }
     if (pets.length >= MAX) { say('Kandang penuh (' + MAX + '/' + MAX + ')'); return; }
-    if (coins < COST) { say('Sparkle kurang (butuh ' + COST + ')'); return; }
-    let roll = Math.random() * 100;
-    let r: Rar = 'Common';
-    for (const k of ORDER) { roll -= RAR[k].w; if (roll < 0) { r = k; break; } }
-    const list = POOL.filter(s => s.r === r);
-    const s = list[Math.floor(Math.random() * list.length)];
-    const p: Pet = { ...s, id: Date.now(), readyAt: Date.now() + CD };
-    setCoins(c => c - COST);
-    setPets(ps => [...ps, p]);
-    setReveal(p);
+    if (koin < COST) { say('Crystal kurang (butuh ' + COST + ')'); return; }
+    lock.current = true; setBusy(true);
+    try {
+      // potong saldo pakai transaction supaya nggak bisa dobel dari 2 tab
+      const res = await fb.db.ref('users/' + uid + '/koin').transaction((cur: any) => (typeof cur !== 'number' ? cur : cur >= COST ? cur - COST : undefined));
+      const left = res.snapshot.val();
+      if (!res.committed || typeof left !== 'number') { say('Crystal kurang (butuh ' + COST + ')'); lock.current = false; setBusy(false); return; }
+      setKoin(left);
+      let roll = Math.random() * 100;
+      let r: Rar = 'Common';
+      for (const k of ORDER) { roll -= RAR[k].w; if (roll < 0) { r = k; break; } }
+      const list = POOL.filter(s => s.r === r);
+      const s = list[Math.floor(Math.random() * list.length)];
+      const p: Pet = { ...s, id: Date.now(), readyAt: Date.now() + CD };
+      setPets(ps => [...ps, p]);
+      setReveal(p);
+    } catch { say('Gagal, coba lagi'); }
+    lock.current = false; setBusy(false);
   };
 
   const owned = (n: string) => pets.filter(p => p.name === n).length;
@@ -223,9 +284,14 @@ export default function PetPage() {
           Klaim Semua
           <span className={'min-w-[22px] h-[22px] rounded-full text-xs flex items-center justify-center text-white ' + (ready.length ? 'bg-red-500' : 'bg-rose-400/70')}>{ready.length}</span>
         </button>
-        <div className="rounded-full px-3 py-1.5 text-base font-extrabold text-white flex items-center gap-1 shrink-0" style={{ background: 'linear-gradient(180deg,#4fb4ee,#2f95dc)', boxShadow: '0 4px 0 #2478b5' }}>
-          <span className="text-sm">✦</span>{coins}
-        </div>
+        <button
+          onClick={() => { if (!uid) loginWithGoogle().catch(() => say('Login gagal, coba lagi')); }}
+          aria-label="Crystal"
+          className="rounded-full px-3 py-1.5 text-base font-extrabold text-white flex items-center gap-1 shrink-0"
+          style={{ background: 'linear-gradient(180deg,#4fb4ee,#2f95dc)', boxShadow: '0 4px 0 #2478b5' }}
+        >
+          <span className="text-sm">✦</span>{uid ? koin.toLocaleString('id-ID') : 'Login'}
+        </button>
       </div>
 
       <div className="relative z-[5]" style={{ height: 'calc(100vh - 230px)' }}>
@@ -281,7 +347,7 @@ export default function PetPage() {
                       <p className="text-[15px] font-extrabold leading-tight">{p.name}</p>
                       <div className="mt-1"><Chip r={p.r} /></div>
                       <p className="mt-1 inline-block rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-800 whitespace-nowrap">
-                        HASILKAN ✦ {RAR[p.r].rate}/hari
+                        HASILKAN {RAR[p.r].rate} Crystal/hari
                       </p>
                       {sheet === 'katalog' && owned(p.name) > 0 && <p className="text-[11px] font-bold text-emerald-600">Dimiliki ×{owned(p.name)}</p>}
                       {sheet === 'kelola' && <p className="text-[11px] font-bold text-slate-500">{now ? (pet.readyAt - now <= 0 ? 'Siap klaim' : fmt(pet.readyAt - now)) : ''}</p>}
@@ -297,8 +363,9 @@ export default function PetPage() {
 
       <div className="fixed bottom-3 left-0 right-0 max-w-md mx-auto px-3 z-20">
         <div className="flex gap-2.5 rounded-[28px] bg-white/95 p-3 shadow-xl">
-          <button onClick={gacha} className="flex-[1.15] rounded-2xl text-white py-3.5 text-xl font-extrabold flex items-center justify-center gap-2 active:translate-y-1" style={{ background: 'linear-gradient(180deg,#a66cf0,#7a3fd0)', ...btn3d('#5b2aa8') }}>
+          <button onClick={gacha} disabled={busy} className="flex-[1.15] rounded-2xl text-white py-2 text-xl font-extrabold flex flex-col items-center justify-center leading-tight active:translate-y-1 disabled:opacity-60" style={{ background: 'linear-gradient(180deg,#a66cf0,#7a3fd0)', ...btn3d('#5b2aa8') }}>
             Gacha
+            <span className="text-xs font-bold text-white/85">{COST} Crystal</span>
           </button>
           <button onClick={() => setSheet(s => (s === 'kelola' ? '' : 'kelola'))} className="relative flex-[1.5] rounded-2xl text-white py-3 text-xl font-extrabold flex items-center justify-center gap-2 active:translate-y-1" style={{ background: 'linear-gradient(180deg,#2fd3a6,#14a98a)', ...btn3d('#0d7d68') }}>
             Kelola
@@ -318,7 +385,7 @@ export default function PetPage() {
             <div className="relative" style={{ animation: 'kzBob 2s ease-in-out infinite' }}><PetArt s={reveal} size={150} /></div>
             <p className="relative mt-3 text-3xl font-extrabold text-white">{reveal.name}</p>
             <div className="relative mt-2"><Chip r={reveal.r} big /></div>
-            <p className="relative mt-2 text-white/90 font-bold">✦ {RAR[reveal.r].rate}/hari</p>
+            <p className="relative mt-2 text-white/90 font-bold">{RAR[reveal.r].rate} Crystal/hari</p>
             <p className="relative mt-5 text-white/60 text-sm">Ketuk untuk tutup</p>
           </div>
         </div>

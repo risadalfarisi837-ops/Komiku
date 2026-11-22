@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUserStats } from '@/lib/store';
 import { currentSeason, fmt, POINTS_PER_CHAPTER, DAILY_BONUS, NIGHT_BONUS } from '@/lib/season';
 import {
-  TRACKS, TrackName, byTrack, heldLencana, loadBest, recordHeld, isUnlocked,
+  TRACKS, TrackName, byTrack, heldLencana, loadBest, recordHeld, mergeBest, isUnlocked, findLencana,
   loadEquipped, saveEquipped, RARITY_COLOR, TRACK_INFO, Lencana,
 } from '@/lib/lencana';
 import { LencanaIcon } from '@/components/LencanaBadge';
@@ -63,6 +63,21 @@ export default function LencanaPage() {
     const eq = loadEquipped();
     setEquipped(eq || held.id);
     setTab(held.track);
+
+    // Data dari server: lencana yang dibuka/dipasang developer ikut muncul
+    let stop = false;
+    (async () => {
+      try {
+        const user = await getUser();
+        if (!user || stop) return;
+        const { db } = await getFirebase();
+        const u = (await db.ref(`users/${user.uid}`).get()).val() || {};
+        if (stop) return;
+        if (u.lencanaBest) setBest(mergeBest(u.lencanaBest));
+        if (u.lencana && findLencana(u.lencana)) { setEquipped(u.lencana); saveEquipped(u.lencana); }
+      } catch {}
+    })();
+    return () => { stop = true; };
   }, [mounted, held.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const equip = async (l: Lencana) => {
