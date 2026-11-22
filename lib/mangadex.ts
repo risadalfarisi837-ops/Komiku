@@ -136,7 +136,7 @@ async function toCards(list: any[]) {
     const chMap: Record<string, any> = {};
     (chapters?.data || []).forEach((c: any) => { chMap[c.id] = c.attributes; });
 
-    return list.map((m) => {
+    return list.filter((m) => { const l = chMap[m.attributes?.latestUploadedChapter]; return !(l && (l.externalUrl || l.pages === 0)); }).map((m) => {
         const st = stats?.statistics?.[m.id];
         const rating = st?.rating?.bayesian;
         const score = rating ? rating.toFixed(1) : 'N/A';
@@ -310,7 +310,7 @@ export async function getDetail(url: string) {
         num: c.num,
         at: c.publishAt || '',
     }));
-    if (!chapters.length) throw new Error('Belum ada chapter yang bisa dibaca untuk komik ini.');
+    if (!chapters.length) throw new Error('Komik ini cuma tersedia di situs resmi dan tidak bisa dibaca di sini.');
     return {
         title: titleOf(m),
         thumb: coverOf(m),
