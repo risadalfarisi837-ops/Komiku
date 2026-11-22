@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock } from 'lucide-react';
+import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, ShoppingBag } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore } from '@/lib/leaderboard';
@@ -1003,7 +1003,8 @@ export default function ProfilePage() {
       {/* Menu: Aplikasi */}
       <SectionLabel>Aplikasi</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
-        <MenuRow icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun, data, dan notifikasi" href="/settings" />
+        <MenuRow icon={<ShoppingBag size={20} color={ICON} />} title="KomikStore" sub="Menu spesial Komiku" href="/komikstore" />
+        <MenuRow border icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun, data, dan notifikasi" href="/settings" />
         <MenuRow border icon={<Bug size={20} color={ICON} />} title="Laporkan bug" onClick={() => window.open('https://wa.me/6281315059849?text=Halo%2C%20saya%20mau%20lapor%20bug%20Komiku.%0A%0AHalaman%2Fmenu%3A%20%0AYang%20terjadi%3A%20%0AYang%20seharusnya%3A%20%0AHP%2Fbrowser%3A%20', '_blank')} />
       </div>
 
