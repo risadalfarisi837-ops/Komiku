@@ -181,6 +181,7 @@ export default function BrowsePage() {
   const [appliedStatus, setAppliedStatus] = useState<string | null>(null);
 
   const [sort, setSort] = useState<'update' | 'popular'>('update');
+  const [pendingSort, setPendingSort] = useState<'update' | 'popular'>('update');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -267,6 +268,7 @@ export default function BrowsePage() {
     setPendingGenre(appliedGenre);
     setPendingFormat(appliedFormat);
     setPendingStatus(appliedStatus);
+    setPendingSort(sort);
     setShowSheet(true);
   };
 
@@ -274,6 +276,7 @@ export default function BrowsePage() {
     setAppliedGenre(pendingGenre);
     setAppliedFormat(pendingFormat);
     setAppliedStatus(pendingStatus);
+    setSort(pendingSort);
     setSearch('');
     setSearchQuery('');
     setShowSheet(false);
@@ -283,6 +286,7 @@ export default function BrowsePage() {
     setPendingGenre(null);
     setPendingFormat(null);
     setPendingStatus(null);
+    setPendingSort('update');
   };
 
   const tabs = ['Semua', 'Manhwa', 'Manhua', 'Manga'];
@@ -394,103 +398,68 @@ export default function BrowsePage() {
         )}
       </div>
 
-      {/* Bottom Sheet — z-[60] supaya di atas navbar z-40 */}
+      {/* Bottom Sheet Filter */}
       {showSheet && (
         <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowSheet(false)} />
-          <div className="relative bg-[#13151A] rounded-t-3xl max-h-[85vh] flex flex-col">
+          <div className="relative bg-[#2A2931] rounded-t-3xl max-h-[92vh] flex flex-col">
             <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
+              <div className="w-12 h-1.5 rounded-full bg-white/20" />
+            </div>
+            <div className="flex items-center justify-between px-5 pt-3 pb-2 shrink-0">
+              <h2 className="text-3xl font-extrabold text-white tracking-tight">Filter</h2>
+              <button onClick={resetFilter} className="text-lg font-extrabold" style={{ color: CORAL }}>Reset</button>
             </div>
 
             <div className="overflow-y-auto flex-1 px-5 pb-4">
-              {/* Genre */}
-              <button
-                onClick={() => setGenreOpen(v => !v)}
-                className="flex items-center justify-between w-full py-4"
-              >
-                <span className="text-white font-bold text-base">Genre</span>
-                {genreOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-              </button>
-              {genreOpen && (
-                <div className="flex flex-wrap gap-2 pb-2">
-                  {GENRES.map(g => (
-                    <button
-                      key={g}
-                      onClick={() => setPendingGenre(pendingGenre === g ? null : g)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        pendingGenre === g ? 'bg-white text-black border-white' : 'bg-transparent text-gray-300 border-white/20'
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <h3 className="text-xl font-extrabold text-white mt-4 mb-3">Urutkan</h3>
+              <div className="flex rounded-full bg-[#33323A] p-1">
+                {([['update', 'Terkini'], ['popular', 'Populer']] as const).map(([v, label]) => (
+                  <button
+                    key={v}
+                    onClick={() => setPendingSort(v)}
+                    className={'flex-1 py-3 rounded-full text-lg font-extrabold ' + (pendingSort === v ? 'bg-[#18171C] text-white' : 'text-[#8F94A3]')}
+                  >{label}</button>
+                ))}
+              </div>
 
-              {/* Format */}
-              <button
-                onClick={() => setFormatOpen(v => !v)}
-                className="flex items-center justify-between w-full py-4 border-t border-white/5"
-              >
-                <span className="text-white font-bold text-base">Format</span>
-                {formatOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-              </button>
-              {formatOpen && (
-                <div className="flex flex-wrap gap-2 pb-2">
-                  {FORMATS.map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setPendingFormat(pendingFormat === f ? null : f)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        pendingFormat === f ? 'bg-white text-black border-white' : 'bg-transparent text-gray-300 border-white/20'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <h3 className="text-xl font-extrabold text-white mt-7 mb-3">Status</h3>
+              <div className="flex flex-wrap gap-3">
+                {([['Ongoing', 'Berlanjut'], ['Completed', 'Tamat']] as const).map(([v, label]) => (
+                  <button
+                    key={v}
+                    onClick={() => setPendingStatus(pendingStatus === v ? null : v)}
+                    className={'px-5 py-2.5 rounded-full border text-lg font-extrabold ' + (pendingStatus === v ? 'bg-[#F3F2F7] text-[#1B1A20] border-[#F3F2F7]' : 'text-white border-white/15')}
+                  >{label}</button>
+                ))}
+              </div>
 
-              {/* Status */}
-              <button
-                onClick={() => setStatusOpen(v => !v)}
-                className="flex items-center justify-between w-full py-4 border-t border-white/5"
-              >
-                <span className="text-white font-bold text-base">Status</span>
-                {statusOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-              </button>
-              {statusOpen && (
-                <div className="flex flex-wrap gap-2 pb-2">
-                  {STATUSES.map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setPendingStatus(pendingStatus === s ? null : s)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        pendingStatus === s ? 'bg-white text-black border-white' : 'bg-transparent text-gray-300 border-white/20'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <h3 className="text-xl font-extrabold text-white mt-7 mb-3">Format</h3>
+              <div className="flex flex-wrap gap-3">
+                {['Manhwa', 'Manhua', 'Manga'].map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setPendingFormat(pendingFormat === f ? null : f)}
+                    className={'px-5 py-2.5 rounded-full border text-lg font-extrabold ' + (pendingFormat === f ? 'bg-[#F3F2F7] text-[#1B1A20] border-[#F3F2F7]' : 'text-white border-white/15')}
+                  >{f}</button>
+                ))}
+              </div>
+
+              <h3 className="text-xl font-extrabold text-white mt-7 mb-3">Genre</h3>
+              <div className="flex flex-wrap gap-3">
+                {GENRES.map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setPendingGenre(pendingGenre === g ? null : g)}
+                    className={'px-5 py-2.5 rounded-full border text-lg font-extrabold ' + (pendingGenre === g ? 'bg-[#F3F2F7] text-[#1B1A20] border-[#F3F2F7]' : 'text-white border-white/15')}
+                  >{g}</button>
+                ))}
+              </div>
             </div>
 
-            {/* Footer */}
             <div className="px-5 py-4 border-t border-white/5 flex gap-3 shrink-0">
-              <button
-                onClick={resetFilter}
-                className="flex-1 py-3 rounded-2xl bg-[#2A2931] text-white font-bold text-sm"
-              >
-                Reset
-              </button>
-              <button
-                onClick={applyFilter}
-                className="flex-1 py-3 rounded-2xl bg-[#4B5563] text-white font-bold text-sm"
-              >
-                Filter
-              </button>
+              <button onClick={() => setShowSheet(false)} className="flex-1 py-4 rounded-full border border-white/15 text-white text-xl font-extrabold">Batal</button>
+              <button onClick={applyFilter} className="flex-[2] py-4 rounded-full text-white text-xl font-extrabold" style={{ background: CORAL }}>Tampilkan hasil</button>
             </div>
           </div>
         </div>
