@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import WallpaperBg from '@/components/WallpaperBg';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ChevronLeft, Heart, Send } from 'lucide-react';
+import { Loader2, ChevronLeft, Heart, Send, ArrowLeft, Share2, MoreVertical, Bookmark, MessageSquare, Download, BookOpen, Search, ArrowUpDown, Star, X } from 'lucide-react';
 import Link from 'next/link';
 import { useFavorites, useHistory } from '@/lib/store';
 
@@ -344,7 +344,28 @@ function ReviewsTab({ mangaUrl, mangaTitle }: { mangaUrl: string; mangaTitle: st
   );
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────────
+const CORAL = '#FF6B6B';
+const STATUS_INFO: Record<string, { label: string; color: string }> = {
+  ongoing:   { label: 'Berlanjut',  color: '#34D399' },
+  hiatus:    { label: 'Hiatus',     color: '#FB923C' },
+  completed: { label: 'Tamat',      color: '#60A5FA' },
+  cancelled: { label: 'Dibatalkan', color: '#F87171' },
+};
+function fmtCount(n?: number | null) {
+  if (n == null) return '-';
+  const f = (v: number, s: string) => v.toFixed(1).replace('.', ',').replace(/,0$/, '') + ' ' + s;
+  if (n >= 1_000_000) return f(n / 1_000_000, 'jt');
+  if (n >= 1_000) return f(n / 1_000, 'rb');
+  return String(n);
+}
+function fmtDate(iso?: string) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; }
+}
+const isNewChapter = (iso?: string) => !!iso && Date.now() - new Date(iso).getTime() < 3 * 86400000;
+const chNumOf = (title: string) => (title.match(/chapter\s*([\d.]+)/i)?.[1]) || '';
+
 function MangaDetailContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get('url');
@@ -355,17 +376,28 @@ function MangaDetailContent() {
   const [detail, setDetail]           = useState<any>(null);
   const [loading, setLoading]         = useState(!!url);
   const [error, setError]             = useState<string | null>(url ? null : 'URL tidak valid');
-  const [officialUrl, setOfficialUrl]   = useState<string | null>(null);
-  const [activeTab, setActiveTab]     = useState('Chapters');
+  const [officialUrl, setOfficialUrl] = useState<string | null>(null);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [mounted, setMounted]         = useState(false);
-  const chaptersRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled]       = useState(false);
+  const [newestFirst, setNewestFirst] = useState(true);
+  const [searchOpen, setSearchOpen]   = useState(false);
+  const [chQuery, setChQuery]         = useState('');
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [menuOpen, setMenuOpen]       = useState(false);
+  const [toast, setToast]             = useState('');
 
-  // Cari chapter terakhir dibaca untuk manga ini
   const lastRead = history.find(h => h.mangaLink === url);
 
   useEffect(() => {
     setMounted(true);
+    const onScroll = () => setScrolled(window.scrollY > 300);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
     if (!url) return;
     (async () => {
       try {
@@ -377,6 +409,12 @@ function MangaDetailContent() {
       finally { setLoading(false); }
     })();
   }, [url]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(''), 2000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   if (loading) return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-[#1B1A20] gap-4">
@@ -394,133 +432,203 @@ function MangaDetailContent() {
     </div>
   );
 
-  const isFav = isFavorite(url as string);
+  const isFav = mounted && isFavorite(url as string);
+  const chapters: any[] = detail.chapters || [];
+  const status = STATUS_INFO[detail.status || ''] || null;
+  const mangaHref = (link: string) =>
+    `/chapter?url=${encodeURIComponent(link)}&thumb=${encodeURIComponent(detail.thumb || '')}&mangaTitle=${encodeURIComponent(detail.title || '')}`;
+
+  const firstChapter = chapters[chapters.length - 1];
+  const resumeChapter = lastRead ? chapters.find(ch => ch.link === lastRead.chapterLink) : null;
+  const target = resumeChapter || firstChapter;
+  const targetNum = chNumOf(target?.title || '') || target?.num || '';
+  const youAt = resumeChapter ? (chNumOf(resumeChapter.title) || resumeChapter.num || '') : '';
+
+  const q = chQuery.trim().toLowerCase();
+  let list = q ? chapters.filter(ch => ch.title.toLowerCase().includes(q)) : chapters;
+  if (!newestFirst) list = [...list].reverse();
+
+  const share = async () => {
+    const data = { title: detail.title, url: typeof window !== 'undefined' ? window.location.href : '' };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else { await navigator.clipboard.writeText(data.url); setToast('Link disalin'); }
+    } catch {}
+  };
+
+  const circleBtn = 'w-12 h-12 rounded-full bg-black/45 backdrop-blur-md flex items-center justify-center border border-white/10 active:scale-95 transition-transform';
 
   return (
-    <div className="bg-[#1B1A20] flex flex-col relative text-white">
-      {/* Background */}
-      <div className="absolute top-0 left-0 w-full h-[60vh] z-0">
-        <Image src={detail.thumb || "https://picsum.photos/400/600"} alt={detail.title} fill
-          className="object-cover opacity-80" referrerPolicy="no-referrer" priority unoptimized />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#13151A] via-transparent to-black/30" />
+    <div className="bg-[#1B1A20] min-h-screen text-white max-w-md mx-auto relative pb-16">
+      {/* Hero background */}
+      <div className="absolute top-0 inset-x-0 h-[470px] overflow-hidden z-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={detail.thumb} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover scale-125 blur-[3px] opacity-80" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(27,26,32,.15) 0%, rgba(27,26,32,.55) 55%, #1B1A20 100%)' }} />
       </div>
 
-      {/* Top Nav */}
-      <div className="fixed top-6 inset-x-6 z-20 flex items-center gap-3 max-w-md mx-auto">
-        <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 active:scale-95 transition-transform">
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
-
+      {/* Floating buttons (di atas hero) */}
+      <div className={'absolute top-4 inset-x-4 z-20 flex items-center justify-between transition-opacity ' + (scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100')}>
+        <button onClick={() => router.back()} aria-label="Kembali" className={circleBtn}><ArrowLeft className="w-6 h-6" /></button>
+        <div className="flex gap-2">
+          <button onClick={share} aria-label="Bagikan" className={circleBtn}><Share2 className="w-5 h-5" /></button>
+          <button onClick={() => setMenuOpen(v => !v)} aria-label="Menu" className={circleBtn}><MoreVertical className="w-5 h-5" /></button>
+        </div>
       </div>
 
-      {/* Sheet */}
-      <div className="relative z-10 mt-[45vh] bg-[#2A2931] rounded-t-[2.5rem] w-full max-w-md mx-auto p-6 border-t border-white/5 shadow-2xl">
-        <div className="flex justify-between items-start mt-2">
-          <div className="flex-1 pr-4">
-            <h1 className="text-2xl font-black text-white leading-tight mb-1">{detail.title}</h1>
-            <p className="text-sm font-medium text-gray-400">by <span className="text-gray-300">Komiku Authors</span></p>
+      {/* Bar atas saat di-scroll */}
+      <div className={'fixed top-0 inset-x-0 z-30 max-w-md mx-auto flex items-center gap-3 px-4 py-3 bg-[#1B1A20]/95 backdrop-blur-md transition-opacity ' + (scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
+        <button onClick={() => router.back()} aria-label="Kembali" className="p-2"><ArrowLeft className="w-6 h-6" /></button>
+        <h2 className="flex-1 text-2xl font-extrabold tracking-tight truncate">{detail.title}</h2>
+        <button onClick={share} aria-label="Bagikan" className="p-2"><Share2 className="w-5 h-5" /></button>
+        <button onClick={() => setMenuOpen(v => !v)} aria-label="Menu" className="p-2"><MoreVertical className="w-5 h-5" /></button>
+      </div>
+
+      {menuOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)}>
+          <div className="absolute right-4 top-16 w-56 rounded-2xl bg-[#2A2931] border border-white/10 shadow-2xl overflow-hidden max-w-md" onClick={e => e.stopPropagation()}>
+            <a href={url as string} target="_blank" rel="noopener noreferrer" className="block px-4 py-3.5 text-base font-bold">Buka di MangaDex</a>
           </div>
+        </div>
+      )}
+
+      <div className="relative z-10 px-5 pt-[120px]">
+        {/* Cover + judul */}
+        <div className="flex gap-4 items-end">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={detail.thumb} alt={detail.title} referrerPolicy="no-referrer" className="w-[148px] h-[220px] rounded-2xl object-cover shrink-0 shadow-2xl bg-[#2A2931]" />
+          <div className="min-w-0 pb-1">
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span className="px-3 py-1 rounded-lg bg-black text-white text-base font-extrabold">{detail.type || 'Manga'}</span>
+              {status && (
+                <span className="px-3 py-1 rounded-lg text-base font-extrabold flex items-center gap-1.5" style={{ background: 'rgba(120,60,50,.55)', color: status.color }}>
+                  <span className="w-2 h-2 rounded-full" style={{ background: status.color }} />{status.label}
+                </span>
+              )}
+            </div>
+            <h1 className="text-[32px] leading-[1.05] font-extrabold tracking-tight line-clamp-4">{detail.title}</h1>
+            {detail.nativeTitle && <p className="mt-2 text-lg font-bold text-white/50 truncate">{detail.nativeTitle}</p>}
+          </div>
+        </div>
+
+        {/* Statistik */}
+        <div className="mt-6 flex items-stretch rounded-3xl bg-[#2A2931] py-4">
+          <div className="flex-1 text-center">
+            <p className="text-3xl font-extrabold flex items-center justify-center gap-1.5"><Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />{detail.rating != null ? String(detail.rating).replace('.', ',') : '-'}</p>
+            <p className="text-lg font-bold text-white/50">Rating</p>
+          </div>
+          <div className="w-px bg-white/10" />
+          <div className="flex-1 text-center">
+            <p className="text-3xl font-extrabold">{fmtCount(detail.follows)}</p>
+            <p className="text-lg font-bold text-white/50">Disimpan</p>
+          </div>
+          <div className="w-px bg-white/10" />
+          <div className="flex-1 text-center">
+            <p className="text-3xl font-extrabold">{chapters.length}</p>
+            <p className="text-lg font-bold text-white/50">Chapter</p>
+          </div>
+        </div>
+
+        {/* Aksi */}
+        <div className="mt-5 flex items-center gap-3">
+          {target ? (
+            <Link href={mangaHref(target.link)} className="flex-1 h-16 rounded-full flex items-center justify-center gap-3 text-xl font-extrabold text-white active:scale-95 transition-transform" style={{ background: CORAL }}>
+              <BookOpen className="w-6 h-6" />{resumeChapter ? `Lanjutkan Ch. ${targetNum}` : `Mulai Ch. ${targetNum || 1}`}
+            </Link>
+          ) : <div className="flex-1" />}
           <button
             onClick={() => toggleFavorite({ title: detail.title, link: url as string, thumb: detail.thumb, desc: detail.synopsis?.slice(0, 50) })}
-            className={`w-12 h-12 rounded-full flex items-center justify-center border active:scale-95 transition-all shrink-0 z-50 relative cursor-pointer ${mounted && isFav ? 'bg-red-500/10 border-red-500/30' : 'bg-[#1B1A20] border-white/5'}`}
-          >
-            <Heart className={`w-5 h-5 transition-all ${mounted && isFav ? 'fill-red-500 text-red-500 scale-110' : 'fill-gray-600 text-gray-600'}`} strokeWidth={0} />
-          </button>
+            aria-label="Simpan" className="w-12 h-12 flex items-center justify-center"
+          ><Bookmark className="w-7 h-7" style={{ color: CORAL, fill: isFav ? CORAL : 'transparent' }} /></button>
+          <button onClick={() => setCommentsOpen(true)} aria-label="Komentar" className="w-12 h-12 flex items-center justify-center"><MessageSquare className="w-7 h-7" /></button>
+          <button onClick={() => setToast('Fitur unduh segera hadir')} aria-label="Unduh" className="w-12 h-12 flex items-center justify-center"><Download className="w-7 h-7" /></button>
         </div>
 
-        <p className={`text-gray-400 text-sm leading-relaxed mt-6 ${isDescExpanded ? '' : 'line-clamp-3'}`}>{detail.synopsis}</p>
-        {detail.synopsis && detail.synopsis.length > 150 && (
-          <button onClick={() => setIsDescExpanded(!isDescExpanded)} className="mt-2 text-gray-300 text-xs font-bold">
-            {isDescExpanded ? '...Show Less' : '...Show More'}
-          </button>
+        {/* Sinopsis */}
+        <p className={'mt-6 text-[22px] leading-snug font-extrabold tracking-tight ' + (isDescExpanded ? '' : 'line-clamp-3')}>{detail.synopsis}</p>
+        {detail.synopsis && detail.synopsis.length > 120 && (
+          <button onClick={() => setIsDescExpanded(v => !v)} className="mt-1 text-xl font-extrabold" style={{ color: CORAL }}>{isDescExpanded ? 'Sembunyikan' : 'Selengkapnya'}</button>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-6 mt-8 border-b border-white/5 pb-2">
-          {['Chapters', 'Info', 'Reviews'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`pb-2 text-sm font-bold transition-colors relative ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
-              {tab}
-              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2A2931] rounded-t-full shadow-[0_0_8px_rgba(58,200,186,0.8)]" />}
-            </button>
-          ))}
+        {/* Genre */}
+        {detail.genres?.length > 0 && (
+          <div className="mt-5 -mx-5 px-5 flex gap-3 overflow-x-auto no-scrollbar">
+            {detail.genres.map((g: string) => (
+              <span key={g} className="shrink-0 px-5 py-2.5 rounded-full text-xl font-extrabold" style={{ background: 'rgba(255,107,107,.16)' }}>{g}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Info */}
+        <div className="mt-7 grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 text-xl">
+          {detail.author && (<><span className="font-bold text-white/45">Penulis</span><span className="font-extrabold">{detail.author}</span></>)}
+          {detail.artist && (<><span className="font-bold text-white/45">Ilustrator</span><span className="font-extrabold">{detail.artist}</span></>)}
+          <span className="font-bold text-white/45">Format</span><span className="font-extrabold">{detail.type || 'Manga'}</span>
         </div>
 
-        {/* Content */}
-        <div className="mt-6 pb-20" ref={chaptersRef}>
-          {activeTab === 'Chapters' && (
-            <div className="space-y-3">
-              {detail.chapters.length === 0
-                ? <p className="text-gray-500 text-sm py-4">Belum ada chapter.</p>
-                : detail.chapters.map((ch: any, i: number) => {
-                    const isRead = history.some(h => h.chapterLink === ch.link);
-                    const isLastRead = lastRead?.chapterLink === ch.link;
-                    return (
-                      <Link href={`/chapter?url=${encodeURIComponent(ch.link)}&thumb=${encodeURIComponent(detail.thumb||"")}&mangaTitle=${encodeURIComponent(detail.title||"")}`} key={i}
-                        className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer group ${isRead ? 'bg-[#1B1A20]/30 border-white/5 opacity-70' : 'bg-[#1B1A20]/50 border-white/5 hover:bg-[#2A2931]'}`}>
-                        <div className="flex items-center gap-3 pointer-events-none">
-                          <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm relative ${isLastRead ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : isRead ? 'bg-[#2A2931] border-white/5 text-gray-600' : 'bg-[#2A2931] border-white/5 text-gray-300'}`}>
-                            {detail.chapters.length - i}
-                            {isLastRead && (
-                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-[#2A2931]" />
-                            )}
-                          </div>
-                          <div>
-                            <h4 className={`font-bold text-sm line-clamp-1 transition-colors ${isRead ? 'text-gray-500' : 'text-gray-200 group-hover:text-gray-300'}`}>{ch.title}</h4>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <p className="text-xs text-gray-600 font-medium">Release Date • {ch.date || 'Unknown'}</p>
-                              {isLastRead && <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">Terakhir Dibaca</span>}
-                              {isRead && !isLastRead && <span className="text-[10px] font-black text-gray-600 bg-white/5 px-2 py-0.5 rounded-full">Sudah Dibaca</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronLeft className={`w-4 h-4 rotate-180 pointer-events-none ${isRead ? 'text-gray-700' : 'text-gray-600 group-hover:text-gray-300'}`} />
-                      </Link>
-                    );
-                  })
-              }
+        {/* Header chapter (sticky) */}
+        <div className="sticky top-[60px] z-20 bg-[#1B1A20] -mx-5 px-5 pt-8 pb-3 mt-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[34px] font-extrabold tracking-tight">Chapter <span className="text-white/45 text-3xl">· {chapters.length}</span></h3>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setSearchOpen(v => !v); setChQuery(''); }} aria-label="Cari chapter" className="w-11 h-11 flex items-center justify-center"><Search className="w-6 h-6" /></button>
+              <button onClick={() => setNewestFirst(v => !v)} aria-label="Urutkan" className="w-11 h-11 flex items-center justify-center"><ArrowUpDown className="w-6 h-6" /></button>
             </div>
+          </div>
+          {searchOpen ? (
+            <input autoFocus value={chQuery} onChange={e => setChQuery(e.target.value)} placeholder="Cari nomor chapter..." className="mt-2 w-full rounded-full bg-[#2A2931] px-5 py-3 text-lg font-bold outline-none placeholder-white/30" />
+          ) : (
+            <p className="mt-1 text-xl font-bold text-white/45">{newestFirst ? 'Terbaru dulu' : 'Terlama dulu'}{youAt ? ` · kamu di Ch. ${youAt}` : ''}</p>
           )}
-          {activeTab === 'Info' && (
-            <p className="text-gray-400 text-sm">Informasi manga sedang dimuat. Genre: Action, Adventure.</p>
-          )}
-          {activeTab === 'Reviews' && (
-            <ReviewsTab mangaUrl={url as string} mangaTitle={detail.title} />
-          )}
+        </div>
+
+        {/* Daftar chapter */}
+        <div className="pt-2">
+          {list.length === 0 ? (
+            <p className="text-white/40 text-lg font-bold py-8 text-center">Chapter tidak ditemukan.</p>
+          ) : list.map((ch, i) => {
+            const isRead = history.some(h => h.chapterLink === ch.link);
+            const num = chNumOf(ch.title) || ch.num;
+            const pos = ['top', 'center', 'bottom'][i % 3];
+            return (
+              <Link key={ch.link} href={mangaHref(ch.link)} className={'flex items-center gap-4 py-2.5 ' + (isRead ? 'opacity-55' : '')}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={detail.thumb} alt="" referrerPolicy="no-referrer" loading="lazy" className="w-[68px] h-[68px] rounded-2xl object-cover shrink-0 bg-[#2A2931]" style={{ objectPosition: pos }} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[28px] leading-tight font-extrabold tracking-tight truncate">{num ? `Ch. ${num}` : ch.title}</p>
+                    {isNewChapter(ch.at) && <span className="shrink-0 px-2.5 py-0.5 rounded-md text-base font-extrabold text-white" style={{ background: CORAL }}>BARU</span>}
+                  </div>
+                  <p className="text-xl font-bold text-white/45 truncate">{fmtDate(ch.at) || ch.date}{ch.pages ? ` · ${ch.pages} hlm` : ''}</p>
+                </div>
+                <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setToast('Fitur unduh segera hadir'); }} className="p-2 text-white/50"><Download className="w-6 h-6" /></span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
-      {/* Bottom CTA */}
-      {detail.chapters.length > 0 && (() => {
-        const firstChapter = detail.chapters[detail.chapters.length - 1];
-        const targetChapter = lastRead
-          ? (detail.chapters.find((ch: any) => ch.link === lastRead.chapterLink) || firstChapter)
-          : firstChapter;
-        const isResume = !!lastRead;
-        // Ambil chapter number aja, bukan full title manga
-        const rawLabel = lastRead?.chapterNumber || lastRead?.chapterTitle || '';
-        // Kalau ada angka chapter (misal "Chapter 1" atau "1"), ambil itu aja
-        const chMatch = rawLabel.match(/chapter\s*(\d+)/i) || rawLabel.match(/^(\d+)$/);
-        const chapterLabel = isResume
-          ? (chMatch ? 'Ch. ' + chMatch[1] : rawLabel || 'Terakhir')
-          : 'Ch. 1';
-        return (
-          <div className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md z-50">
-            <div className="bg-[#1B1A20] px-4 pt-3 pb-6 flex items-center border-t border-white/5">
-              <Link
-                href={`/chapter?url=${encodeURIComponent(targetChapter.link)}&thumb=${encodeURIComponent(detail.thumb||"")}&mangaTitle=${encodeURIComponent(detail.title||"")}`}
-                className="flex-1 bg-[#2A2931] text-white font-black py-4 rounded-[1.5rem] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-white/5"
-              >
-                {isResume ? 'Lanjut Baca →' : 'Swipe to Read →'}
-              </Link>
-              <div className="w-[120px] flex flex-col items-center justify-center">
-                <span className="text-xs text-gray-500 font-medium">{isResume ? 'Lanjut dari' : 'Start From'}</span>
-                <span className="text-sm font-black text-white">{chapterLabel}</span>
-              </div>
+      {/* Komentar */}
+      {commentsOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setCommentsOpen(false)} />
+          <div className="relative bg-[#2A2931] rounded-t-3xl max-h-[85vh] w-full max-w-md mx-auto flex flex-col">
+            <div className="flex items-center justify-between px-5 pt-5 pb-2 shrink-0">
+              <h3 className="text-2xl font-extrabold">Komentar</h3>
+              <button onClick={() => setCommentsOpen(false)} aria-label="Tutup" className="p-1"><X className="w-6 h-6" /></button>
+            </div>
+            <div className="overflow-y-auto px-5 pb-8">
+              <ReviewsTab mangaUrl={url as string} mangaTitle={detail.title} />
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-8 inset-x-0 z-[60] flex justify-center pointer-events-none">
+          <span className="px-5 py-3 rounded-full bg-black/80 text-white text-base font-bold">{toast}</span>
+        </div>
+      )}
     </div>
   );
 }

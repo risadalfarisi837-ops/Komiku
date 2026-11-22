@@ -335,11 +335,34 @@ async function findOfficialUrl(id: string, m: any): Promise<string> {
     return l.raw || l.engtl || l.amz || l.ebj || `${SITE}/title/${id}`;
 }
 
+function extraInfo(m: any, st: any) {
+    const rels: any[] = m.relationships || [];
+    const names = (t: string) => Array.from(new Set(rels.filter((r) => r.type === t).map((r) => r.attributes?.name).filter(Boolean))).join(', ');
+    const orig = m.attributes?.originalLanguage;
+    const genres = (m.attributes?.tags || [])
+        .filter((t: any) => ['genre', 'theme'].includes(t.attributes?.group))
+        .map((t: any) => t.attributes?.name?.en)
+        .filter(Boolean);
+    const nativeTitle = (m.attributes?.altTitles || []).map((t: any) => t[orig]).find(Boolean) || '';
+    const rating = st?.rating?.bayesian;
+    return {
+        status: m.attributes?.status || '',
+        type: typeOf(orig) || 'Manga',
+        genres,
+        author: names('author'),
+        artist: names('artist'),
+        nativeTitle,
+        rating: rating ? Number(rating.toFixed(1)) : null,
+        follows: st?.follows ?? null,
+    };
+}
+
 export async function getDetail(url: string) {
     const id = idFromLink(url);
-    const [mangaRes, feed] = await Promise.all([
-        md(`/manga/${id}`, { 'includes[]': ['cover_art'] }),
+    const [mangaRes, feed, statsRes] = await Promise.all([
+        md(`/manga/${id}`, { 'includes[]': ['cover_art', 'author', 'artist'] }),
         fetchFeed(id, LANGS),
+        md(`/statistics/manga/${id}`).catch(() => null),
     ]);
     const m = mangaRes.data;
     const chapters = dedupe(feed).map((c) => ({
@@ -348,6 +371,7 @@ export async function getDetail(url: string) {
         date: timeAgo(c.publishAt),
         num: c.num,
         at: c.publishAt || '',
+        pages: c.pages,
     }));
     if (!chapters.length) {
         const err: any = new Error('Komik ini cuma tersedia di situs resmi dan tidak bisa dibaca di sini.');
@@ -360,6 +384,7 @@ export async function getDetail(url: string) {
         thumb: coverOf(m),
         synopsis: pick(m.attributes?.description, ['id', 'en']) || 'Tidak ada sinopsis.',
         chapters,
+        ...extraInfo(m, statsRes?.statistics?.[id]),
     };
 }
 
