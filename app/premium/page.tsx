@@ -68,7 +68,7 @@ export default function PremiumPage() {
       {/* Kartu atas */}
       <div style={{ margin: '12px 14px 0', background: GOLD_BG, border: `1.5px solid ${GOLD_LINE}`, borderRadius: 22, padding: '22px 18px 20px' }}>
         <Crown size={26} />
-        <div style={{ fontSize: 31, fontWeight: 800, letterSpacing: -1.2, color: GOLD, marginTop: 8, lineHeight: 1.1 }}>KomikID Premium</div>
+        <div style={{ fontSize: 31, fontWeight: 800, letterSpacing: -1.2, color: GOLD, marginTop: 8, lineHeight: 1.1 }}>Komiku Premium</div>
         <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: -0.6, color: GOLD_DIM, marginTop: 6 }}>Baca tanpa gangguan.</div>
       </div>
 
