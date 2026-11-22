@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { X, Check, Wrench, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, LogOut } from 'lucide-react';
+import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore } from '@/lib/leaderboard';
@@ -394,9 +394,10 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   open: boolean; onClose: () => void;
   uid: string; db: any; userData: any; onUpdate: (d: any) => void;
 }) {
-  const [tab, setTab]     = useState<'user'|'global'>('user');
+  const [tab, setTab]       = useState<'user'|'global'>('user');
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{msg:string; type:'success'|'error'}|null>(null);
+  const [toast, setToast]   = useState<{msg:string; type:'success'|'error'}|null>(null);
+  const [confirmGlobal, setConfirmGlobal] = useState(false);
 
   // Tab: Manajemen User
   const [targetUid, setTargetUid] = useState('');
@@ -411,6 +412,8 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [giftSender, setGiftSender] = useState('Sistem Komiku');
   const [giftMsg,    setGiftMsg]    = useState('Kompensasi Spesial');
 
+  useEffect(() => { if (!open) setConfirmGlobal(false); }, [open]);
+
   const showToast = (msg: string, type: 'success'|'error') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -418,177 +421,169 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
   const applyToUser = async () => {
     const uidInput = targetUid.trim().replace('#','').toUpperCase();
-    if (!uidInput) { showToast('UID Target harus diisi!', 'error'); return; }
+    if (!uidInput) { showToast('UID target harus diisi.', 'error'); return; }
+    const nKoin = parseInt(uKoin), nLvl = parseInt(uLvl), nExp = parseInt(uExp);
+    if ((uKoin !== '' && isNaN(nKoin)) || (uLvl !== '' && isNaN(nLvl)) || (uExp !== '' && isNaN(nExp))) {
+      showToast('Angka tidak valid.', 'error'); return;
+    }
     setSaving(true);
     try {
       const snap = await db.ref('users').get();
-      let targetFullUid: string | null = null;
-      snap.forEach((child: any) => {
-        if (child.key.toUpperCase() === uidInput || child.key.substring(0,6).toUpperCase() === uidInput) {
-          targetFullUid = child.key;
-        }
-      });
-      if (!targetFullUid) { showToast('User tidak ditemukan!', 'error'); setSaving(false); return; }
+      const keys: string[] = [];
+      snap.forEach((child: any) => { keys.push(child.key); });
+      const matches = keys.filter(k => k.toUpperCase() === uidInput || k.substring(0,6).toUpperCase() === uidInput);
+      if (matches.length === 0) { showToast('User tidak ditemukan.', 'error'); setSaving(false); return; }
+      if (matches.length > 1)  { showToast('UID ambigu, pakai UID lengkap.', 'error'); setSaving(false); return; }
+      const targetFullUid = matches[0];
 
       const updates: any = {};
-      if (uKoin !== '') updates.koin  = parseInt(uKoin);
-      if (uRole !== '') updates.role  = uRole;
-      if (uLvl  !== '') { updates.level = parseInt(uLvl); if (uExp === '') updates.exp = (parseInt(uLvl)-1)*200; }
-      if (uExp  !== '') { updates.exp   = parseInt(uExp);  if (uLvl === '') updates.level = Math.floor(parseInt(uExp)/200)+1; }
-      if (Object.keys(updates).length === 0) { showToast('Isi minimal 1 data!', 'error'); setSaving(false); return; }
+      if (uKoin !== '') updates.koin = nKoin;
+      if (uRole !== '') updates.role = uRole;
+      if (uLvl  !== '') { updates.level = nLvl; if (uExp === '') updates.exp = (nLvl - 1) * 200; }
+      if (uExp  !== '') { updates.exp = nExp;   if (uLvl === '') updates.level = Math.floor(nExp / 200) + 1; }
+      if (Object.keys(updates).length === 0) { showToast('Isi minimal 1 data.', 'error'); setSaving(false); return; }
 
       await db.ref(`users/${targetFullUid}`).update(updates);
-      showToast('Berhasil diterapkan!', 'success');
+      if (targetFullUid === uid) onUpdate(updates);
+      showToast('Berhasil diterapkan.', 'success');
       setTargetUid(''); setULvl(''); setUExp(''); setUKoin(''); setURole('');
-    } catch(e: any) { showToast('Gagal: ' + e.message, 'error'); }
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
+  };
+
+  const askGlobal = () => {
+    const val = parseInt(giftVal);
+    if (!val || val <= 0) { showToast('Masukkan angka yang benar.', 'error'); return; }
+    setConfirmGlobal(true);
   };
 
   const sendGlobal = async () => {
     const val = parseInt(giftVal);
-    if (!val || val <= 0) { showToast('Masukkan angka yang benar!', 'error'); return; }
-    if (!confirm(`PERINGATAN GLOBAL!\nKirim ${giftType === 'koin' ? val+' Koin' : '+'+val+' Level'} ke SELURUH USER?\n(${giftMsg})`)) return;
+    setConfirmGlobal(false);
     setSaving(true);
     try {
       const snap = await db.ref('users').get();
       const updates: any = {};
       let count = 0;
+      let mine: any = null;
       snap.forEach((child: any) => {
         const u = child.key; const d = child.val();
-        if (giftType === 'koin') updates[`users/${u}/koin`] = (d.koin||0) + val;
+        if (giftType === 'koin') updates[`users/${u}/koin`] = (d.koin || 0) + val;
         else {
-          const newLvl = (d.level||1) + val;
+          const newLvl = (d.level || 1) + val;
           updates[`users/${u}/level`] = newLvl;
-          updates[`users/${u}/exp`]   = (newLvl-1)*200;
+          updates[`users/${u}/exp`]   = (newLvl - 1) * 200;
         }
-        updates[`users/${u}/newGift`] = { from: giftSender, itemName: giftType==='koin'?`${val} Koin`:`+${val} Level`, cat: giftType, isKompensasi: true, timestamp: Date.now() };
+        updates[`users/${u}/newGift`] = { from: giftSender, itemName: giftType === 'koin' ? `${val} Koin` : `+${val} Level`, cat: giftType, isKompensasi: true, timestamp: Date.now() };
+        if (u === uid) mine = giftType === 'koin' ? { koin: (d.koin || 0) + val } : { level: (d.level || 1) + val, exp: ((d.level || 1) + val - 1) * 200 };
         count++;
       });
       await db.ref().update(updates);
-      showToast(`Terkirim ke ${count} user!`, 'success');
+      if (mine) onUpdate(mine);
+      showToast(`Terkirim ke ${count} user.`, 'success');
       setGiftVal('');
-    } catch(e: any) { showToast('Gagal: ' + e.message, 'error'); }
+    } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
 
-  const inputCls = "w-full bg-[#0a0a0a] border border-[#333] rounded-2xl px-4 py-3.5 text-white font-bold focus:outline-none focus:border-blue-500 text-sm box-border";
+  const FIELD: React.CSSProperties = { width: '100%', boxSizing: 'border-box', background: '#1F1E24', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: '13px 14px', color: '#fff', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', outline: 'none' };
+  const LABEL: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 800, color: '#8F8D9B', letterSpacing: -0.2, textTransform: 'uppercase', margin: '0 0 6px 2px' };
+  const BTN: React.CSSProperties = { width: '100%', border: 0, borderRadius: 16, padding: '14px 0', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
 
   return (
-    <>
-      {open && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center" onClick={() => onClose()}>
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-          <div
-            className="relative w-full max-w-md bg-[#0a0a0a] rounded-t-3xl border-t-2 border-blue-500 flex flex-col"
-            style={{ maxHeight: '85vh' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Toast */}
-            {toast && (
-              <div className={`absolute top-4 left-4 right-4 z-10 px-4 py-3 rounded-2xl text-sm font-black text-center ${toast.type==='success' ? 'bg-white/5 text-gray-400 border border-white/10' : 'bg-white/5 text-gray-400 border border-white/20/30'}`}>
-                {toast.msg}
-              </div>
-            )}
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#1a1a1a] flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-500/10 p-2 rounded-xl">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.7a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.7z"/></svg>
-                </div>
-                <h3 className="text-white font-black text-lg">Panel Developer</h3>
-              </div>
-              <button onClick={() => onClose()} className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-400">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-2 px-5 pt-4 pb-3 flex-shrink-0">
-              <button onClick={() => setTab('user')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${tab==='user' ? 'bg-blue-600 text-white' : 'bg-[#1c1c1e] text-gray-400'}`}
-              >Manajemen User</button>
-              <button onClick={() => setTab('global')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${tab==='global' ? 'bg-blue-600 text-white' : 'bg-[#1c1c1e] text-gray-400'}`}
-              >Global Gift</button>
-            </div>
-
-            {/* Content */}
-            <div className="overflow-y-auto flex-1 px-5 pb-28">
-              {tab === 'user' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] text-gray-500 font-black uppercase mb-2 ml-1">Target UID</label>
-                    <input className={inputCls} value={targetUid} onChange={e=>setTargetUid(e.target.value)} placeholder="#XXXXXX" style={{ fontFamily:'monospace', letterSpacing:'3px', fontSize:'15px' }} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-gray-400 font-black uppercase mb-2 ml-1">Set Koin</label>
-                      <input className={inputCls} style={{ color:'#facc15' }} value={uKoin} onChange={e=>setUKoin(e.target.value)} type="number" placeholder="0" />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-blue-400 font-black uppercase mb-2 ml-1">Set Level</label>
-                      <input className={inputCls} style={{ color:'#60a5fa' }} value={uLvl} onChange={e=>setULvl(e.target.value)} type="number" placeholder="1" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-500 font-black uppercase mb-2 ml-1">Set EXP</label>
-                    <input className={inputCls} value={uExp} onChange={e=>setUExp(e.target.value)} type="number" placeholder="0" />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-500 font-black uppercase mb-2 ml-1">Ubah Role</label>
-                    <select className={inputCls} value={uRole} onChange={e=>setURole(e.target.value)}>
-                      <option value="">-- Biarkan Tetap --</option>
-                      <option value="Member">Member (Komiku Biasa)</option>
-                      <option value="Komiku Premium">Komiku Premium</option>
-                      <option value="Developer">Developer</option>
-                    </select>
-                  </div>
-                  <button onClick={applyToUser} disabled={saving}
-                    className="w-full py-4 rounded-2xl font-black text-sm text-white disabled:opacity-50 mt-2"
-                    style={{ background:'linear-gradient(135deg,#2A2931,#2a2d35)', boxShadow:'0 10px 20px rgba(59,130,246,0.3)' }}
-                  >{saving ? 'Memproses...' : 'TERAPKAN KE USER'}</button>
-                </div>
-              )}
-
-              {tab === 'global' && (
-                <div className="space-y-3">
-                  <div className="bg-blue-500/5 border border-dashed border-blue-500/40 rounded-2xl p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] text-gray-500 font-black uppercase mb-2 ml-1">Nama Pengirim</label>
-                        <input className={inputCls} value={giftSender} onChange={e=>setGiftSender(e.target.value)} />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] text-gray-500 font-black uppercase mb-2 ml-1">Jenis Hadiah</label>
-                        <select className={inputCls} value={giftType} onChange={e=>setGiftType(e.target.value as any)}>
-                          <option value="koin">Koin</option>
-                          <option value="level">Level Up</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-gray-400 font-black uppercase mb-2 ml-1">
-                        {giftType === 'koin' ? 'Jumlah Koin' : 'Naik Berapa Level'}
-                      </label>
-                      <input className={inputCls} style={{ color:'#facc15', fontSize:'16px' }} value={giftVal} onChange={e=>setGiftVal(e.target.value)} type="number" placeholder={giftType==='koin'?"Cth: 500":"Cth: 5"} />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-blue-400 font-black uppercase mb-2 ml-1">Pesan / Alasan</label>
-                      <input className={inputCls} style={{ color:'#60a5fa' }} value={giftMsg} onChange={e=>setGiftMsg(e.target.value)} placeholder="Cth: Server Down" />
-                    </div>
-                    <button onClick={sendGlobal} disabled={saving}
-                      className="w-full py-4 rounded-2xl font-black text-sm text-white disabled:opacity-50"
-                      style={{ background:'linear-gradient(135deg,#2A2931,#2a2d35)', boxShadow:'0 10px 20px rgba(59,130,246,0.3)' }}
-                    >{saving ? 'Mengirim...' : 'KIRIM KOMPENSASI GLOBAL'}</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+    <Sheet open={open} onClose={onClose} title="Panel Developer">
+      {toast && (
+        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 15, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6AE' : '#FF7A7A' }}>
+          {toast.msg}
         </div>
       )}
-    </>
+
+      {/* Tab */}
+      <div style={{ display: 'flex', gap: 4, background: '#1F1E24', borderRadius: 14, padding: 4, marginBottom: 14 }}>
+        {([['user', 'Manajemen user'], ['global', 'Hadiah global']] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setTab(k)} style={{ flex: 1, border: 0, borderRadius: 11, padding: '10px 0', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', background: tab === k ? '#2A2931' : 'transparent', color: tab === k ? '#fff' : '#8F8D9B' }}>{l}</button>
+        ))}
+      </div>
+
+      {tab === 'user' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={LABEL}>UID target</label>
+            <input style={{ ...FIELD, fontFamily: 'monospace', letterSpacing: 3 }} value={targetUid} onChange={e => setTargetUid(e.target.value)} placeholder="#XXXXXX" autoCapitalize="characters" />
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={LABEL}>Set koin</label>
+              <input style={FIELD} value={uKoin} onChange={e => setUKoin(e.target.value)} type="number" inputMode="numeric" placeholder="0" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={LABEL}>Set level</label>
+              <input style={FIELD} value={uLvl} onChange={e => setULvl(e.target.value)} type="number" inputMode="numeric" placeholder="1" />
+            </div>
+          </div>
+          <div>
+            <label style={LABEL}>Set EXP</label>
+            <input style={FIELD} value={uExp} onChange={e => setUExp(e.target.value)} type="number" inputMode="numeric" placeholder="0" />
+          </div>
+          <div>
+            <label style={LABEL}>Ubah role</label>
+            <select style={FIELD} value={uRole} onChange={e => setURole(e.target.value)}>
+              <option value="">Biarkan tetap</option>
+              <option value="Member">Member</option>
+              <option value="Komiku Premium">Komiku Premium</option>
+              <option value="Developer">Developer</option>
+            </select>
+          </div>
+          <button onClick={applyToUser} disabled={saving} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving ? 0.5 : 1, marginTop: 4 }}>
+            {saving ? 'Memproses...' : 'Terapkan ke user'}
+          </button>
+        </div>
+      )}
+
+      {tab === 'global' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4 }}>Hadiah ini dikirim ke semua user sekaligus dan tidak bisa dibatalkan.</div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={LABEL}>Pengirim</label>
+              <input style={FIELD} value={giftSender} onChange={e => setGiftSender(e.target.value)} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <label style={LABEL}>Jenis</label>
+              <select style={FIELD} value={giftType} onChange={e => setGiftType(e.target.value as 'koin'|'level')}>
+                <option value="koin">Koin</option>
+                <option value="level">Level up</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style={LABEL}>{giftType === 'koin' ? 'Jumlah koin' : 'Naik berapa level'}</label>
+            <input style={FIELD} value={giftVal} onChange={e => setGiftVal(e.target.value)} type="number" inputMode="numeric" placeholder={giftType === 'koin' ? 'Cth: 500' : 'Cth: 5'} />
+          </div>
+          <div>
+            <label style={LABEL}>Pesan / alasan</label>
+            <input style={FIELD} value={giftMsg} onChange={e => setGiftMsg(e.target.value)} placeholder="Cth: Server down" />
+          </div>
+
+          {!confirmGlobal ? (
+            <button onClick={askGlobal} disabled={saving} style={{ ...BTN, background: 'rgba(255,92,92,.12)', color: '#FF7A7A', opacity: saving ? 0.5 : 1, marginTop: 4 }}>
+              {saving ? 'Mengirim...' : 'Kirim ke semua user'}
+            </button>
+          ) : (
+            <div style={{ background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 18, padding: 14, marginTop: 4 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: GOLD, letterSpacing: -0.4 }}>
+                Kirim {giftType === 'koin' ? `${giftVal} koin` : `+${giftVal} level`} ke SEMUA user?
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{giftMsg}</div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <button onClick={() => setConfirmGlobal(false)} style={{ ...BTN, flex: 1, width: 'auto', background: '#2A2931', color: '#fff' }}>Batal</button>
+                <button onClick={sendGlobal} style={{ ...BTN, flex: 1, width: 'auto', background: GOLD, color: '#2E2615' }}>Ya, kirim</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Sheet>
   );
 }
 
@@ -706,13 +701,21 @@ export default function ProfilePage() {
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [borderShopOpen, setBorderShopOpen]   = useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
-  const [sheet, setSheet] = useState<null | 'edit' | 'badges' | 'settings'>(null);
+  const [sheet, setSheet] = useState<null | 'edit' | 'badges'>(null);
   const [devOpen, setDevOpen] = useState(false);
   const [seasonRank, setSeasonRank] = useState<number | null>(null);
   const [newChapters, setNewChapters] = useState(0);
   const dbRef = useRef<any>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Halaman Pengaturan membuka Panel Developer lewat /profile?dev=1
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('dev') === '1') {
+      setDevOpen(true);
+      window.history.replaceState(null, '', '/profile');
+    }
+  }, []);
 
   useEffect(() => {
     let unsub: any = null;
@@ -803,12 +806,6 @@ export default function ProfilePage() {
     } finally {
       setLoadingLogin(false);
     }
-  }, []);
-
-  const handleLogout = useCallback(async () => {
-    if (!confirm('Yakin mau keluar?')) return;
-    const { auth } = await getFirebase();
-    await auth.signOut();
   }, []);
 
   const handleEquipBorder = useCallback(async (key: string) => {
@@ -917,9 +914,9 @@ export default function ProfilePage() {
             <Bell size={26} strokeWidth={1.8} />
             {newChapters > 0 && <span style={{ position: 'absolute', top: 7, right: 9, width: 11, height: 11, borderRadius: '50%', background: '#FF5C5C' }} />}
           </Link>
-          <button onClick={() => setSheet('settings')} aria-label="Pengaturan" style={{ background: 'none', border: 0, padding: 8, display: 'flex', cursor: 'pointer' }}>
+          <Link href="/settings" aria-label="Pengaturan" style={{ padding: 8, display: 'flex' }}>
             <HexIcon size={26} color="#fff" />
-          </button>
+          </Link>
         </div>
 
         <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => setBorderShopOpen(true)} />
@@ -1006,7 +1003,7 @@ export default function ProfilePage() {
       {/* Menu: Aplikasi */}
       <SectionLabel>Aplikasi</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
-        <MenuRow icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun dan keluar" onClick={() => setSheet('settings')} />
+        <MenuRow icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun, data, dan notifikasi" href="/settings" />
         <MenuRow border icon={<Bug size={20} color={ICON} />} title="Laporkan bug" onClick={() => window.open('https://github.com/risadalfarisi837-ops/Komiku/issues/new', '_blank')} />
       </div>
 
@@ -1047,21 +1044,6 @@ export default function ProfilePage() {
           onUpdate={(patch) => setUserData((prev: any) => ({ ...prev, ...patch }))}
         />
       )}
-
-      <Sheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Pengaturan">
-        {isDev && (
-          <div style={{ background: '#1F1E24', borderRadius: 16, overflow: 'hidden', marginBottom: 12 }}>
-            <MenuRow icon={<Wrench size={20} color={ICON} />} title="Panel Developer" sub="Atur user dan kirim hadiah" onClick={() => { setSheet(null); setDevOpen(true); }} />
-          </div>
-        )}
-        <div style={{ background: '#1F1E24', borderRadius: 16, padding: '12px 18px', marginBottom: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED }}>ID akun</div>
-          <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{getShortUid(user.uid)}</div>
-        </div>
-        <button onClick={() => { setSheet(null); handleLogout(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'rgba(255,92,92,.12)', color: '#FF7A7A', border: 0, borderRadius: 16, padding: '14px 0', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
-          <LogOut size={18} /> Keluar
-        </button>
-      </Sheet>
 
       <BorderShopModal
         open={borderShopOpen}
