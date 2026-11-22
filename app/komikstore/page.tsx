@@ -25,7 +25,6 @@ const MENU: Tile[] = [
   { title: 'Avatar Border', sub: 'Shop decoration', from: '#4a044e', to: '#7e22ce', border: '#c084fc', icon: <Smile className={ICON} /> },
   { title: 'Profile Effects', sub: 'Efek profil', from: '#7c2d12', to: '#dc2626', border: '#fb7185', icon: <Sparkles className={ICON} /> },
   { title: 'Info', sub: 'Panduan KomikStore', from: '#1e293b', to: '#334155', border: '#64748b', icon: <Info className={ICON} /> },
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#581c87', to: '#be185d', border: '#e879f9', icon: <Sparkles className={ICON} /> },
 ];
 
 export default function KomikStorePage() {
