@@ -873,7 +873,7 @@ export default function ProfilePage() {
   );
 
   if (!user) return (
-    <div className="min-h-screen bg-[#1B1A20] flex flex-col pb-28">
+    <div className="min-h-screen bg-[#1B1A20] flex flex-col pb-2">
       <div className="bg-[#1B1A20]/90 backdrop-blur-md px-6 pt-12 pb-4 sticky top-0 z-30 border-b border-white/5">
         <h1 className="text-2xl font-black text-white tracking-tight">Akun<span className="text-gray-300">.</span></h1>
       </div>
