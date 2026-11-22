@@ -1,18 +1,34 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Shield, PawPrint, Mic, Fish, Smile, Info } from 'lucide-react';
 
-// Isi menu KomikStore: ganti judul/sub/warna di sini kalau isinya sudah ada.
-type Tile = { title: string; sub: string; from: string; to: string; border: string; dark?: boolean; href?: string };
+type Tile = {
+  title: string;
+  sub: string;
+  from: string;
+  to: string;
+  border: string;
+  icon: ReactNode;
+  dark?: boolean;
+  live?: boolean;
+  href?: string;
+};
+
+const ICON = 'w-12 h-12';
 const MENU: Tile[] = [
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#172554', to: '#1e3a8a', border: '#a16207' },
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#fcd34d', to: '#f59e0b', border: '#fde68a', dark: true },
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#3b0764', to: '#6d28d9', border: '#8b5cf6' },
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#0e4f5c', to: '#0e90a8', border: '#22d3ee' },
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#4a044e', to: '#7e22ce', border: '#c084fc' },
-  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#7c2d12', to: '#dc2626', border: '#fb7185' },
+  { title: 'Clans', sub: 'Gabung squad', from: '#172554', to: '#1e3a8a', border: '#a16207', icon: <Shield className={ICON} fill="#fbbf24" color="#fbbf24" /> },
+  { title: 'AniPet', sub: 'Koleksi pet', from: '#fcd34d', to: '#f59e0b', border: '#fde68a', dark: true, icon: <PawPrint className={ICON} fill="#451a03" color="#451a03" /> },
+  { title: 'Voice Rooms', sub: 'Nobar + ngobrol live', from: '#3b0764', to: '#6d28d9', border: '#8b5cf6', live: true, icon: (
+      <span className="w-14 h-14 rounded-full bg-violet-500 flex items-center justify-center ring-4 ring-violet-400/30"><Mic className="w-7 h-7" /></span>
+    ) },
+  { title: 'Mancing', sub: 'Mini game santai', from: '#0e4f5c', to: '#0e90a8', border: '#22d3ee', icon: <Fish className={ICON} /> },
+  { title: 'Avatar Border', sub: 'Shop decoration', from: '#4a044e', to: '#7e22ce', border: '#c084fc', icon: <Smile className={ICON} /> },
+  { title: 'Profile Effects', sub: 'Efek profil', from: '#7c2d12', to: '#dc2626', border: '#fb7185', icon: <Sparkles className={ICON} /> },
+  { title: 'Info', sub: 'Panduan KomikStore', from: '#1e293b', to: '#334155', border: '#64748b', icon: <Info className={ICON} /> },
+  { title: 'Segera hadir', sub: 'Menu menyusul', from: '#581c87', to: '#be185d', border: '#e879f9', icon: <Sparkles className={ICON} /> },
 ];
 
 export default function KomikStorePage() {
@@ -66,13 +82,18 @@ export default function KomikStorePage() {
         {MENU.map((m, i) => (
           <button
             key={i}
-            onClick={() => { if (m.href) router.push(m.href); }}
-            className="rounded-3xl px-4 py-8 text-center flex flex-col items-center justify-center gap-2 min-h-[190px]"
+            onClick={() => (m.href ? router.push(m.href) : alert(m.title + ' segera hadir.'))}
+            className="relative rounded-3xl px-4 py-6 text-center flex flex-col items-center justify-center gap-2 min-h-[190px] active:scale-95 transition-transform"
             style={{ background: 'linear-gradient(145deg,' + m.from + ',' + m.to + ')', border: '1.5px solid ' + m.border, color: m.dark ? '#451a03' : '#fff' }}
           >
-            <Sparkles className="w-10 h-10 opacity-80" />
+            {m.live && (
+              <span className="absolute top-8 right-6 flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-xs font-extrabold text-white">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-200" /> LIVE
+              </span>
+            )}
+            <span className="h-14 flex items-center justify-center">{m.icon}</span>
             <span className="text-2xl font-extrabold leading-tight">{m.title}</span>
-            <span className="text-lg font-bold opacity-70">{m.sub}</span>
+            <span className="text-lg font-bold opacity-70 leading-tight">{m.sub}</span>
           </button>
         ))}
       </div>
