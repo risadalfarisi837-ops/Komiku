@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import WallpaperBg from '@/components/WallpaperBg';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Share2, MessageSquare, Smile } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useHistory, useUserStats } from '@/lib/store';
 import { pushSeasonScore, addProfileExp } from '@/lib/leaderboard';
+import { KomoFace, REACTIONS, ReactionKey } from '@/components/KomoReaction';
 
 function IconBack() {
     return (
@@ -572,15 +573,123 @@ function Backdrop({ onClick }: { onClick: () => void }) {
     return <div onClick={onClick} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 150 }} />;
 }
 
-// ── Main ChapterContent ────────────────────────────────────────────────────
-const REACTIONS = [
-    { k: 'like',  e: '😍', l: 'Suka' },
-    { k: 'laugh', e: '😆', l: 'Lucu' },
-    { k: 'wow',   e: '😮', l: 'Kaget' },
-    { k: 'sad',   e: '😢', l: 'Sedih' },
-    { k: 'angry', e: '😡', l: 'Marah' },
-];
 
+// ── Bagian akhir chapter: reaksi Komo, chapter berikutnya, komentar, bagikan ──
+function ChapterEnd({ chapterUrl, chNum, thumb, nextLink, mangaLink, komentarHref, onNext }: {
+    chapterUrl: string; chNum: string; thumb: string; nextLink: string | null; mangaLink: string | null;
+    komentarHref: string; onNext: () => void;
+}) {
+    const key = chapterUrl.replace(/[.#$[\]/]/g, '_').slice(-120);
+    const [react, setReact] = useState<Record<string, string>>({});
+    const [uid, setUid] = useState<string | null>(null);
+    const [commentCount, setCommentCount] = useState<number | null>(null);
+    const [nextLabel, setNextLabel] = useState('');
+    const [msg, setMsg] = useState('');
+    const router = useRouter();
+    const dbRef = useRef<any>(null);
+    const authRef = useRef<any>(null);
+
+    useEffect(() => {
+        let offs: Array<() => void> = [];
+        getFirebase().then(({ auth, db }) => {
+            authRef.current = auth; dbRef.current = db;
+            auth.onAuthStateChanged((u: any) => setUid(u ? u.uid : null));
+            const r1 = db.ref(`chapterReactions/${key}`);
+            const c1 = (s: any) => setReact(s.val() || {});
+            r1.on('value', c1, () => {});
+            offs.push(() => r1.off('value', c1));
+            const r2 = db.ref(`chapterComments/${key}`);
+            const c2 = (s: any) => setCommentCount(s.numChildren());
+            r2.on('value', c2, () => {});
+            offs.push(() => r2.off('value', c2));
+        });
+        return () => offs.forEach((f) => f());
+    }, [key]);
+
+    // Nomor chapter berikutnya dari daftar chapter komik
+    useEffect(() => {
+        if (!nextLink || !mangaLink) return;
+        let alive = true;
+        fetch(`/api/manga/detail?url=${encodeURIComponent(mangaLink)}`).then((r) => r.json()).then((j) => {
+            const list: { title: string; link: string }[] = j?.data?.chapters || [];
+            const hit = list.find((c) => c.link === nextLink);
+            const m = hit?.title?.match(/\d+(?:\.\d+)?/);
+            if (alive && m) setNextLabel(`Ch. ${m[0]}`);
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, [nextLink, mangaLink]);
+
+    const counts: Record<string, number> = {};
+    Object.values(react).forEach((t) => { counts[t] = (counts[t] || 0) + 1; });
+    const mine = uid ? react[uid] : undefined;
+
+    const pick = async (k: ReactionKey) => {
+        if (!dbRef.current) return;
+        if (!uid) {
+            try { await authRef.current.signInWithPopup(new (window as any).firebase.auth.GoogleAuthProvider()); } catch {}
+            return;
+        }
+        const ref = dbRef.current.ref(`chapterReactions/${key}/${uid}`);
+        try { if (mine === k) await ref.remove(); else await ref.set(k); }
+        catch (e: any) { setMsg('Gagal menyimpan reaksi: ' + (e?.message || 'izin database ditolak')); setTimeout(() => setMsg(''), 3000); }
+    };
+
+    const share = async () => {
+        const link = window.location.href;
+        try {
+            if (navigator.share) await navigator.share({ title: document.title, url: link });
+            else { await navigator.clipboard.writeText(link); setMsg('Link disalin'); setTimeout(() => setMsg(''), 2000); }
+        } catch {}
+    };
+
+    const label = chNum ? `Ch. ${chNum}` : 'chapter ini';
+    return (
+        <div style={{ background: '#1B1A20', padding: '26px 14px 130px', color: '#fff' }}>
+            <div style={{ textAlign: 'center', fontSize: 25, fontWeight: 800, letterSpacing: -0.9, marginBottom: 14 }}>Gimana {label}?</div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                {REACTIONS.map((r) => {
+                    const on = mine === r.key;
+                    return (
+                        <button key={r.key} onClick={() => pick(r.key)} style={{ background: '#2A2931', border: on ? '2px solid #FF6B6B' : '2px solid transparent', borderRadius: 18, padding: '14px 0 12px', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                            <KomoFace kind={r.key} size={44} />
+                            <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.6, marginTop: 4 }}>{counts[r.key] || 0}</span>
+                            <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.4, color: '#8F8D9B', marginTop: -4 }}>{r.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {nextLink && (
+                <button onClick={onNext} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 16, background: '#2A2931', border: 0, borderRadius: 18, padding: 0, marginTop: 16, overflow: 'hidden', textAlign: 'left', color: '#fff', cursor: 'pointer' }}>
+                    {thumb
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={thumb} alt="" referrerPolicy="no-referrer" style={{ width: 66, height: 66, objectFit: 'cover', flex: '0 0 66px' }} />
+                        : <span style={{ width: 66, height: 66, background: '#3A3940', flex: '0 0 66px' }} />}
+                    <span style={{ flex: 1, padding: '10px 0' }}>
+                        <span style={{ display: 'block', fontSize: 19, fontWeight: 800, letterSpacing: -0.5, color: '#8F8D9B' }}>CHAPTER BERIKUTNYA</span>
+                        <span style={{ display: 'block', fontSize: 28, fontWeight: 800, letterSpacing: -1 }}>{nextLabel || 'Lanjut baca'}</span>
+                    </span>
+                    <svg style={{ marginRight: 18 }} width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+                </button>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <button onClick={() => router.push(komentarHref)} style={{ flex: 1, height: 58, borderRadius: 29, background: '#2A2931', border: 0, color: '#fff', fontSize: 23, fontWeight: 800, letterSpacing: -0.7, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer' }}>
+                    <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinejoin="round"><path d="M4 5h16v11H9l-5 4z" /></svg>
+                    Komentar{commentCount !== null ? ` · ${commentCount}` : ''}
+                </button>
+                <button onClick={share} style={{ flex: 1, height: 58, borderRadius: 29, background: '#2A2931', border: 0, color: '#fff', fontSize: 23, fontWeight: 800, letterSpacing: -0.7, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer' }}>
+                    <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4M8 8l4-4 4 4" /><path d="M5 12v7h14v-7" /></svg>
+                    Bagikan
+                </button>
+            </div>
+            {msg && <div style={{ textAlign: 'center', color: '#FF6B6B', fontSize: 15, fontWeight: 800, marginTop: 12 }}>{msg}</div>}
+        </div>
+    );
+}
+
+// ── Main ChapterContent ────────────────────────────────────────────────────
 function ChapterContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -738,62 +847,6 @@ function ChapterContent() {
         if (imgs[pageIdx]) imgs[pageIdx].scrollIntoView({ behavior: 'smooth' });
     }, []);
 
-    // ── Daftar chapter, reaksi, toast ──────────────────────────────────────
-    const [chapters, setChapters] = useState<any[]>([]);
-    const [showChapterList, setShowChapterList] = useState(false);
-    const [counts, setCounts] = useState<Record<string, number>>({});
-    const [myReact, setMyReact] = useState('');
-    const [toast, setToast] = useState('');
-    const endRef = useRef<HTMLDivElement>(null);
-    const rKey = (url || '').replace(/[.#$[\]/]/g, '_').slice(-120);
-
-    useEffect(() => {
-        const ml = chapter?.mangaLink;
-        if (!ml) return;
-        let dead = false;
-        fetch('/api/manga/detail?url=' + encodeURIComponent(ml))
-            .then(r => r.json())
-            .then(j => { if (!dead && j.success) setChapters(j.data.chapters || []); })
-            .catch(() => {});
-        return () => { dead = true; };
-    }, [chapter?.mangaLink]);
-
-    useEffect(() => {
-        if (!rKey) return;
-        try { setMyReact(localStorage.getItem('komiku_react_' + rKey) || ''); } catch {}
-        setCounts({});
-        let ref: any = null;
-        getFirebase().then(({ db }) => {
-            ref = db.ref('chapterReactions/' + rKey);
-            ref.on('value', (snap: any) => setCounts(snap.val() || {}));
-        }).catch(() => {});
-        return () => { if (ref) ref.off(); };
-    }, [rKey]);
-
-    useEffect(() => {
-        if (!toast) return;
-        const t = setTimeout(() => setToast(''), 2000);
-        return () => clearTimeout(t);
-    }, [toast]);
-
-    const react = async (k: string) => {
-        const prev = myReact;
-        const nextK = prev === k ? '' : k;
-        setMyReact(nextK);
-        try { localStorage.setItem('komiku_react_' + rKey, nextK); } catch {}
-        setCounts(c => {
-            const n = { ...c };
-            if (prev) n[prev] = Math.max(0, (n[prev] || 0) - 1);
-            if (nextK) n[nextK] = (n[nextK] || 0) + 1;
-            return n;
-        });
-        try {
-            const { db } = await getFirebase();
-            if (prev) await db.ref('chapterReactions/' + rKey + '/' + prev).transaction((v: any) => Math.max(0, (v || 0) - 1));
-            if (nextK) await db.ref('chapterReactions/' + rKey + '/' + nextK).transaction((v: any) => (v || 0) + 1);
-        } catch {}
-    };
-
     if (loading || navigating) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen space-y-6 bg-[#1B1A20]">
@@ -818,42 +871,51 @@ function ChapterContent() {
 
     const totalPages = chapter.images?.length ?? 0;
     const progress = totalPages > 1 ? currentPage / (totalPages - 1) : 0;
-    const numOf = (s: any) => String(s ?? '').match(/[\d.]+/)?.[0] || '';
-    const chNum = numOf(chapter.chapterNumber) || numOf(chapter.title);
-    const nextItem = chapter.next ? chapters.find((c: any) => c.link === chapter.next) : null;
-    const nextNum = nextItem ? (numOf(nextItem.title) || numOf(nextItem.num)) : '';
-    const coverImg = thumbParam || chapter.mangaThumb || '';
-    const showTitle = mangaTitleParam || chapter.mangaTitle || chapter.title || '';
-    const circ: any = {
-        width: 56, height: 56, borderRadius: '50%', background: 'rgba(18,18,22,0.93)',
-        backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-        color: 'white', flexShrink: 0, WebkitTapHighlightColor: 'transparent',
-    };
-    const share = async () => {
-        const data = { title: showTitle, text: showTitle + ' - ' + (chapter.title || ''), url: window.location.href };
-        try {
-            if (navigator.share) await navigator.share(data);
-            else { await navigator.clipboard.writeText(data.url); setToast('Link disalin'); }
-        } catch {}
-    };
+    const chNum = chapter.chapterNumber ?? chapter.title?.match(/\d+/)?.[0] ?? '';
+    const komentarHref = `/komentar?url=${encodeURIComponent(url || '')}&title=${encodeURIComponent(mangaTitleParam || chapter.mangaTitle || '')}&ch=${encodeURIComponent(String(chNum))}`;
 
     return (
         <>
             <style>{`
                 .ui-layer { transition: opacity 0.3s ease; }
                 .ui-layer.hidden { opacity: 0; pointer-events: none; }
-                .rd-press:active { transform: scale(0.92); }
-                .rd-press { transition: transform 0.15s; -webkit-tap-highlight-color: transparent; }
-                .scroll-indicator {
-                    position: fixed; top: 84px; right: 14px; z-index: 99;
-                    background: rgba(255,107,107,0.95); color: white; border-radius: 20px;
-                    padding: 4px 10px; font-size: 12px; font-weight: 700;
-                    display: flex; align-items: center; gap: 5px; pointer-events: none;
+                .icon-btn {
+                    width: 44px; height: 44px; border-radius: 50%;
+                    background: rgba(28,28,34,0.9); border: none; cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: transform 0.15s; flex-shrink: 0;
+                    -webkit-tap-highlight-color: transparent;
                 }
-                .no-sb::-webkit-scrollbar { display: none; }
+                .icon-btn:active { transform: scale(0.86); }
+                .icon-btn.play-active { background: rgba(220,38,38,0.25) !important; border: 1px solid rgba(220,38,38,0.5); }
+                .ch-nav-btn {
+                    background: none; border: none; cursor: pointer; color: white;
+                    display: flex; align-items: center; gap: 2px;
+                    padding: 5px 7px; border-radius: 8px; transition: background 0.15s;
+                    -webkit-tap-highlight-color: transparent;
+                }
+                .ch-nav-btn:active { background: rgba(255,255,255,0.1); }
+                .ch-nav-btn:disabled { opacity: 0.3; cursor: default; }
+                .progress-slider {
+                    -webkit-appearance: none; appearance: none;
+                    position: absolute; inset: 0; width: 100%; height: 100%;
+                    opacity: 0; cursor: pointer; margin: 0;
+                }
+                .scroll-indicator {
+                    position: fixed; top: 60px; right: 12px; z-index: 99;
+                    background: rgba(220,38,38,0.9); color: white; border-radius: 20px;
+                    padding: 4px 10px; font-size: 12px; font-weight: 700;
+                    display: flex; align-items: center; gap: 5px;
+                    animation: pulse-red 1s ease-in-out infinite;
+                    pointer-events: none;
+                }
+                @keyframes pulse-red {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
+                    50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+                }
             `}</style>
 
+            {/* Auto-scroll indicator */}
             {isScrolling && (
                 <div className="scroll-indicator">
                     <span style={{ width: 6, height: 6, background: 'white', borderRadius: '50%', display: 'inline-block' }} />
@@ -864,28 +926,33 @@ function ChapterContent() {
             {/* TOP BAR */}
             <div className={`ui-layer ${uiVisible ? '' : 'hidden'}`} style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-                margin: 'max(env(safe-area-inset-top), 10px) 10px 0',
-                background: 'rgba(20,20,24,0.94)', backdropFilter: 'blur(14px)',
-                border: '1px solid rgba(255,255,255,0.06)', borderRadius: 22,
-                padding: '8px 8px 8px 10px', display: 'flex', alignItems: 'center', gap: 8,
+                background: 'rgba(15,15,18,0.93)', backdropFilter: 'blur(12px)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8,
             }}>
-                <button onClick={goToMangaDetail} aria-label="Kembali" className="rd-press" style={{ background: 'none', border: 'none', color: 'white', padding: 8, display: 'flex', cursor: 'pointer' }}>
-                    <ArrowLeft size={26} />
+                <button onClick={goToMangaDetail} className="ch-nav-btn" style={{ padding: 4 }}>
+                    <IconBack />
                 </button>
-                <span style={{ flex: 1, minWidth: 0, fontSize: 21, fontWeight: 800, color: 'white', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {showTitle}
-                </span>
-                <button onClick={() => setShowChapterList(true)} className="rd-press" style={{
-                    background: 'rgba(255,255,255,0.09)', border: 'none', color: 'white', borderRadius: 999,
-                    padding: '10px 14px 10px 18px', display: 'flex', alignItems: 'center', gap: 4,
-                    fontSize: 20, fontWeight: 800, cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit',
-                }}>
-                    Ch. {chNum}<ChevronDown size={22} />
-                </button>
+                <div style={{ flex: 1, overflow: 'hidden', textAlign: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                        {chapter.title}
+                    </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    <button className="ch-nav-btn" disabled={!chapter.prev} onClick={() => chapter.prev && navigateTo(chapter.prev)}>
+                        <IconChevLeft />
+                    </button>
+                    <button onClick={goToMangaDetail} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontWeight: 900, fontSize: 14, padding: '4px 6px', fontFamily: 'inherit' }}>
+                        Ch {chNum}
+                    </button>
+                    <button className="ch-nav-btn" disabled={!chapter.next} onClick={() => chapter.next && navigateTo(chapter.next)}>
+                        <IconChevRight />
+                    </button>
+                </div>
             </div>
 
             {/* COMIC PAGES */}
-            <div onClick={toggleUI} style={{ background: '#000', minHeight: '60vh', cursor: 'pointer' }}>
+            <div onClick={toggleUI} style={{ background: '#000', paddingTop: 52, paddingBottom: 0, minHeight: '60vh', cursor: 'pointer' }}>
                 {totalPages > 0 ? chapter.images.map((img: string, i: number) => (
                     <div key={i} className="comic-page-img" data-idx={i} style={{ width: '100%', lineHeight: 0 }}>
                         <img
@@ -907,149 +974,117 @@ function ChapterContent() {
             </div>
 
             {/* AKHIR CHAPTER */}
-            {totalPages > 0 && (
-                <div ref={endRef} style={{ background: '#0E0E11', padding: '34px 14px 150px', color: 'white' }}>
-                    <h3 style={{ textAlign: 'center', fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 18 }}>
-                        Gimana Ch. {chNum}?
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-                        {REACTIONS.map(r => {
-                            const on = myReact === r.k;
-                            return (
-                                <button key={r.k} onClick={() => react(r.k)} className="rd-press" style={{
-                                    background: on ? 'rgba(255,107,107,0.18)' : '#1C1C21',
-                                    border: on ? '1.5px solid #FF6B6B' : '1.5px solid transparent',
-                                    borderRadius: 18, padding: '14px 0 10px', color: 'white', cursor: 'pointer',
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontFamily: 'inherit',
-                                }}>
-                                    <span style={{ fontSize: 34, lineHeight: 1 }}>{r.e}</span>
-                                    <span style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>{counts[r.k] || 0}</span>
-                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{r.l}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+            <ChapterEnd
+                chapterUrl={url || ''}
+                chNum={String(chNum)}
+                thumb={thumbParam || chapter.mangaThumb || ''}
+                nextLink={chapter.next || null}
+                mangaLink={chapter.mangaLink || null}
+                komentarHref={komentarHref}
+                onNext={() => chapter.next && navigateTo(chapter.next)}
+            />
 
-                    {chapter.next && (
-                        <button onClick={() => navigateTo(chapter.next)} className="rd-press" style={{
-                            marginTop: 14, width: '100%', background: '#1C1C21', border: 'none', borderRadius: 20,
-                            padding: 14, display: 'flex', alignItems: 'center', gap: 14, color: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                        }}>
-                            {coverImg && <img src={coverImg} alt="" referrerPolicy="no-referrer" style={{ width: 64, height: 64, borderRadius: 14, objectFit: 'cover', objectPosition: 'top', flexShrink: 0 }} />}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: 17, fontWeight: 800, letterSpacing: '0.02em', color: 'rgba(255,255,255,0.55)' }}>CHAPTER BERIKUTNYA</p>
-                                <p style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>{nextNum ? 'Ch. ' + nextNum : 'Lanjut'}</p>
-                            </div>
-                            <ChevronRight size={30} color="white" />
-                        </button>
-                    )}
-
-                    <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
-                        <button onClick={() => { setShowComments(true); setShowSpeedPanel(false); }} className="rd-press" style={{
-                            flex: 1, background: '#1C1C21', border: 'none', borderRadius: 999, padding: '18px 0', color: 'white',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 22, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-                        }}><MessageSquare size={24} />Komentar</button>
-                        <button onClick={share} className="rd-press" style={{
-                            flex: 1, background: '#1C1C21', border: 'none', borderRadius: 999, padding: '18px 0', color: 'white',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 22, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-                        }}><Share2 size={24} />Bagikan</button>
-                    </div>
-                </div>
-            )}
-
-            {/* KONTROL BAWAH */}
+            {/* BOTTOM BAR */}
             <div className={`ui-layer ${uiVisible ? '' : 'hidden'}`} style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-                padding: '0 12px max(env(safe-area-inset-bottom), 14px)', pointerEvents: 'none',
+                background: 'rgba(10,10,13,0.96)', backdropFilter: 'blur(16px)',
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, pointerEvents: 'auto' }}>
-                    <button className="rd-press" style={{ ...circ, position: 'relative' }} aria-label="Kecepatan"
-                        onClick={(e) => { e.stopPropagation(); setShowSpeedPanel(v => !v); setShowComments(false); }}>
+                {/* Action icons */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '10px 20px 8px' }}>
+                    {/* Settings / speed icon */}
+                    <button
+                        className="icon-btn"
+                        onClick={(e) => { e.stopPropagation(); setShowSpeedPanel(v => !v); setShowComments(false); }}
+                        style={{ position: 'relative' }}
+                    >
                         <IconSettings />
-                        {scrollSpeed !== 1 && <span style={{ position: 'absolute', top: 10, right: 10, width: 8, height: 8, background: '#FF6B6B', borderRadius: '50%' }} />}
+                        {scrollSpeed !== 1 && (
+                            <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: '#dc2626', borderRadius: '50%' }} />
+                        )}
                     </button>
-                    <button className="rd-press" style={{ ...circ, background: isScrolling ? 'rgba(255,107,107,0.3)' : circ.background }} aria-label="Auto scroll"
-                        onClick={(e) => { e.stopPropagation(); setIsScrolling(v => !v); setShowComments(false); setShowSpeedPanel(false); }}>
+
+                    {/* Play / Pause button */}
+                    <button
+                        className={`icon-btn${isScrolling ? ' play-active' : ''}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsScrolling(v => !v);
+                            setShowComments(false);
+                            setShowSpeedPanel(false);
+                        }}
+                    >
                         {isScrolling ? <IconPause /> : <IconPlay />}
                     </button>
-                    <button className="rd-press" style={circ} aria-label="Reaksi"
-                        onClick={(e) => { e.stopPropagation(); endRef.current?.scrollIntoView({ behavior: 'smooth' }); }}>
-                        <Smile size={26} />
+
+                    {/* Like */}
+                    <button
+                        className="icon-btn"
+                        onClick={(e) => { e.stopPropagation(); setLiked(v => !v); }}
+                        style={{ width: 52, height: 52, background: liked ? 'rgba(59,130,246,0.15)' : 'rgba(28,28,34,0.9)', border: liked ? '1px solid rgba(59,130,246,0.3)' : 'none', transition: 'all 0.2s' }}
+                    >
+                        <IconLike active={liked} />
                     </button>
-                    <button className="rd-press" style={circ} aria-label="Daftar chapter"
-                        onClick={(e) => { e.stopPropagation(); goToMangaDetail(); }}>
-                        <IconList />
-                    </button>
-                    <button className="rd-press" style={{ ...circ, background: showComments ? 'rgba(255,107,107,0.3)' : circ.background }} aria-label="Komentar"
-                        onClick={(e) => { e.stopPropagation(); setShowComments(v => !v); setShowSpeedPanel(false); setIsScrolling(false); }}>
+
+                    {/* Chapter list */}
+                    <button className="icon-btn" onClick={(e) => { e.stopPropagation(); goToMangaDetail(); }}><IconList /></button>
+
+                    {/* Comments */}
+                    <button
+                        className={`icon-btn${showComments ? ' play-active' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setIsScrolling(false); router.push(komentarHref); }}
+                    >
                         <IconChat />
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
-                    <button className="rd-press" disabled={!chapter.prev} aria-label="Chapter sebelumnya"
-                        style={{ ...circ, width: 54, height: 54, opacity: chapter.prev ? 1 : 0.35 }}
-                        onClick={(e) => { e.stopPropagation(); chapter.prev && navigateTo(chapter.prev); }}>
-                        <ChevronLeft size={28} />
+                {/* Progress row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px 6px' }}>
+                    <button
+                        disabled={!chapter.prev}
+                        onClick={(e) => { e.stopPropagation(); chapter.prev && navigateTo(chapter.prev); }}
+                        style={{ background: 'none', border: 'none', color: chapter.prev ? 'white' : 'rgba(255,255,255,0.2)', cursor: chapter.prev ? 'pointer' : 'default', padding: 2, flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                        <IconChevLeft />
                     </button>
-                    <div style={{
-                        flex: 1, height: 54, borderRadius: 999, background: 'rgba(18,18,22,0.93)', backdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 12, padding: '0 18px',
-                    }}>
-                        <span style={{ fontSize: 20, fontWeight: 800, color: 'rgba(255,255,255,0.55)', minWidth: 24, textAlign: 'center' }}>{currentPage + 1}</span>
-                        <div style={{ flex: 1, position: 'relative', height: 30, display: 'flex', alignItems: 'center' }}>
-                            <div style={{ position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.2)' }} />
-                            <div style={{ position: 'absolute', left: 0, width: `${progress * 100}%`, height: 4, borderRadius: 4, background: '#E4DDF7' }} />
-                            <div style={{ position: 'absolute', left: `calc(${progress * 100}% - 14px)`, width: 28, height: 28, borderRadius: '50%', background: '#E4DDF7', boxShadow: '0 2px 8px rgba(0,0,0,0.5)', pointerEvents: 'none' }} />
-                            <input
-                                type="range" min={0} max={Math.max(totalPages - 1, 0)} value={currentPage}
-                                onChange={(e) => { const pg = parseInt(e.target.value); setCurrentPage(pg); scrollToPage(pg); }}
-                                onClick={e => e.stopPropagation()}
-                                style={{ WebkitAppearance: 'none', appearance: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0 } as any}
-                            />
+
+                    <div style={{ flex: 1, position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
+                        {/* Dot segments */}
+                        <div style={{ position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 3, pointerEvents: 'none' }}>
+                            {chapter.images.map((_: any, i: number) => (
+                                <div key={i} style={{
+                                    flex: 1, height: i === currentPage ? 8 : 5, borderRadius: 99,
+                                    background: i < currentPage ? 'rgba(255,255,255,0.5)' : i === currentPage ? '#dc2626' : 'rgba(255,255,255,0.18)',
+                                    transition: 'all 0.2s',
+                                }} />
+                            ))}
                         </div>
-                        <span style={{ fontSize: 20, fontWeight: 800, color: 'rgba(255,255,255,0.55)', minWidth: 24, textAlign: 'center' }}>{totalPages}</span>
+                        {/* Red thumb */}
+                        <div style={{
+                            position: 'absolute', left: `calc(${progress * 100}% - 8px)`,
+                            width: 16, height: 16, background: '#dc2626', borderRadius: '50%',
+                            border: '2px solid white', boxShadow: '0 0 6px rgba(220,38,38,0.8)',
+                            pointerEvents: 'none', transition: 'left 0.1s', zIndex: 2,
+                        }} />
+                        {/* Invisible slider */}
+                        <input
+                            type="range" min={0} max={Math.max(totalPages - 1, 0)} value={currentPage}
+                            onChange={(e) => { const pg = parseInt(e.target.value); setCurrentPage(pg); scrollToPage(pg); }}
+                            onClick={e => e.stopPropagation()}
+                            style={{ WebkitAppearance: 'none', appearance: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0 } as any}
+                        />
                     </div>
-                    <button className="rd-press" disabled={!chapter.next} aria-label="Chapter berikutnya"
-                        style={{ ...circ, width: 54, height: 54, opacity: chapter.next ? 1 : 0.35 }}
-                        onClick={(e) => { e.stopPropagation(); chapter.next && navigateTo(chapter.next); }}>
-                        <ChevronRight size={28} />
+
+                    <button
+                        disabled={!chapter.next}
+                        onClick={(e) => { e.stopPropagation(); chapter.next && navigateTo(chapter.next); }}
+                        style={{ background: 'none', border: 'none', color: chapter.next ? 'white' : 'rgba(255,255,255,0.2)', cursor: chapter.next ? 'pointer' : 'default', padding: 2, flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                        <IconChevRight />
                     </button>
                 </div>
             </div>
-
-            {/* PILIH CHAPTER */}
-            {showChapterList && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 220, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                    <div onClick={() => setShowChapterList(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
-                    <div style={{ position: 'relative', background: '#1B1A20', borderRadius: '24px 24px 0 0', maxHeight: '70vh', display: 'flex', flexDirection: 'column', color: 'white' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 10px' }}>
-                            <span style={{ fontSize: 22, fontWeight: 800 }}>Pilih Chapter</span>
-                            <button onClick={() => setShowChapterList(false)} aria-label="Tutup" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><IconClose /></button>
-                        </div>
-                        <div className="no-sb" style={{ overflowY: 'auto', padding: '0 12px 24px' }}>
-                            {chapters.length === 0 && <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '24px 0', fontWeight: 700 }}>Memuat daftar chapter...</p>}
-                            {chapters.map((c: any) => {
-                                const cur = c.link === url;
-                                return (
-                                    <button key={c.link} onClick={() => { setShowChapterList(false); if (!cur) navigateTo(c.link); }} style={{
-                                        width: '100%', textAlign: 'left', background: cur ? 'rgba(255,107,107,0.15)' : 'none', border: 'none',
-                                        borderRadius: 14, padding: '14px 12px', color: cur ? '#FF6B6B' : 'white', fontSize: 20, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-                                    }}>
-                                        {numOf(c.title) || numOf(c.num) ? 'Ch. ' + (numOf(c.title) || numOf(c.num)) : c.title}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {toast && (
-                <div style={{ position: 'fixed', bottom: 100, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 300, pointerEvents: 'none' }}>
-                    <span style={{ background: 'rgba(0,0,0,0.85)', color: 'white', padding: '10px 18px', borderRadius: 999, fontSize: 15, fontWeight: 700 }}>{toast}</span>
-                </div>
-            )}
 
             {/* Overlays */}
             {(showComments || showSpeedPanel) && <Backdrop onClick={() => { setShowComments(false); setShowSpeedPanel(false); }} />}
