@@ -11,7 +11,7 @@ function useFirebasePhoto() {
       if (typeof window === 'undefined' || !(window as any).firebase) return;
       try {
         const auth = (window as any).firebase.auth();
-        auth.onAuthStateChanged((u: any) => setPhotoURL(u?.photoURL ?? null));
+        auth.onAuthStateChanged(async (u: any) => { setPhotoURL(u?.photoURL ?? null); if (!u) return; try { const v = (await (window as any).firebase.database().ref("users/" + u.uid + "/photoURL").get()).val(); if (typeof v === "string") setPhotoURL(v || null); } catch {} });
       } catch {}
     };
     if ((window as any).firebase) {
