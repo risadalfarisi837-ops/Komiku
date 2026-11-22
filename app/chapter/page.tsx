@@ -644,7 +644,7 @@ function ChapterEnd({ chapterUrl, chNum, thumb, nextLink, mangaLink, komentarHre
 
     const label = chNum ? `Ch. ${chNum}` : 'chapter ini';
     return (
-        <div style={{ background: '#1B1A20', padding: '26px 14px 130px', color: '#fff' }}>
+        <div id="akhir-chapter" style={{ background: '#1B1A20', padding: '26px 14px 220px', color: '#fff' }}>
             <div style={{ textAlign: 'center', fontSize: 25, fontWeight: 800, letterSpacing: -0.9, marginBottom: 14 }}>Gimana {label}?</div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
@@ -888,6 +888,8 @@ function ChapterContent() {
                 }
                 .icon-btn:active { transform: scale(0.86); }
                 .icon-btn.play-active { background: rgba(220,38,38,0.25) !important; border: 1px solid rgba(220,38,38,0.5); }
+                .float-btn { width: 62px !important; height: 62px !important; background: #222226 !important; box-shadow: 0 4px 14px rgba(0,0,0,0.4); border: none !important; color: #fff; }
+                .float-btn svg { width: 26px; height: 26px; }
                 .ch-nav-btn {
                     background: none; border: none; cursor: pointer; color: white;
                     display: flex; align-items: center; gap: 2px;
@@ -923,36 +925,29 @@ function ChapterContent() {
                 </div>
             )}
 
-            {/* TOP BAR */}
+            {/* TOP BAR (pil melayang) */}
             <div className={`ui-layer ${uiVisible ? '' : 'hidden'}`} style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-                background: 'rgba(15,15,18,0.93)', backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8,
+                position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 12, right: 12, zIndex: 50,
+                background: 'rgba(28,28,32,0.96)', borderRadius: 28,
+                padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10,
+                boxShadow: '0 4px 18px rgba(0,0,0,0.45)',
             }}>
-                <button onClick={goToMangaDetail} className="ch-nav-btn" style={{ padding: 4 }}>
-                    <IconBack />
+                <button onClick={goToMangaDetail} className="ch-nav-btn" style={{ padding: 6 }} aria-label="Kembali">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 5l-7 7 7 7" /></svg>
                 </button>
-                <div style={{ flex: 1, overflow: 'hidden', textAlign: 'center' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                        {chapter.title}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.6, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                        {mangaTitleParam || chapter.mangaTitle || chapter.title}
                     </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                    <button className="ch-nav-btn" disabled={!chapter.prev} onClick={() => chapter.prev && navigateTo(chapter.prev)}>
-                        <IconChevLeft />
-                    </button>
-                    <button onClick={goToMangaDetail} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontWeight: 900, fontSize: 14, padding: '4px 6px', fontFamily: 'inherit' }}>
-                        Ch {chNum}
-                    </button>
-                    <button className="ch-nav-btn" disabled={!chapter.next} onClick={() => chapter.next && navigateTo(chapter.next)}>
-                        <IconChevRight />
-                    </button>
-                </div>
+                <button onClick={goToMangaDetail} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 800, fontSize: 20, letterSpacing: -0.6, padding: '9px 14px', borderRadius: 99, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    Ch. {chNum}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
             </div>
 
             {/* COMIC PAGES */}
-            <div onClick={toggleUI} style={{ background: '#000', paddingTop: 52, paddingBottom: 0, minHeight: '60vh', cursor: 'pointer' }}>
+            <div onClick={toggleUI} style={{ background: '#000', paddingTop: 0, paddingBottom: 0, minHeight: '60vh', cursor: 'pointer' }}>
                 {totalPages > 0 ? chapter.images.map((img: string, i: number) => (
                     <div key={i} className="comic-page-img" data-idx={i} style={{ width: '100%', lineHeight: 0 }}>
                         <img
@@ -984,103 +979,63 @@ function ChapterContent() {
                 onNext={() => chapter.next && navigateTo(chapter.next)}
             />
 
-            {/* BOTTOM BAR */}
+            {/* BOTTOM BAR (tombol bulat melayang) */}
             <div className={`ui-layer ${uiVisible ? '' : 'hidden'}`} style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
-                background: 'rgba(10,10,13,0.96)', backdropFilter: 'blur(16px)',
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-                paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+                padding: '0 12px max(env(safe-area-inset-bottom), 12px)',
+                pointerEvents: uiVisible ? 'auto' : 'none',
             }}>
-                {/* Action icons */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '10px 20px 8px' }}>
-                    {/* Settings / speed icon */}
-                    <button
-                        className="icon-btn"
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px 12px' }}>
+                    <button className="icon-btn float-btn"
                         onClick={(e) => { e.stopPropagation(); setShowSpeedPanel(v => !v); setShowComments(false); }}
-                        style={{ position: 'relative' }}
-                    >
+                        style={{ position: 'relative' }} aria-label="Pengaturan">
                         <IconSettings />
-                        {scrollSpeed !== 1 && (
-                            <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: '#dc2626', borderRadius: '50%' }} />
-                        )}
+                        {scrollSpeed !== 1 && <span style={{ position: 'absolute', top: 8, right: 8, width: 9, height: 9, background: '#dc2626', borderRadius: '50%' }} />}
                     </button>
-
-                    {/* Play / Pause button */}
-                    <button
-                        className={`icon-btn${isScrolling ? ' play-active' : ''}`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsScrolling(v => !v);
-                            setShowComments(false);
-                            setShowSpeedPanel(false);
-                        }}
-                    >
+                    <button className={`icon-btn float-btn${isScrolling ? ' play-active' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setIsScrolling(v => !v); setShowComments(false); setShowSpeedPanel(false); }}
+                        aria-label="Gulir otomatis">
                         {isScrolling ? <IconPause /> : <IconPlay />}
                     </button>
-
-                    {/* Like */}
-                    <button
-                        className="icon-btn"
-                        onClick={(e) => { e.stopPropagation(); setLiked(v => !v); }}
-                        style={{ width: 52, height: 52, background: liked ? 'rgba(59,130,246,0.15)' : 'rgba(28,28,34,0.9)', border: liked ? '1px solid rgba(59,130,246,0.3)' : 'none', transition: 'all 0.2s' }}
-                    >
-                        <IconLike active={liked} />
+                    <button className="icon-btn float-btn"
+                        onClick={(e) => { e.stopPropagation(); document.getElementById('akhir-chapter')?.scrollIntoView({ behavior: 'smooth' }); }}
+                        aria-label="Reaksi">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9.5" /><path d="M8.5 14.5c1 1.6 2.100 2.300 3.500 2.300s2.500-.7 3.500-2.300" /><circle cx="9" cy="9.800" r="0.6" fill="#fff" /><circle cx="15" cy="9.800" r="0.6" fill="#fff" /></svg>
                     </button>
-
-                    {/* Chapter list */}
-                    <button className="icon-btn" onClick={(e) => { e.stopPropagation(); goToMangaDetail(); }}><IconList /></button>
-
-                    {/* Comments */}
-                    <button
-                        className={`icon-btn${showComments ? ' play-active' : ''}`}
+                    <button className="icon-btn float-btn" onClick={(e) => { e.stopPropagation(); goToMangaDetail(); }} aria-label="Daftar chapter"><IconList /></button>
+                    <button className="icon-btn float-btn"
                         onClick={(e) => { e.stopPropagation(); setIsScrolling(false); router.push(komentarHref); }}
-                    >
+                        aria-label="Komentar">
                         <IconChat />
                     </button>
                 </div>
 
-                {/* Progress row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px 6px' }}>
-                    <button
-                        disabled={!chapter.prev}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button className="icon-btn float-btn" disabled={!chapter.prev}
                         onClick={(e) => { e.stopPropagation(); chapter.prev && navigateTo(chapter.prev); }}
-                        style={{ background: 'none', border: 'none', color: chapter.prev ? 'white' : 'rgba(255,255,255,0.2)', cursor: chapter.prev ? 'pointer' : 'default', padding: 2, flexShrink: 0, display: 'flex', alignItems: 'center' }}
-                    >
+                        style={{ opacity: chapter.prev ? 1 : 0.35 }} aria-label="Chapter sebelumnya">
                         <IconChevLeft />
                     </button>
 
-                    <div style={{ flex: 1, position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
-                        {/* Dot segments */}
-                        <div style={{ position: 'absolute', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 3, pointerEvents: 'none' }}>
-                            {chapter.images.map((_: any, i: number) => (
-                                <div key={i} style={{
-                                    flex: 1, height: i === currentPage ? 8 : 5, borderRadius: 99,
-                                    background: i < currentPage ? 'rgba(255,255,255,0.5)' : i === currentPage ? '#dc2626' : 'rgba(255,255,255,0.18)',
-                                    transition: 'all 0.2s',
-                                }} />
-                            ))}
+                    <div style={{ flex: 1, height: 62, borderRadius: 31, background: '#222226', display: 'flex', alignItems: 'center', gap: 14, padding: '0 20px', boxShadow: '0 4px 14px rgba(0,0,0,0.4)' }}>
+                        <span style={{ color: '#8F8D9B', fontSize: 22, fontWeight: 800, letterSpacing: -0.5, minWidth: 20 }}>{currentPage + 1}</span>
+                        <div style={{ flex: 1, position: 'relative', height: 30, display: 'flex', alignItems: 'center' }}>
+                            <div style={{ position: 'absolute', left: 0, right: 0, height: 5, borderRadius: 99, background: '#4A4A52', pointerEvents: 'none' }} />
+                            <div style={{ position: 'absolute', left: 0, width: `${progress * 100}%`, height: 5, borderRadius: 99, background: '#8F8D9B', pointerEvents: 'none' }} />
+                            <div style={{ position: 'absolute', left: `calc(${progress * 100}% - ${progress * 30}px)`, width: 30, height: 30, borderRadius: '50%', background: '#D8D3E8', pointerEvents: 'none', transition: 'left 0.1s' }} />
+                            <input
+                                type="range" min={0} max={Math.max(totalPages - 1, 0)} value={currentPage}
+                                onChange={(e) => { const pg = parseInt(e.target.value); setCurrentPage(pg); scrollToPage(pg); }}
+                                onClick={e => e.stopPropagation()}
+                                style={{ WebkitAppearance: 'none', appearance: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0 }}
+                            />
                         </div>
-                        {/* Red thumb */}
-                        <div style={{
-                            position: 'absolute', left: `calc(${progress * 100}% - 8px)`,
-                            width: 16, height: 16, background: '#dc2626', borderRadius: '50%',
-                            border: '2px solid white', boxShadow: '0 0 6px rgba(220,38,38,0.8)',
-                            pointerEvents: 'none', transition: 'left 0.1s', zIndex: 2,
-                        }} />
-                        {/* Invisible slider */}
-                        <input
-                            type="range" min={0} max={Math.max(totalPages - 1, 0)} value={currentPage}
-                            onChange={(e) => { const pg = parseInt(e.target.value); setCurrentPage(pg); scrollToPage(pg); }}
-                            onClick={e => e.stopPropagation()}
-                            style={{ WebkitAppearance: 'none', appearance: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0 } as any}
-                        />
+                        <span style={{ color: '#8F8D9B', fontSize: 22, fontWeight: 800, letterSpacing: -0.5, minWidth: 28, textAlign: 'right' }}>{totalPages}</span>
                     </div>
 
-                    <button
-                        disabled={!chapter.next}
+                    <button className="icon-btn float-btn" disabled={!chapter.next}
                         onClick={(e) => { e.stopPropagation(); chapter.next && navigateTo(chapter.next); }}
-                        style={{ background: 'none', border: 'none', color: chapter.next ? 'white' : 'rgba(255,255,255,0.2)', cursor: chapter.next ? 'pointer' : 'default', padding: 2, flexShrink: 0, display: 'flex', alignItems: 'center' }}
-                    >
+                        style={{ opacity: chapter.next ? 1 : 0.35 }} aria-label="Chapter berikutnya">
                         <IconChevRight />
                     </button>
                 </div>
