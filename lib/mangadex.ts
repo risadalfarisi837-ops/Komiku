@@ -121,6 +121,34 @@ const LIST_BASE: Params = {
     hasAvailableChapters: 'true',
 };
 
+const readableCache = new Map<string, { ok: boolean; t: number }>();
+
+async function hasReadable(id: string): Promise<boolean> {
+    const c = readableCache.get(id);
+    if (c && Date.now() - c.t < 3600_000) return c.ok;
+    let ok = true;
+    try {
+        const json = await md(`/manga/${id}/feed`, {
+            'translatedLanguage[]': LANGS,
+            'contentRating[]': ['safe', 'suggestive', 'erotica', 'pornographic'],
+            includeExternalUrl: 0,
+            limit: 3,
+        });
+        ok = (json.data || []).some((c: any) => c.attributes?.pages > 0);
+    } catch { ok = true; }
+    readableCache.set(id, { ok, t: Date.now() });
+    return ok;
+}
+
+async function filterReadable(list: any[], chMap: Record<string, any>) {
+    const keep = await Promise.all(list.map(async (m) => {
+        const l = chMap[m.attributes?.latestUploadedChapter];
+        if (l && l.pages > 0 && !l.externalUrl && LANGS.includes(l.translatedLanguage)) return true;
+        return hasReadable(m.id);
+    }));
+    return list.filter((_, i) => keep[i]);
+}
+
 // Tambahkan skor, jumlah follow, dan chapter terbaru ke tiap manga (2 request batch untuk seluruh daftar).
 async function toCards(list: any[]) {
     if (!list.length) return [];
@@ -136,7 +164,8 @@ async function toCards(list: any[]) {
     const chMap: Record<string, any> = {};
     (chapters?.data || []).forEach((c: any) => { chMap[c.id] = c.attributes; });
 
-    return list.filter((m) => { const l = chMap[m.attributes?.latestUploadedChapter]; return !(l && (l.externalUrl || l.pages === 0)); }).map((m) => {
+    const shown = await filterReadable(list, chMap);
+    return shown.map((m) => {
         const st = stats?.statistics?.[m.id];
         const rating = st?.rating?.bayesian;
         const score = rating ? rating.toFixed(1) : 'N/A';
@@ -322,6 +351,7 @@ export async function getDetail(url: string) {
     }));
     if (!chapters.length) {
         const err: any = new Error('Komik ini cuma tersedia di situs resmi dan tidak bisa dibaca di sini.');
+        readableCache.set(id, { ok: false, t: Date.now() });
         err.officialUrl = await findOfficialUrl(id, m);
         throw err;
     }
