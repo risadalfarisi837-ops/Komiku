@@ -74,7 +74,7 @@ function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRenam
     const trimmed = name.trim();
     if (!trimmed || trimmed === currentName) { onClose(); return; }
     if (trimmed.length < 2 || trimmed.length > 20) { alert('Nama harus 2–20 karakter.'); return; }
-    if (freeRenameUsed && !canAfford) { alert('Koin tidak cukup! Butuh 500 koin.'); return; }
+    if (freeRenameUsed && !canAfford) { alert('Crystal tidak cukup! Butuh 500 koin.'); return; }
     setLoading(true);
     try { await onRename(trimmed); onClose(); }
     catch (e: any) { alert('Gagal: ' + e.message); }
@@ -91,7 +91,7 @@ function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRenam
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4" />
         <h3 className="text-base font-black text-white text-center mb-1">Ganti Nama</h3>
         <p className="text-[11px] text-gray-500 text-center mb-4">
-          {freeRenameUsed ? `Gratis sudah dipakai • Biaya: ${RENAME_COST} koin` : '1x gratis tersedia'}
+          {freeRenameUsed ? `Gratis sudah dipakai • Biaya: ${RENAME_COST} crystal` : '1x gratis tersedia'}
         </p>
         <input
           className="w-full bg-[#1B1A20] border border-white/10 rounded-2xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-blue-500 mb-4"
@@ -107,7 +107,7 @@ function RenameModal({ open, onClose, currentName, freeRenameUsed, koin, onRenam
             disabled={loading || !name.trim() || (freeRenameUsed && !canAfford)}
             className="flex-1 py-3 rounded-2xl bg-blue-600 text-white font-black text-sm disabled:opacity-40"
           >
-            {loading ? '...' : freeRenameUsed ? `Bayar ${RENAME_COST} koin` : 'Simpan Gratis'}
+            {loading ? '...' : freeRenameUsed ? `Bayar ${RENAME_COST} crystal` : 'Simpan Gratis'}
           </button>
         </div>
       </div>
@@ -185,211 +185,6 @@ function AvatarWithBorder({
 }
 
 // ─── Border Shop Modal ────────────────────────────────────────────────────────
-function BorderShopModal({
-  open, onClose, photoURL, activeBorder, ownedBorders, koin, uid,
-  onEquip, onBuy,
-}: {
-  open: boolean; onClose: () => void;
-  photoURL: string; activeBorder: string; ownedBorders: string[]; koin: number; uid: string;
-  onEquip: (key: string) => void;
-  onBuy: (key: string, harga: number) => void;
-}) {
-  const [tab, setTab] = useState<'owned'|'shop'>('owned');
-  const [confirm, setConfirm] = useState<{ key: string; harga: number } | null>(null);
-  const [preview, setPreview] = useState(activeBorder);
-
-  useEffect(() => { setPreview(activeBorder); }, [activeBorder, open]);
-
-  if (!open) return null;
-
-  const shopItems = Object.entries(BORDER_CATALOG).filter(([k]) => !ownedBorders.includes(k));
-  const ownedItems = Object.entries(BORDER_CATALOG).filter(([k]) => ownedBorders.includes(k));
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: '#2A2931', borderRadius: '24px 24px 0 0',
-          width: '100%', maxWidth: 480, maxHeight: '85vh',
-          display: 'flex', flexDirection: 'column',
-          border: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '0 -10px 40px rgba(0,0,0,0.6)',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-          <div style={{ width: 40, height: 4, background: '#333', borderRadius: 2 }} />
-        </div>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px' }}>
-          <span style={{ fontWeight: 900, fontSize: 16, color: '#fff' }}>Ganti Border</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#f1c40f' }}>{koin.toLocaleString()} Koin</span>
-            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <X size={16} color="#fff" />
-            </button>
-          </div>
-        </div>
-
-        {/* Preview */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 0 16px' }}>
-          <AvatarWithBorder src={photoURL} size={88} borderKey={preview || undefined} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button
-              onClick={() => { setPreview(''); onEquip(''); }}
-              style={{
-                background: !preview ? '#2A2931' : 'rgba(255,255,255,0.07)',
-                border: 'none', borderRadius: 20, padding: '6px 14px',
-                color: '#fff', fontWeight: 800, fontSize: 11, cursor: 'pointer',
-              }}
-            >
-              Tanpa Border
-            </button>
-            {preview && (
-              <button
-                onClick={() => onEquip(preview)}
-                style={{ background: '#2A2931', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '6px 14px', color: '#fff', fontWeight: 800, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Check size={12} /> Pakai Ini
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', margin: '0 20px' }}>
-          {(['owned', 'shop'] as const).map(t => (
-            <button
-              key={t} onClick={() => setTab(t)}
-              style={{
-                flex: 1, padding: '10px 0', fontWeight: 800, fontSize: 13,
-                color: tab === t ? '#fff' : '#555',
-                background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: tab === t ? '2px solid #9ca3af' : '2px solid transparent',
-                transition: 'all 0.2s',
-              }}
-            >
-              {t === 'owned' ? `Dimiliki (${ownedItems.length})` : `Shop (${shopItems.length})`}
-            </button>
-          ))}
-        </div>
-
-        {/* List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px 32px' }}>
-          {tab === 'owned' && (
-            ownedItems.length === 0
-              ? <p style={{ color: '#555', textAlign: 'center', fontSize: 13, padding: '24px 0' }}>Belum punya border. Beli di Shop!</p>
-              : ownedItems.map(([key, item]) => {
-                const isActive = activeBorder === key;
-                const isPreviewing = preview === key;
-                return (
-                  <div
-                    key={key}
-                    onClick={() => setPreview(isPreviewing ? '' : key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      background: isPreviewing ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${isPreviewing ? '#9ca3af' : 'rgba(255,255,255,0.07)'}`,
-                      borderRadius: 16, padding: '12px 14px', marginBottom: 10, cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <AvatarWithBorder src={photoURL} size={48} borderKey={key} />
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: '#fff', fontWeight: 800, fontSize: 13, marginBottom: 2 }}>{item.nama}</p>
-                      <p style={{ color: '#666', fontSize: 11, fontWeight: 700 }}>{item.harga.toLocaleString()}</p>
-                    </div>
-                    {isActive && (
-                      <span style={{ background: 'rgba(59,130,246,0.2)', color: '#9ca3af', fontSize: 10, fontWeight: 900, padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(59,130,246,0.4)' }}>AKTIF</span>
-                    )}
-                  </div>
-                );
-              })
-          )}
-
-          {tab === 'shop' && (
-            shopItems.length === 0
-              ? <p style={{ color: '#555', textAlign: 'center', fontSize: 13, padding: '24px 0' }}>Semua border sudah dimiliki!</p>
-              : shopItems.map(([key, item]) => {
-                const canAfford = koin >= item.harga;
-                return (
-                  <div
-                    key={key}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      borderRadius: 16, padding: '12px 14px', marginBottom: 10,
-                    }}
-                  >
-                    <AvatarWithBorder src={photoURL} size={48} borderKey={key} />
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: '#fff', fontWeight: 800, fontSize: 13, marginBottom: 2 }}>{item.nama}</p>
-                      <p style={{ color: '#f1c40f', fontSize: 11, fontWeight: 800 }}>{item.harga.toLocaleString()} Koin</p>
-                    </div>
-                    <button
-                      onClick={() => setConfirm({ key, harga: item.harga })}
-                      disabled={!canAfford}
-                      style={{
-                        background: canAfford ? '#2A2931' : '#2a2d36',
-                        color: canAfford ? '#fff' : '#555',
-                        border: 'none', borderRadius: 20, padding: '8px 16px',
-                        fontSize: 12, fontWeight: 800, cursor: canAfford ? 'pointer' : 'not-allowed',
-                        flexShrink: 0,
-                      }}
-                    >
-                      Beli
-                    </button>
-                  </div>
-                );
-              })
-          )}
-        </div>
-      </div>
-
-      {/* Confirm buy modal */}
-      {confirm && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 10000,
-            background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onClick={() => setConfirm(null)}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: '#2A2931', borderRadius: 24, padding: '28px 24px', width: 300, textAlign: 'center', border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <p style={{ color: '#fff', fontWeight: 900, fontSize: 16, marginBottom: 8 }}>Konfirmasi Pembelian</p>
-            <p style={{ color: '#aaa', fontSize: 13, marginBottom: 6 }}>{BORDER_CATALOG[confirm.key]?.nama}</p>
-            <p style={{ color: '#f1c40f', fontWeight: 900, fontSize: 18, marginBottom: 20 }}>{confirm.harga.toLocaleString()} Koin</p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setConfirm(null)}
-                style={{ flex: 1, background: '#2a2d36', border: 'none', borderRadius: 14, padding: '12px 0', color: '#aaa', fontWeight: 800, cursor: 'pointer' }}>
-                Batal
-              </button>
-              <button onClick={() => { onBuy(confirm.key, confirm.harga); setConfirm(null); setTab('owned'); setPreview(confirm.key); }}
-                style={{ flex: 1, background: '#2A2931', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 0', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>
-                Beli!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Dev Panel ────────────────────────────────────────────────────────────────
 function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   open: boolean; onClose: () => void;
   uid: string; db: any; userData: any; onUpdate: (d: any) => void;
@@ -474,7 +269,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           updates[`users/${u}/level`] = newLvl;
           updates[`users/${u}/exp`]   = (newLvl - 1) * 200;
         }
-        updates[`users/${u}/newGift`] = { from: giftSender, itemName: giftType === 'koin' ? `${val} Koin` : `+${val} Level`, cat: giftType, isKompensasi: true, timestamp: Date.now() };
+        updates[`users/${u}/newGift`] = { from: giftSender, itemName: giftType === 'koin' ? `${val} Crystal` : `+${val} Level`, cat: giftType, isKompensasi: true, timestamp: Date.now() };
         if (u === uid) mine = giftType === 'koin' ? { koin: (d.koin || 0) + val } : { level: (d.level || 1) + val, exp: ((d.level || 1) + val - 1) * 200 };
         count++;
       });
@@ -513,7 +308,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <label style={LABEL}>Set koin</label>
+              <label style={LABEL}>Set crystal</label>
               <input style={FIELD} value={uKoin} onChange={e => setUKoin(e.target.value)} type="number" inputMode="numeric" placeholder="0" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -551,13 +346,13 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
             <div style={{ flex: 1, minWidth: 0 }}>
               <label style={LABEL}>Jenis</label>
               <select style={FIELD} value={giftType} onChange={e => setGiftType(e.target.value as 'koin'|'level')}>
-                <option value="koin">Koin</option>
+                <option value="koin">Crystal</option>
                 <option value="level">Level up</option>
               </select>
             </div>
           </div>
           <div>
-            <label style={LABEL}>{giftType === 'koin' ? 'Jumlah koin' : 'Naik berapa level'}</label>
+            <label style={LABEL}>{giftType === 'koin' ? 'Jumlah crystal' : 'Naik berapa level'}</label>
             <input style={FIELD} value={giftVal} onChange={e => setGiftVal(e.target.value)} type="number" inputMode="numeric" placeholder={giftType === 'koin' ? 'Cth: 500' : 'Cth: 5'} />
           </div>
           <div>
@@ -572,7 +367,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           ) : (
             <div style={{ background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 18, padding: 14, marginTop: 4 }}>
               <div style={{ fontSize: 17, fontWeight: 800, color: GOLD, letterSpacing: -0.4 }}>
-                Kirim {giftType === 'koin' ? `${giftVal} koin` : `+${giftVal} level`} ke SEMUA user?
+                Kirim {giftType === 'koin' ? `${giftVal} crystal` : `+${giftVal} level`} ke SEMUA user?
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{giftMsg}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
@@ -819,7 +614,7 @@ export default function ProfilePage() {
     const snap = await dbRef.current.ref(`users/${user.uid}`).get();
     const d = snap.val();
     const currentKoin = d.koin || 0;
-    if (currentKoin < harga) { alert('Koin tidak cukup!'); return; }
+    if (currentKoin < harga) { alert('Crystal tidak cukup!'); return; }
     const owned = d.ownedBorders ? Object.keys(d.ownedBorders) : [];
     if (owned.includes(key)) { alert('Sudah dimiliki!'); return; }
     await dbRef.current.ref(`users/${user.uid}`).update({
@@ -843,7 +638,7 @@ export default function ProfilePage() {
     const currentKoin = d.koin || 0;
     const COST = 500;
     if (freeUsed) {
-      if (currentKoin < COST) throw new Error('Koin tidak cukup!');
+      if (currentKoin < COST) throw new Error('Crystal tidak cukup!');
       await dbRef.current.ref(`users/${user.uid}`).update({ displayName: newName, koin: currentKoin - COST });
       setUserData((prev: any) => ({ ...prev, displayName: newName, koin: currentKoin - COST }));
     } else {
@@ -919,7 +714,7 @@ export default function ProfilePage() {
           </Link>
         </div>
 
-        <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => setBorderShopOpen(true)} />
+        <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => void 0} />
 
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
           {userData?.displayName || user.displayName || 'User'}
@@ -1012,7 +807,6 @@ export default function ProfilePage() {
       <Sheet open={sheet === 'edit'} onClose={() => setSheet(null)} title="Edit profil">
         <div style={{ background: '#1F1E24', borderRadius: 16, overflow: 'hidden' }}>
           <MenuRow icon={<Pencil size={20} color={ICON} />} title="Ganti nama" sub={freeRenameUsed ? 'Biaya 500 koin' : '1x gratis tersedia'} onClick={() => { setSheet(null); setRenameModalOpen(true); }} />
-          <MenuRow border icon={<Crown size={20} color={ICON} />} title="Ganti border avatar" sub={`${fmt(koin)} koin`} onClick={() => { setSheet(null); setBorderShopOpen(true); }} />
         </div>
       </Sheet>
 
@@ -1046,17 +840,6 @@ export default function ProfilePage() {
         />
       )}
 
-      <BorderShopModal
-        open={borderShopOpen}
-        onClose={() => setBorderShopOpen(false)}
-        photoURL={photoURL}
-        activeBorder={activeBorder}
-        ownedBorders={ownedBorders}
-        koin={koin}
-        uid={user.uid}
-        onEquip={handleEquipBorder}
-        onBuy={handleBuyBorder}
-      />
 
       <RenameModal
         open={renameModalOpen}
