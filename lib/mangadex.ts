@@ -296,6 +296,16 @@ function dedupe(chs: Ch[]): Ch[] {
     return arr;
 }
 
+async function findOfficialUrl(id: string, m: any): Promise<string> {
+    try {
+        const json = await md('/chapter', { manga: id, limit: 1, 'order[chapter]': 'desc', 'translatedLanguage[]': LANGS, 'contentRating[]': ['safe', 'suggestive', 'erotica', 'pornographic'] });
+        const ext = (json.data || []).map((c: any) => c.attributes?.externalUrl).find(Boolean);
+        if (ext) return ext;
+    } catch { }
+    const l = m?.attributes?.links || {};
+    return l.raw || l.engtl || l.amz || l.ebj || `${SITE}/title/${id}`;
+}
+
 export async function getDetail(url: string) {
     const id = idFromLink(url);
     const [mangaRes, feed] = await Promise.all([
@@ -310,7 +320,11 @@ export async function getDetail(url: string) {
         num: c.num,
         at: c.publishAt || '',
     }));
-    if (!chapters.length) throw new Error('Komik ini cuma tersedia di situs resmi dan tidak bisa dibaca di sini.');
+    if (!chapters.length) {
+        const err: any = new Error('Komik ini cuma tersedia di situs resmi dan tidak bisa dibaca di sini.');
+        err.officialUrl = await findOfficialUrl(id, m);
+        throw err;
+    }
     return {
         title: titleOf(m),
         thumb: coverOf(m),
