@@ -55,7 +55,7 @@ export default function KomikStorePage() {
   }, []);
 
   return (
-    <div className="min-h-screen text-white max-w-md mx-auto pb-24" style={{ background: 'radial-gradient(ellipse at top, #151c34 0%, #0b0f1d 60%, #070a14 100%)' }}>
+    <div className="min-h-screen text-white max-w-md mx-auto pb-10 -mb-28" style={{ background: 'radial-gradient(ellipse at top, #151c34 0%, #0b0f1d 60%, #070a14 100%)' }}>
       <div className="flex items-center gap-4 px-6 pt-8 pb-6">
         <button onClick={() => router.back()} aria-label="Kembali" className="p-1"><ArrowLeft className="w-7 h-7" /></button>
         <h1 className="text-4xl font-extrabold tracking-tight">KomikStore</h1>
