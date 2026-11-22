@@ -10,7 +10,8 @@ import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
-import { TRACKS, byTrack, findLencana } from '@/lib/lencana';
+import { TRACKS, TrackName, TRACK_COLOR, CATALOG, byTrack, findLencana, heldLencana, recordHeld, mergeBest, isUnlocked, loadEquipped } from '@/lib/lencana';
+import { LencanaIcon } from '@/components/LencanaBadge';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -748,6 +749,16 @@ export default function ProfilePage() {
   const streak   = mounted ? mine.streak : 0;
   const { rank, next } = rankFor(pts);
 
+  // Lencana yang dipakai (server > lokal > yang dipegang musim ini) dan jumlah yang sudah terbuka
+  const [lenBest, setLenBest] = useState<Record<TrackName, number> | null>(null);
+  useEffect(() => {
+    if (!mounted) return;
+    recordHeld(heldLencana(pts));
+    setLenBest(mergeBest(userData?.lencanaBest));
+  }, [mounted, pts, userData?.lencanaBest]); // eslint-disable-line react-hooks/exhaustive-deps
+  const equippedL = findLencana(userData?.lencana || (mounted ? loadEquipped() : null)) || heldLencana(pts);
+  const lenOpen = lenBest ? CATALOG.filter((l) => isUnlocked(l, lenBest)).length : 0;
+
   // Peringkat musim = jumlah pemain dengan poin lebih tinggi + 1
   useEffect(() => {
     if (!user || !mounted || pts <= 0) { setSeasonRank(null); return; }
@@ -865,7 +876,6 @@ export default function ProfilePage() {
   const activeEffect = userData?.activeEffect ?? '';
   const ownedBorders = userData?.ownedBorders ? Object.keys(userData.ownedBorders) : [];
   const photoURL = (userData?.photoURL ?? user?.photoURL) || '';
-  const unlocked     = RANKS.filter(r => pts >= r.min).length;
   const target       = next ? next.min : Math.max(pts, 1);
   const barPct       = Math.min(100, (pts / target) * 100);
   const soon = () => alert('Fitur Premium segera hadir.');
@@ -931,8 +941,8 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
-            <Emblem t={rank.track} fill={rank.bg} size={18} />{rank.name}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: TRACK_COLOR[equippedL.track], padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
+            <LencanaIcon l={equippedL} size={22} />{equippedL.name}
           </span>
           {isPremium && !isDev && (
             <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>PREMIUM</span>
@@ -1000,7 +1010,7 @@ export default function ProfilePage() {
       <SectionLabel>Kamu</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
         <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => { window.location.assign('/profile/edit'); }} />
-        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
+        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${lenOpen} terbuka · ${equippedL.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
         <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/notifikasi" />
         {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={() => { window.location.assign("/premium"); }} />}
       </div>
