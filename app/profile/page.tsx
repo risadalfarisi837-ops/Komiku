@@ -994,8 +994,8 @@ export default function ProfilePage() {
       {/* Menu: Kamu */}
       <SectionLabel>Kamu</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
-        <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => setSheet('edit')} />
-        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => setSheet('badges')} />
+        <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => { window.location.assign('/profile/edit'); }} />
+        <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
         <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/history" />
         {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={soon} />}
       </div>
