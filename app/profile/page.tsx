@@ -985,7 +985,7 @@ export default function ProfilePage() {
             <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.9, lineHeight: 1.2, marginTop: 4 }}>Baca tanpa iklan</div>
             <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.4, marginTop: 2 }}>Plus unduh massal dan cincin profil emas.</div>
           </div>
-          <button onClick={soon} style={{ background: GOLD, color: '#2E2615', border: 0, borderRadius: 99, padding: '0 22px', height: 38, fontSize: 19, fontWeight: 800, letterSpacing: -0.5, flexShrink: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={() => { window.location.assign("/premium"); }} style={{ background: GOLD, color: '#2E2615', border: 0, borderRadius: 99, padding: '0 22px', height: 38, fontSize: 19, fontWeight: 800, letterSpacing: -0.5, flexShrink: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
             Upgrade
           </button>
         </div>
@@ -997,14 +997,14 @@ export default function ProfilePage() {
         <MenuRow icon={<Pencil size={20} color={ICON} />} title="Edit profil" sub="Nama dan avatar" onClick={() => { window.location.assign('/profile/edit'); }} />
         <MenuRow border icon={<Crown size={21} color={ICON} />} title="Lencana" sub={`${unlocked} terbuka · ${rank.name} dipakai`} onClick={() => window.location.assign('/ranking/lencana')} />
         <MenuRow border icon={<Bell size={20} color={ICON} />} title="Notifikasi" right={newChapters > 0 ? `${newChapters} baru` : undefined} href="/notifikasi" />
-        {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={soon} />}
+        {!isPremium && <MenuRow border icon={<Gift size={20} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" onClick={() => { window.location.assign("/premium"); }} />}
       </div>
 
       {/* Menu: Aplikasi */}
       <SectionLabel>Aplikasi</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
         <MenuRow icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun, data, dan notifikasi" href="/settings" />
-        <MenuRow border icon={<Bug size={20} color={ICON} />} title="Laporkan bug" onClick={() => window.open('https://github.com/risadalfarisi837-ops/Komiku/issues/new', '_blank')} />
+        <MenuRow border icon={<Bug size={20} color={ICON} />} title="Laporkan bug" onClick={() => window.open('https://wa.me/6281315059849?text=Halo%2C%20saya%20mau%20lapor%20bug%20Komiku.%0A%0AHalaman%2Fmenu%3A%20%0AYang%20terjadi%3A%20%0AYang%20seharusnya%3A%20%0AHP%2Fbrowser%3A%20', '_blank')} />
       </div>
 
       {/* Sheets */}
