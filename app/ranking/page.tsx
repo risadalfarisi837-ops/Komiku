@@ -133,7 +133,7 @@ export default function RankingPage() {
           <div style={{ fontSize: 18, fontWeight: 700, color: MUTED, letterSpacing: -0.3, marginTop: 2 }}>{season.label} · {season.daysLeft} hari lagi</div>
         </div>
         <div style={{ display: 'flex', gap: 6, paddingTop: 0 }}>
-          <button onClick={() => setSheet(true)} aria-label="Daftar lencana" style={{ background: 'none', border: 0, padding: 8 }}>
+          <button onClick={() => { window.location.assign('/ranking/lencana'); }} aria-label="Daftar lencana" style={{ background: 'none', border: 0, padding: 8 }}>
             <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" /></svg>
           </button>
           <button onClick={() => setSheet(true)} aria-label="Aturan poin" style={{ background: 'none', border: 0, padding: 8 }}>

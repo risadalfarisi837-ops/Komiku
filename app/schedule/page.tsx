@@ -314,7 +314,7 @@ export default function BrowsePage() {
             <button onClick={() => { setSearch(''); setSearchQuery(''); }} aria-label="Hapus"><X className="w-4 h-4 text-gray-500" /></button>
           )}
         </div>
-        <button aria-label="Notifikasi" style={{ position: 'relative', background: 'none', border: 0, padding: 8 }}>
+        <button onClick={() => { window.location.assign('/notifikasi'); }} aria-label="Notifikasi" style={{ position: 'relative', background: 'none', border: 0, padding: 8 }}>
           <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 01-3.4 0" /></svg>
           <span style={{ position: 'absolute', top: 6, right: 7, width: 9, height: 9, borderRadius: '50%', background: CORAL }} />
         </button>

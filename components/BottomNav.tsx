@@ -73,7 +73,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const photoURL = useFirebasePhoto();
 
-  if (pathname.startsWith('/chapter') || pathname.startsWith('/manga') || pathname.startsWith('/search')) return null;
+  if (pathname.startsWith('/chapter') || pathname.startsWith('/manga') || pathname.startsWith('/search') || pathname.startsWith('/notifikasi') || pathname.startsWith('/profile/edit') || pathname.startsWith('/ranking/lencana')) return null;
 
   return (
     <nav

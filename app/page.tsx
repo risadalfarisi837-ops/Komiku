@@ -99,7 +99,7 @@ function Header({ onSearch }: { onSearch: () => void }) {
       <button onClick={onSearch} aria-label="Cari" style={{ background: 'none', border: 0, color: '#fff', padding: 8 }}>
         <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round"><circle cx={11} cy={11} r={7.5} /><line x1={21} y1={21} x2={16.5} y2={16.5} /></svg>
       </button>
-      <button aria-label="Notifikasi" style={{ position: 'relative', background: 'none', border: 0, color: '#fff', padding: 8, marginLeft: 6 }}>
+      <button onClick={() => { window.location.assign('/notifikasi'); }} aria-label="Notifikasi" style={{ position: 'relative', background: 'none', border: 0, color: '#fff', padding: 8, marginLeft: 6 }}>
         <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 01-3.4 0" /></svg>
         <span style={{ position: 'absolute', top: 6, right: 7, width: 9, height: 9, borderRadius: '50%', background: ACCENT }} />
       </button>
