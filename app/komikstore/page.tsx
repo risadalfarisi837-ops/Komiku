@@ -22,7 +22,7 @@ const ICON = 'w-12 h-12';
 const MENU: Tile[] = [
   { title: 'Pet', sub: 'Koleksi pet', href: '/komikstore/pet', from: '#fcd34d', to: '#f59e0b', border: '#fde68a', dark: true, icon: <PawPrint className={ICON} fill="#451a03" color="#451a03" /> },
   { title: 'Avatar Border', sub: 'Shop decoration', href: '/komikstore/avatar-border', from: '#4a044e', to: '#7e22ce', border: '#c084fc', icon: <Smile className={ICON} /> },
-  { title: 'Profile Effects', sub: 'Efek profil', from: '#7c2d12', to: '#dc2626', border: '#fb7185', icon: <Sparkles className={ICON} /> },
+  { title: 'Profile Effects', sub: 'Efek profil', href: '/komikstore/profile-effects', from: '#7c2d12', to: '#dc2626', border: '#fb7185', icon: <Sparkles className={ICON} /> },
   { title: 'Info', sub: 'Panduan KomikStore', from: '#1e293b', to: '#334155', border: '#64748b', icon: <Info className={ICON} /> },
 ];
 

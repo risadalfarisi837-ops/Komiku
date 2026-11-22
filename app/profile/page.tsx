@@ -6,6 +6,7 @@ import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore } from '@/lib/leaderboard';
+import ProfileEffect from '@/components/ProfileEffect';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -654,6 +655,7 @@ export default function ProfilePage() {
   const koin         = userData?.koin ?? 0;
   const freeRenameUsed = userData?.freeRenameUsed ?? false;
   const activeBorder = userData?.activeBorder ?? '';
+  const activeEffect = userData?.activeEffect ?? '';
   const ownedBorders = userData?.ownedBorders ? Object.keys(userData.ownedBorders) : [];
   const photoURL = (userData?.photoURL ?? user?.photoURL) || '';
   const unlocked     = RANKS.filter(r => pts >= r.min).length;
@@ -703,7 +705,8 @@ export default function ProfilePage() {
     <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh', paddingBottom: 130 }}>
 
       {/* Header */}
-      <div style={{ position: 'relative', padding: '24px 16px 0', textAlign: 'center' }}>
+      <div style={{ position: 'relative', padding: '24px 16px 0', textAlign: 'center', overflow: 'hidden' }}>
+        {activeEffect && <ProfileEffect effectKey={activeEffect} />}
         <div style={{ position: 'absolute', top: 14, right: 10, display: 'flex', gap: 2 }}>
           <Link href="/notifikasi" aria-label="Notifikasi" style={{ position: 'relative', padding: 8, color: '#fff', display: 'flex' }}>
             <Bell size={26} strokeWidth={1.8} />
