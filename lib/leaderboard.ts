@@ -14,7 +14,7 @@ export async function getUser(): Promise<any> {
   });
 }
 
-export interface Row { uid: string; name: string; photo: string; points: number; chapters: number; streak: number; night: number }
+export interface Row { lencana?: string; uid: string; name: string; photo: string; points: number; chapters: number; streak: number; night: number }
 
 // Kirim skor musim ini ke Firebase (hanya kalau sudah login)
 export async function pushSeasonScore(): Promise<void> {
