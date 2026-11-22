@@ -585,24 +585,26 @@ function ChapterEnd({ chapterUrl, chNum, thumb, nextLink, mangaLink, komentarHre
     const [commentCount, setCommentCount] = useState<number | null>(null);
     const [nextLabel, setNextLabel] = useState('');
     const [msg, setMsg] = useState('');
+    const [rulesErr, setRulesErr] = useState('');
     const router = useRouter();
     const dbRef = useRef<any>(null);
     const authRef = useRef<any>(null);
+    const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 4000); };
 
     useEffect(() => {
         let offs: Array<() => void> = [];
         getFirebase().then(({ auth, db }) => {
             authRef.current = auth; dbRef.current = db;
-            auth.onAuthStateChanged((u: any) => setUid(u ? u.uid : null));
+            offs.push(auth.onAuthStateChanged((u: any) => setUid(u ? u.uid : null)));
             const r1 = db.ref(`chapterReactions/${key}`);
-            const c1 = (s: any) => setReact(s.val() || {});
-            r1.on('value', c1, () => {});
+            const c1 = (s: any) => { setRulesErr(''); setReact(s.val() || {}); };
+            r1.on('value', c1, (e: any) => setRulesErr('Reaksi belum aktif: database menolak akses (' + (e?.code || e?.message || 'error') + '). Cek rules chapterReactions di Firebase.'));
             offs.push(() => r1.off('value', c1));
             const r2 = db.ref(`chapterComments/${key}`);
             const c2 = (s: any) => setCommentCount(s.numChildren());
             r2.on('value', c2, () => {});
             offs.push(() => r2.off('value', c2));
-        });
+        }).catch(() => setRulesErr('Gagal terhubung ke Firebase. Coba muat ulang halaman.'));
         return () => offs.forEach((f) => f());
     }, [key]);
 
@@ -624,14 +626,28 @@ function ChapterEnd({ chapterUrl, chNum, thumb, nextLink, mangaLink, komentarHre
     const mine = uid ? react[uid] : undefined;
 
     const pick = async (k: ReactionKey) => {
-        if (!dbRef.current) return;
+        if (!dbRef.current || !authRef.current) { flash('Menyambung ke server, coba lagi sebentar'); return; }
         if (!uid) {
-            try { await authRef.current.signInWithPopup(new (window as any).firebase.auth.GoogleAuthProvider()); } catch {}
+            flash('Masuk dengan Google dulu untuk bereaksi');
+            const provider = new (window as any).firebase.auth.GoogleAuthProvider();
+            try { await authRef.current.signInWithPopup(provider); }
+            catch (e: any) {
+                const blocked = ['popup-blocked', 'popup-closed-by-user', 'cancelled-popup-request', 'web-storage-unsupported'];
+                if (blocked.some((c) => e?.code?.includes(c))) { try { await authRef.current.signInWithRedirect(provider); } catch {} }
+            }
             return;
         }
+        const before = react[uid];
+        const next = mine === k ? null : k;
+        // tampil langsung tanpa nunggu server
+        setReact((prev) => { const n = { ...prev }; if (next) n[uid] = next; else delete n[uid]; return n; });
         const ref = dbRef.current.ref(`chapterReactions/${key}/${uid}`);
-        try { if (mine === k) await ref.remove(); else await ref.set(k); }
-        catch (e: any) { setMsg('Gagal menyimpan reaksi: ' + (e?.message || 'izin database ditolak')); setTimeout(() => setMsg(''), 3000); }
+        try { if (next) await ref.set(next); else await ref.remove(); }
+        catch (e: any) {
+            setReact((prev) => { const n = { ...prev }; if (before) n[uid] = before; else delete n[uid]; return n; });
+            const denied = String(e?.code || e?.message || '').toLowerCase().includes('permission');
+            flash(denied ? 'Ditolak database: tambahkan rules chapterReactions di Firebase' : 'Gagal menyimpan reaksi: ' + (e?.message || 'error'));
+        }
     };
 
     const share = async () => {
@@ -651,7 +667,7 @@ function ChapterEnd({ chapterUrl, chNum, thumb, nextLink, mangaLink, komentarHre
                 {REACTIONS.map((r) => {
                     const on = mine === r.key;
                     return (
-                        <button key={r.key} onClick={() => pick(r.key)} style={{ background: '#2A2931', border: on ? '2px solid #FF6B6B' : '2px solid transparent', borderRadius: 18, padding: '14px 0 12px', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                        <button key={r.key} type="button" onClick={() => pick(r.key)} style={{ background: on ? 'rgba(255,107,107,0.14)' : '#2A2931', border: on ? '2px solid #FF6B6B' : '2px solid transparent', borderRadius: 18, padding: '14px 0 12px', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', userSelect: 'none', transform: on ? 'scale(1.03)' : 'none', transition: 'transform .15s, background .15s' }}>
                             <KomoFace kind={r.key} size={44} />
                             <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.6, marginTop: 4 }}>{counts[r.key] || 0}</span>
                             <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.4, color: '#8F8D9B', marginTop: -4 }}>{r.label}</span>
@@ -685,6 +701,7 @@ function ChapterEnd({ chapterUrl, chNum, thumb, nextLink, mangaLink, komentarHre
                 </button>
             </div>
             {msg && <div style={{ textAlign: 'center', color: '#FF6B6B', fontSize: 15, fontWeight: 800, marginTop: 12 }}>{msg}</div>}
+            {rulesErr && <div style={{ textAlign: 'center', color: '#F2C14E', fontSize: 13, fontWeight: 700, marginTop: 10, lineHeight: 1.4 }}>{rulesErr}</div>}
         </div>
     );
 }
