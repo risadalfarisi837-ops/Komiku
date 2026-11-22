@@ -69,7 +69,7 @@ const links = [
   { href: '/profile',   Icon: PersonIcon,  label: 'Profil' },
 ];
 
-export default function BottomNav() {
+function BottomNavInner() {
   const pathname = usePathname();
   const photoURL = useFirebasePhoto();
 
@@ -106,4 +106,10 @@ export default function BottomNav() {
       </div>
     </nav>
   );
+}
+
+export default function BottomNav(props: any) {
+  const __hideNav = (usePathname() || '').startsWith('/komikstore');
+  if (__hideNav) return null;
+  return <BottomNavInner {...props} />;
 }
