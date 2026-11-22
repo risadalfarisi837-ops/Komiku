@@ -494,6 +494,15 @@ export default function ProfilePage() {
   const [user, setUser]                 = useState<UserState | null>(null);
   const [userData, setUserData]         = useState<any>(null);
   const [loadingAuth, setLoadingAuth]   = useState(true);
+
+  // Refresh: browser mengembalikan posisi scroll lama saat konten belum siap -> halaman nyangkut di tengah.
+  useEffect(() => {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    window.scrollTo(0, 0);
+  }, []);
+  useEffect(() => {
+    if (!loadingAuth) window.scrollTo(0, 0);
+  }, [loadingAuth]);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [borderShopOpen, setBorderShopOpen]   = useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
