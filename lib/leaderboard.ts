@@ -46,7 +46,10 @@ export async function getUser(): Promise<any> {
   });
 }
 
-export interface Row { uid: string; name: string; photo: string; points: number; chapters: number; streak: number; night: number }
+export interface Row { uid: string; name: string; photo: string; points: number; chapters: number; streak: number; night: number; t: number }
+
+// Akun yang tidak aktif selama ini dianggap off: disembunyikan dari peringkat dan (kalau Developer yang buka) dihapus dari leaderboard.
+export const ACTIVE_DAYS = 14;
 
 // Kirim skor musim ini ke Firebase (hanya kalau sudah login).
 // Poin total = poin baca chapter (lokal) + bonus dari Panel Developer (tersimpan di Firebase).
@@ -87,9 +90,22 @@ export async function fetchTop(seasonId: number): Promise<Row[]> {
   const rows: Row[] = [];
   snap.forEach((c: any) => {
     const v = c.val() || {};
-    rows.push({ uid: String(c.key), name: v.name || 'User', photo: v.photo || '', points: Number(v.points) || 0, chapters: Number(v.chapters) || 0, streak: Number(v.streak) || 0, night: Number(v.night) || 0 });
+    rows.push({ uid: String(c.key), name: v.name || 'User', photo: v.photo || '', points: Number(v.points) || 0, chapters: Number(v.chapters) || 0, streak: Number(v.streak) || 0, night: Number(v.night) || 0, t: Number(v.t) || 0 });
   });
-  return rows.sort((a, b) => b.points - a.points).slice(0, 100);
+  const cutoff = Date.now() - ACTIVE_DAYS * 86400000;
+  const active = rows.filter((r) => r.t >= cutoff);
+  const stale = rows.filter((r) => r.t < cutoff);
+  if (stale.length) {
+    try {
+      const user = await getUser();
+      if (user && (await db.ref(`users/${user.uid}/role`).get()).val() === 'Developer') {
+        const upd: Record<string, null> = {};
+        stale.forEach((r) => { upd[`leaderboard/s${seasonId}/${r.uid}`] = null; });
+        await db.ref().update(upd);
+      }
+    } catch {}
+  }
+  return active.sort((a, b) => b.points - a.points).slice(0, 100);
 }
 
 // Tambah EXP ke profil Firebase (users/<uid>) supaya Level di Profil ikut naik saat baca chapter.
