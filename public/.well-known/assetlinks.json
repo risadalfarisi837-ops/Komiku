@@ -1,1 +1,1 @@
-[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"","sha256_cert_fingerprints":[""]}}]
+[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"app.vercel.komiku_risyadh.twa","sha256_cert_fingerprints":["FF:05:F2:AD:7A:C7:B9:EA:EA:34:C3:70:03:34:A5:06:CC:E8:70:E3:5B:E6:3C:DD:D0:7D:EC:F1:CE:3D:8F:41"]}}]
