@@ -108,7 +108,7 @@ function Header({ onSearch }: { onSearch: () => void }) {
     <div style={{ display: 'flex', alignItems: 'center', padding: '14px 14px 12px' }}>
       <div style={{ width: 38, height: 38, borderRadius: 10, background: '#26252C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800 }}>K</div>
       <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.5, marginLeft: 8, flex: 1 }}>
-        Komi<span style={{ color: ACCENT }}>ku</span>
+        Komi<span style={{ color: ACCENT }}>kita</span>
       </div>
       <button onClick={onSearch} aria-label="Cari" style={{ background: 'none', border: 0, color: '#fff', padding: 8 }}>
         <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round"><circle cx={11} cy={11} r={7.5} /><line x1={21} y1={21} x2={16.5} y2={16.5} /></svg>
