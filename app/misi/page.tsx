@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, BookOpen, MessageSquare, Moon, CalendarCheck, Gem, Ticket, Check } from 'lucide-react';
 import { getFirebase } from '@/lib/firebase-client';
 import { useMissions, MISSIONS, periodKey, type Mission } from '@/lib/missions';
+import CheckInCard from '@/components/CheckInCard';
 
 const ICONS: Record<Mission['stat'], any> = { read: BookOpen, comment: MessageSquare, night: Moon, days: CalendarCheck };
 
@@ -144,6 +145,8 @@ export default function MisiPage() {
           <p className="text-base font-bold text-white/50">Token</p>
         </div>
       </div>
+
+      <div className="px-5 pt-5"><CheckInCard /></div>
 
       {section('d', 'Misi harian')}
       {section('w', 'Misi mingguan')}

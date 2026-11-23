@@ -14,6 +14,7 @@ import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
+import CheckInCard from '@/components/CheckInCard';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -1222,6 +1223,8 @@ export default function ProfilePage() {
           </button>
         </div>
       )}
+
+      <div style={{ margin: '16px 16px 0' }}><CheckInCard /></div>
 
       {/* Menu: Kamu */}
       <SectionLabel>Kamu</SectionLabel>
