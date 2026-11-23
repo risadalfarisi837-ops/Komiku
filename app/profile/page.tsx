@@ -207,11 +207,11 @@ const DEV_UNIT: Record<'koin' | 'level' | 'exp' | 'poin', string> = { koin: 'Cry
 const DEV_ROLES = ['Member', 'Komiku Premium', 'Developer'];
 const DEV_RESETS = [['poin', 'Poin musim'], ['level', 'Level & EXP'], ['koin', 'Crystal'], ['hapus', 'Hapus data user']] as const;
 type DevReset = typeof DEV_RESETS[number][0];
-type GType = 'koin' | 'level' | 'exp' | 'poin';
-const GIFT_TYPES: [GType, string][] = [['koin', 'Crystal'], ['level', 'Level up'], ['exp', 'EXP'], ['poin', 'Poin musim']];
-const GIFT_PRESETS: Record<GType, number[]> = { koin: [100, 500, 1000, 5000], level: [1, 3, 5, 10], exp: [100, 200, 1000, 5000], poin: [50, 100, 300, 700] };
+type GType = 'koin' | 'level' | 'exp' | 'poin' | 'border' | 'wallpaper' | 'effect';
+const GIFT_TYPES: [GType, string][] = [['koin', 'Crystal'], ['level', 'Level up'], ['exp', 'EXP'], ['poin', 'Poin musim'], ['border', 'Border'], ['wallpaper', 'Wallpaper'], ['effect', 'Efek']];
+const GIFT_PRESETS: Record<GType, number[]> = { koin: [100, 500, 1000, 5000], level: [1, 3, 5, 10], exp: [100, 200, 1000, 5000], poin: [50, 100, 300, 700], border: [], wallpaper: [], effect: [] };
 const DEV_PLAN_DAYS: Record<string, { nama: string; days: number }> = { mingguan: { nama: 'Mingguan', days: 7 }, bulanan: { nama: 'Bulanan', days: 30 } };
-const GIFT_UNIT: Record<GType, string> = { koin: 'Crystal', level: 'Level', exp: 'EXP', poin: 'Poin' };
+const GIFT_UNIT: Record<GType, string> = { koin: 'Crystal', level: 'Level', exp: 'EXP', poin: 'Poin', border: 'Border', wallpaper: 'Wallpaper', effect: 'Efek' };
 const DEV_REASONS = ['Kompensasi', 'Server down', 'Hadiah event', 'Bonus spesial'];
 
 function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
@@ -241,6 +241,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [gType, setGType]   = useState<GType>('koin');
   const [resetPick, setResetPick] = useState<DevReset>('poin');
   const [gVal, setGVal]     = useState('');
+  const [gItemKey, setGItemKey] = useState('');
   const [gSender, setGSender] = useState('Sistem Komiku');
   const [gMsg, setGMsg]     = useState('Kompensasi');
   const [confirmGlobal, setConfirmGlobal] = useState(false);
@@ -339,6 +340,11 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       upd[`premiumOrders/${o.id}/status`] = 'approved';
       upd[`premiumOrders/${o.id}/approvedAt`] = now;
       upd[`premiumOrders/${o.id}/until`] = until;
+      const ikey = db.ref(`users/${o.uid}/inbox`).push().key;
+      upd[`users/${o.uid}/inbox/${ikey}`] = {
+        jenis: 'premium_ok', judul: 'Premium aktif!', waktu: now,
+        isi: `Pembayaran Rp ${Number(o.amount).toLocaleString('id-ID')} diterima. Premium ${plan.nama} aktif sampai ${new Date(until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}. Terima kasih sudah mendukung Komiku!`,
+      };
       await db.ref().update(upd);
       setOrders(prev => prev && prev.filter(x => x.id !== o.id));
       showToast(`Premium ${o.name} aktif sampai ${new Date(until).toLocaleDateString('id-ID')}.`, 'success');
@@ -350,7 +356,16 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     if (!window.confirm(`Tolak pesanan ${o.name}?`)) return;
     setSaving(true);
     try {
-      await db.ref(`premiumOrders/${o.id}`).update({ status: 'rejected', rejectedAt: Date.now() });
+      const now = Date.now();
+      const ikey = db.ref(`users/${o.uid}/inbox`).push().key;
+      await db.ref().update({
+        [`premiumOrders/${o.id}/status`]: 'rejected',
+        [`premiumOrders/${o.id}/rejectedAt`]: now,
+        [`users/${o.uid}/inbox/${ikey}`]: {
+          jenis: 'premium_no', judul: 'Pembayaran belum ditemukan', waktu: now,
+          isi: `Pesanan Rp ${Number(o.amount).toLocaleString('id-ID')} tidak kami temukan di mutasi. Kalau kamu sudah bayar, hubungi admin atau buat pesanan baru.`,
+        },
+      });
       setOrders(prev => prev && prev.filter(x => x.id !== o.id));
       showToast('Pesanan ditolak.', 'success');
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
@@ -492,23 +507,32 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   };
 
   const askGlobal = () => {
+    if (isItemGift) {
+      if (!gItemKey) { showToast('Pilih itemnya dulu.', 'error'); return; }
+      setConfirmGlobal(true);
+      return;
+    }
     const val = parseInt(gVal);
     if (!val || val <= 0) { showToast('Masukkan angka yang benar.', 'error'); return; }
     setConfirmGlobal(true);
   };
 
   const sendGlobal = async () => {
-    const val = parseInt(gVal);
+    const isItem = gType === 'border' || gType === 'wallpaper' || gType === 'effect';
+    const val = isItem ? 0 : parseInt(gVal);
+    const nama = isItem ? (DEV_ITEMS[gType as ItemCat].items.find(i => i.key === gItemKey)?.nama || gItemKey) : giftTitle(gType, val);
     setConfirmGlobal(false);
     setSaving(true);
     try {
       const snap = await db.ref('users').get();
       const uids: string[] = [];
       snap.forEach((c: any) => { uids.push(String(c.key)); });
-      await sendGifts(db, uids, { type: gType, amount: val, itemName: giftTitle(gType, val), from: gSender || 'Sistem Komiku', message: gMsg });
+      await sendGifts(db, uids, isItem
+        ? { type: gType, itemKey: gItemKey, itemName: nama, from: gSender || 'Sistem Komiku', message: gMsg }
+        : { type: gType, amount: val, itemName: nama, from: gSender || 'Sistem Komiku', message: gMsg });
       showToast(`Terkirim ke ${uids.length} user. Mereka klaim lewat Notifikasi.`, 'success');
-      setGift({ title: 'Gift terkirim!', sub: giftTitle(gType, val) + ' ke ' + uids.length + ' user' });
-      setGVal('');
+      setGift({ title: 'Gift terkirim!', sub: nama + ' ke ' + uids.length + ' user' });
+      setGVal(''); setGItemKey('');
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
@@ -526,6 +550,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const modeLabel = DEV_MODES.find(m => m[0] === mode)![1];
   const catDef = DEV_ITEMS[itemCat];
   const nameOf = (cat: ItemCat, key: string) => DEV_ITEMS[cat].items.find(i => i.key === key)?.nama || '';
+  const isItemGift = gType === 'border' || gType === 'wallpaper' || gType === 'effect';
   const Avatar = ({ src, size }: { src: string; size: number }) => src
     // eslint-disable-next-line @next/next/no-img-element
     ? <img src={src} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
@@ -711,16 +736,26 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           <div>
             <label style={LABEL}>Jenis hadiah</label>
             <div style={ROW}>
-              {GIFT_TYPES.map(([k, l]) => <button key={k} onClick={() => { setGType(k); setGVal(''); setConfirmGlobal(false); }} style={chip(gType === k)}>{l}</button>)}
+              {GIFT_TYPES.map(([k, l]) => <button key={k} onClick={() => { setGType(k); setGVal(''); setGItemKey(''); setConfirmGlobal(false); }} style={chip(gType === k)}>{l}</button>)}
             </div>
           </div>
-          <div>
-            <label style={LABEL}>{gType === 'koin' ? 'Jumlah crystal' : gType === 'level' ? 'Naik berapa level' : gType === 'exp' ? 'Jumlah EXP' : 'Jumlah poin musim ini'}</label>
-            <div style={{ ...ROW, marginBottom: 8 }}>
-              {GIFT_PRESETS[gType].map(n => <button key={n} onClick={() => { setGVal(String(n)); setConfirmGlobal(false); }} style={chip(gVal === String(n))}>{n.toLocaleString('id-ID')}</button>)}
+          {isItemGift ? (
+            <div>
+              <label style={LABEL}>Pilih {DEV_ITEMS[gType as ItemCat].label.toLowerCase()}</label>
+              <select style={FIELD} value={gItemKey} onChange={e => { setGItemKey(e.target.value); setConfirmGlobal(false); }}>
+                <option value="">Pilih...</option>
+                {DEV_ITEMS[gType as ItemCat].items.map(i => <option key={i.key} value={i.key}>{i.nama}</option>)}
+              </select>
             </div>
-            <input style={FIELD} value={gVal} onChange={e => { setGVal(e.target.value); setConfirmGlobal(false); }} type="number" inputMode="numeric" placeholder="Atau ketik jumlah sendiri" />
-          </div>
+          ) : (
+            <div>
+              <label style={LABEL}>{gType === 'koin' ? 'Jumlah crystal' : gType === 'level' ? 'Naik berapa level' : gType === 'exp' ? 'Jumlah EXP' : 'Jumlah poin musim ini'}</label>
+              <div style={{ ...ROW, marginBottom: 8 }}>
+                {GIFT_PRESETS[gType].map(n => <button key={n} onClick={() => { setGVal(String(n)); setConfirmGlobal(false); }} style={chip(gVal === String(n))}>{n.toLocaleString('id-ID')}</button>)}
+              </div>
+              <input style={FIELD} value={gVal} onChange={e => { setGVal(e.target.value); setConfirmGlobal(false); }} type="number" inputMode="numeric" placeholder="Atau ketik jumlah sendiri" />
+            </div>
+          )}
           <div>
             <label style={LABEL}>Alasan</label>
             <div style={{ ...ROW, marginBottom: 8 }}>
@@ -740,7 +775,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           ) : (
             <div style={{ background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 18, padding: 14, marginTop: 4 }}>
               <div style={{ fontSize: 17, fontWeight: 800, color: GOLD, letterSpacing: -0.4 }}>
-                Kirim +{gVal} {GIFT_UNIT[gType]} ke SEMUA user{gType === 'poin' ? ' di peringkat' : ''}?
+                {isItemGift ? `Kirim ${DEV_ITEMS[gType as ItemCat].items.find(i => i.key === gItemKey)?.nama || ''} ke SEMUA user?` : `Kirim +${gVal} ${GIFT_UNIT[gType]} ke SEMUA user?`}
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{gMsg}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>

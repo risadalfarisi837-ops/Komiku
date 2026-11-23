@@ -16,10 +16,12 @@ const CORAL = '#FF6B6B';
 const MUTED = '#8F8D9B';
 const K_SEEN = 'komiku-notif-seen';        // { [linkKomik]: jumlahChapterTerakhirDilihat }
 const K_INFO = 'komiku-notif-info-read';   // string[] id info yang sudah dibaca
+const K_REL = 'komiku-notif-releases';     // string[] link rilis yang sudah dilihat
 
 type Tab = 'update' | 'hadiah' | 'info' | 'komentar';
 interface UpdateItem { link: string; title: string; thumb: string; baru: number; chapter: string; date: string }
-interface InfoItem { id: string; judul: string; isi: string; waktu?: number }
+interface InfoItem { id: string; judul: string; isi: string; waktu?: number; jenis?: string }
+interface Release { link: string; title: string; thumb: string; type: string; chapter: string; time: string; baru: boolean }
 
 const Back = () => (
   <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 5l-7 7 7 7" /></svg>
@@ -170,6 +172,7 @@ export default function NotifikasiPage() {
   const [claiming, setClaiming] = useState('');
   const [giftErr, setGiftErr] = useState('');
   const [fx, setFx] = useState<{ title: string; sub?: string } | null>(null);
+  const [releases, setReleases] = useState<Release[]>([]);
 
   useEffect(() => { setMounted(true); setReadInfo(readJSON<string[]>(K_INFO, [])); }, []);
 
@@ -199,6 +202,28 @@ export default function NotifikasiPage() {
     return () => { alive = false; };
   }, [mounted, favorites]);
 
+  // Rilis terbaru di Komiku (urut pembaruan). Yang belum pernah dilihat diberi tanda BARU.
+  useEffect(() => {
+    if (!mounted) return;
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/manga/browse?path=${encodeURIComponent('/daftar-manga/?orderby=update')}`);
+        const j = await r.json();
+        const items: any[] = j?.data?.items || [];
+        if (!items.length) return;
+        const seen = readJSON<string[] | null>(K_REL, null);
+        const list: Release[] = items.slice(0, 12).map((m) => ({
+          link: m.link, title: m.title, thumb: m.thumb, type: m.type || '', chapter: m.chapter || '', time: m.time || '',
+          baru: !!seen && !seen.includes(m.link),
+        }));
+        if (!seen) writeJSON(K_REL, items.map((m) => m.link)); // kunjungan pertama: cukup dicatat, jangan banjir notifikasi
+        if (alive) setReleases(list);
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [mounted]);
+
   // Info: dari database kalau ada, kalau tidak pakai bawaan
   useEffect(() => {
     if (!mounted) return;
@@ -211,6 +236,18 @@ export default function NotifikasiPage() {
         if (v) {
           const arr = Object.entries(v as Record<string, any>).map(([id, x]) => ({ id, judul: x.judul || 'Info', isi: x.isi || '', waktu: x.waktu }));
           if (arr.length) items = arr.sort((a, b) => (b.waktu || 0) - (a.waktu || 0));
+        }
+      } catch {}
+      // Notifikasi pribadi (Premium disetujui/ditolak, dll) dari users/<uid>/inbox
+      try {
+        const u = await getUser();
+        if (u) {
+          const { db } = await getFirebase();
+          const v = (await db.ref(`users/${u.uid}/inbox`).get()).val();
+          if (v) {
+            const mine: InfoItem[] = Object.entries(v as Record<string, any>).map(([id, x]) => ({ id: 'u_' + id, judul: x.judul || 'Info', isi: x.isi || '', waktu: Number(x.waktu) || 0, jenis: x.jenis }));
+            items = [...mine, ...items].sort((a, b) => (b.waktu || 0) - (a.waktu || 0));
+          }
         }
       } catch {}
       if (alive) setInfos(items);
@@ -273,7 +310,19 @@ export default function NotifikasiPage() {
 
   const unreadInfo = useMemo(() => infos.filter((i) => !readInfo.includes(i.id)).length, [infos, readInfo]);
 
+  const addSeen = (links: string[]) => {
+    const cur = readJSON<string[]>(K_REL, []);
+    writeJSON(K_REL, Array.from(new Set([...cur, ...links])).slice(-500));
+  };
+  const openRelease = (r: Release) => {
+    addSeen([r.link]);
+    router.push(`/manga?url=${encodeURIComponent(r.link)}`);
+  };
+  const newRel = releases.filter((r) => r.baru).length;
+
   const markAll = () => {
+    addSeen(releases.map((r) => r.link));
+    setReleases((prev) => prev.map((r) => ({ ...r, baru: false })));
     // Catat jumlah chapter terbaru sebagai "sudah dilihat" untuk semua komik yang punya pembaruan
     const seen = readJSON<Record<string, number>>(K_SEEN, {});
     updates.forEach((u) => { seen[u.link] = (seen[u.link] || 0) + u.baru; });
@@ -298,7 +347,7 @@ export default function NotifikasiPage() {
   };
 
   const tabs: { k: Tab; label: string }[] = [
-    { k: 'update', label: 'Pembaruan' },
+    { k: 'update', label: updates.length + newRel > 0 ? `Pembaruan · ${updates.length + newRel}` : 'Pembaruan' },
     { k: 'hadiah', label: pendingGifts.length > 0 ? `Hadiah · ${pendingGifts.length}` : 'Hadiah' },
     { k: 'info', label: unreadInfo > 0 ? `Info · ${unreadInfo}` : 'Info' },
     { k: 'komentar', label: 'Komentar' },
@@ -327,10 +376,11 @@ export default function NotifikasiPage() {
       {tab === 'update' && (
         checking ? (
           <div style={{ padding: '80px 20px', textAlign: 'center', color: MUTED, fontWeight: 700 }}>Memeriksa chapter baru...</div>
-        ) : updates.length === 0 ? (
+        ) : updates.length === 0 && releases.length === 0 ? (
           <Empty title="Semua sudah kamu baca" sub="Tidak ada notifikasi baru. Komo akan membangunkanmu saat ada chapter rilis." />
         ) : (
           <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {updates.length > 0 && <div style={{ color: MUTED, fontSize: 14, fontWeight: 800, letterSpacing: 0.3, margin: '2px 2px 0' }}>CHAPTER BARU DI FAVORITMU</div>}
             {updates.map((u) => (
               <button key={u.link} onClick={() => openUpdate(u)} style={{ display: 'flex', gap: 12, alignItems: 'center', background: '#2A2931', border: 0, borderRadius: 16, padding: 10, textAlign: 'left', color: '#fff' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -340,6 +390,22 @@ export default function NotifikasiPage() {
                   <div style={{ color: MUTED, fontSize: 15, fontWeight: 800, marginTop: 4 }}>{u.baru > 1 ? `${u.baru} chapter baru` : u.chapter} · {u.date}</div>
                 </div>
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: CORAL, flex: '0 0 10px' }} />
+              </button>
+            ))}
+
+            {releases.length > 0 && <div style={{ color: MUTED, fontSize: 14, fontWeight: 800, letterSpacing: 0.3, margin: '10px 2px 0' }}>RILIS TERBARU DI KOMIKU</div>}
+            {releases.map((r) => (
+              <button key={r.link} onClick={() => openRelease(r)} style={{ display: 'flex', gap: 12, alignItems: 'center', background: '#2A2931', border: 0, borderRadius: 16, padding: 10, textAlign: 'left', color: '#fff' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={r.thumb} alt="" referrerPolicy="no-referrer" style={{ width: 52, height: 72, borderRadius: 10, objectFit: 'cover', flex: '0 0 52px' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.4, lineHeight: 1.2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{r.title}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
+                    {r.type && <span style={{ background: '#1F1E24', fontSize: 12, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}>{r.type}</span>}
+                    <span style={{ color: MUTED, fontSize: 14.5, fontWeight: 800 }}>{[r.chapter, r.time].filter(Boolean).join(' · ') || 'Baru diperbarui'}</span>
+                  </div>
+                </div>
+                {r.baru && <span style={{ background: CORAL, color: '#fff', fontSize: 11.5, fontWeight: 800, padding: '3px 8px', borderRadius: 7, flex: '0 0 auto' }}>BARU</span>}
               </button>
             ))}
           </div>
@@ -355,6 +421,8 @@ export default function NotifikasiPage() {
               const unread = !readInfo.includes(i.id);
               return (
                 <button key={i.id} onClick={() => readOne(i.id)} style={{ background: '#2A2931', border: 0, borderRadius: 16, padding: '14px 16px', textAlign: 'left', color: '#fff', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {i.jenis === 'premium_ok' && <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(245,200,75,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 40px' }}><svg width={22} height={22} viewBox="0 0 24 24" fill="#F5C84B"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" /></svg></div>}
+                  {i.jenis === 'premium_no' && <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,92,92,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 40px' }}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#FF7A7A" strokeWidth={2.4} strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></div>}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.4, color: unread ? '#fff' : '#C8C6D2' }}>{i.judul}</div>
                     <div style={{ color: MUTED, fontSize: 15, fontWeight: 700, lineHeight: 1.4, marginTop: 4 }}>{i.isi}</div>
