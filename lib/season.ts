@@ -27,6 +27,12 @@ export const dayKey = (d: Date = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const isNight = (d: Date = new Date()) => d.getHours() >= 22 || d.getHours() < 5;
 export const fmt = (n: number) => n.toLocaleString('id-ID');
+// Ringkas untuk angka besar supaya tidak meleber: 1.000.039 -> "1 jt"
+export const fmtC = (n: number) => {
+  if (n >= 1_000_000_000) return (n / 1e9).toFixed(1).replace('.', ',').replace(/,0$/, '') + ' M';
+  if (n >= 1_000_000) return (n / 1e6).toFixed(1).replace('.', ',').replace(/,0$/, '') + ' jt';
+  return fmt(n);
+};
 
 export type Track = 'Murim' | 'Noble' | 'Demon';
 // ch/streak/night = target Chapter, Streak (hari), dan Malam menuju pangkat ini. Naik pangkat = target ikut naik.

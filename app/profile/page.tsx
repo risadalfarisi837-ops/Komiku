@@ -7,14 +7,13 @@ import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
-import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
+import { currentSeason, RANKS, rankFor, fmt, fmtC, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore, ACTIVE_DAYS } from '@/lib/leaderboard';
 import { sendGifts, giftTitle, GiftType } from '@/lib/gifts';
 import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
-import CheckInCard from '@/components/CheckInCard';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAptqYUJWJ-bfadEA5Oa3d5c8YBl8qGzd0",
@@ -1173,7 +1172,7 @@ export default function ProfilePage() {
         {[
           { v: seasonRank != null ? `#${fmt(seasonRank)}` : '–', l: 'Peringkat musim' },
           { v: String(level), l: 'Tingkat' },
-          { v: fmt(pts), l: 'Poin' },
+          { v: fmtC(pts), l: 'Poin' },
         ].map((x, i) => (
           <div key={x.l} style={{ flex: 1, textAlign: 'center', borderLeft: i ? '1px solid rgba(255,255,255,.08)' : 'none', margin: '2px 0', minWidth: 0 }}>
             <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.2 }}>{x.v}</div>
@@ -1195,7 +1194,7 @@ export default function ProfilePage() {
             </div>
           </div>
           <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1, whiteSpace: 'nowrap' }}>
-            {fmt(pts)}{next && <span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}> / {fmt(next.min)}</span>}
+            {fmtC(pts)}{next && <span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}> / {fmt(next.min)}</span>}
           </div>
         </div>
         <div style={{ height: 8, borderRadius: 4, background: MAROON, marginTop: 14 }}>
@@ -1223,8 +1222,6 @@ export default function ProfilePage() {
           </button>
         </div>
       )}
-
-      <div style={{ margin: '16px 16px 0' }}><CheckInCard /></div>
 
       {/* Menu: Kamu */}
       <SectionLabel>Kamu</SectionLabel>

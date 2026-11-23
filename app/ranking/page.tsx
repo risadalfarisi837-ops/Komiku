@@ -3,7 +3,7 @@
 import { useEffect, useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { useUserStats } from '@/lib/store';
-import { currentSeason, RANKS, rankFor, fmt, targetsFor, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS, Track } from '@/lib/season';
+import { currentSeason, RANKS, rankFor, fmt, fmtC, targetsFor, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS, Track } from '@/lib/season';
 import { fetchTop, pushSeasonScore, getUser, Row } from '@/lib/leaderboard';
 
 const CORAL = '#FF6B6B';
@@ -156,7 +156,7 @@ export default function RankingPage() {
           </div>
           {next && (
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.8 }}>
-              {fmt(pts)}<span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}>/ {fmt(next.min)}</span>
+              {fmtC(pts)}<span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}>/ {fmt(next.min)}</span>
             </div>
           )}
         </div>
@@ -208,7 +208,7 @@ export default function RankingPage() {
                 <RankPill points={r.points} />
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmt(r.points)}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(r.points)}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
               </div>
             </div>
@@ -227,7 +227,7 @@ export default function RankingPage() {
               <RankPill points={pts} />
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmt(pts)}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(pts)}</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
             </div>
           </div>

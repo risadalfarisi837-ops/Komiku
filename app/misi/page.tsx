@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, MessageSquare, Moon, CalendarCheck, Gem, Ticket, C
 import { getFirebase } from '@/lib/firebase-client';
 import { useMissions, MISSIONS, periodKey, type Mission } from '@/lib/missions';
 import CheckInCard from '@/components/CheckInCard';
+import { fmtC } from '@/lib/season';
 
 const ICONS: Record<Mission['stat'], any> = { read: BookOpen, comment: MessageSquare, night: Moon, days: CalendarCheck };
 
@@ -136,12 +137,12 @@ export default function MisiPage() {
 
       <div className="mx-5 flex rounded-3xl border border-white/10 bg-white/5 py-4">
         <div className="flex-1 text-center">
-          <p className="text-3xl font-extrabold flex items-center justify-center gap-2" style={{ color: '#f1c40f' }}><Gem className="w-6 h-6" />{bal.koin.toLocaleString('id-ID')}</p>
+          <p className="text-3xl font-extrabold flex items-center justify-center gap-2" style={{ color: '#f1c40f' }}><Gem className="w-6 h-6" />{fmtC(bal.koin)}</p>
           <p className="text-base font-bold text-white/50">Crystal</p>
         </div>
         <div className="w-px bg-white/10" />
         <div className="flex-1 text-center">
-          <p className="text-3xl font-extrabold flex items-center justify-center gap-2" style={{ color: '#7dd3fc' }}><Ticket className="w-6 h-6" />{bal.token.toLocaleString('id-ID')}</p>
+          <p className="text-3xl font-extrabold flex items-center justify-center gap-2" style={{ color: '#7dd3fc' }}><Ticket className="w-6 h-6" />{fmtC(bal.token)}</p>
           <p className="text-base font-bold text-white/50">Token</p>
         </div>
       </div>
