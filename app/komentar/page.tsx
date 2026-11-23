@@ -157,7 +157,7 @@ function KomentarContent() {
         <a href={`/user?uid=${c.uid}`} aria-label="Lihat profil" style={{ display: 'inline-flex', flex: '0 0 auto', alignSelf: 'flex-start' }}><Avatar src={c.foto} size={small ? 32 : 42} gold={gold} /></a>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 28 }}>
-            <PremiumName premium={isPremiumRole(c.role)} dev={c.role === 'Developer'} style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</PremiumName>
+            <a href={`/user?uid=${c.uid}`} style={{ color: 'inherit', textDecoration: 'none' }}><PremiumName premium={isPremiumRole(c.role)} dev={c.role === 'Developer'} style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</PremiumName></a>
             {(c.role === 'Komiku Premium' || c.role === 'Wibu Premium') && <VerifiedBadge size={small ? 17 : 20} />}
             {c.role === 'Developer' && <DevBadge size={small ? 18 : 22} />}
             {lk && <LencanaIcon l={lk} size={small ? 22 : 28} />}

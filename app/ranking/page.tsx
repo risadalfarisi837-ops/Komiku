@@ -200,7 +200,7 @@ export default function RankingPage() {
       ) : (
         <div>
           {list.map((r, i) => (
-            <div key={r.uid} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
+            <Link key={r.uid} href={`/user?uid=${r.uid}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', color: 'inherit', textDecoration: 'none' }}>
               <span style={{ width: 30, textAlign: 'center', fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: i < 3 ? CORAL : '#fff' }}>{i + 1}</span>
               <Avatar name={r.name} photo={r.photo} />
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -211,7 +211,7 @@ export default function RankingPage() {
                 <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(r.points)}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
