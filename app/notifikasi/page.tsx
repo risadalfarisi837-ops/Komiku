@@ -7,7 +7,7 @@ import { currentSeason } from '@/lib/season';
 import { getFirebase, getUser } from '@/lib/leaderboard';
 import { Gift, claimGift, GIFT_TYPE_LABEL } from '@/lib/gifts';
 import { BORDER_CATALOG } from '@/components/BorderSheet';
-import { WALLPAPER_CATALOG, RARITY_STYLE } from '@/lib/wallpapers';
+import { WALLPAPER_CATALOG, RARITY_STYLE, wpBg } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
 import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
@@ -132,7 +132,7 @@ function GiftArt({ g, photo }: { g: Gift; photo: string }) {
     const w = g.itemKey ? WALLPAPER_CATALOG[g.itemKey] : undefined;
     const r = w ? RARITY_STYLE[w.rarity] : undefined;
     return (
-      <div style={{ ...box, background: w?.url ? `url(${w.url}) center/cover` : w?.grad || '#334155', border: `2px solid ${r?.border || 'rgba(255,255,255,.1)'}`, boxShadow: r?.glow && r.glow !== 'none' ? r.glow : undefined, justifyContent: 'flex-end' }}>
+      <div style={{ ...box, background: w ? wpBg(g.itemKey) : '#334155', border: `2px solid ${r?.border || 'rgba(255,255,255,.1)'}`, boxShadow: r?.glow && r.glow !== 'none' ? r.glow : undefined, justifyContent: 'flex-end' }}>
         <span style={{ background: 'rgba(0,0,0,.55)', width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 800, padding: '3px 0', color: r?.color || '#fff' }}>{w?.rarity || 'Wallpaper'}</span>
       </div>
     );

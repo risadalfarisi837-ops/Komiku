@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getFirebase } from '@/lib/leaderboard';
 import { useFavorites, useHistory } from '@/lib/store';
-import { WALLPAPER_CATALOG, RARITY_STYLE } from '@/lib/wallpapers';
+import { WALLPAPER_CATALOG, RARITY_STYLE, wpBg } from '@/lib/wallpapers';
 import { BORDER_CATALOG } from '@/components/BorderSheet';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import DevBadge from '@/components/DevBadge';
@@ -139,7 +139,7 @@ function UserContent() {
   const tier = tierOf(level);
   const wp: any = prof.activeWallpaper ? (WALLPAPER_CATALOG as any)[prof.activeWallpaper] : null;
   const rs: any = wp ? (RARITY_STYLE as any)[wp.rarity] : null;
-  const bannerBg = wp ? (wp.url ? 'url(' + wp.url + ') center/cover' : wp.grad) : 'linear-gradient(160deg,#1c2133,#0b0c10)';
+  const bannerBg = wp ? wpBg(prof.activeWallpaper, true) : 'linear-gradient(160deg,#1c2133,#0b0c10)';
   const pu = Number(prof.premiumUntil) || 0;
   const verified = isPremiumRole(prof.role) && (!pu || pu > Date.now());
   const dev = prof.role === 'Developer';

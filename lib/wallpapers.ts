@@ -54,6 +54,29 @@ export const WALLPAPER_CATALOG: Record<string, WallpaperItem> = {
   'komet-takdir':      { nama: 'Komet Takdir',      rarity: 'Legendary', grad: 'linear-gradient(180deg,#050818,#a8357f)', url: '/wallpapers/komet-takdir.svg' },
 };
 
+/** Gambar diam (ringan) untuk wallpaper Legendary. SVG beranimasinya berat kalau banyak tampil sekaligus. */
+export const wpPoster = (key: string) => '/wallpapers/poster/' + key + '.webp';
+
+/**
+ * Nilai CSS `background` untuk wallpaper.
+ * Legendary memakai gambar diam, kecuali animated=true (pakai SVG beranimasi; cukup 1 per layar, mis. banner profil).
+ */
+export function wpBg(key: string | undefined | null, animated = false): string {
+  const w = key ? WALLPAPER_CATALOG[key] : undefined;
+  if (!w) return '';
+  if (!w.url) return w.grad;
+  const src = w.rarity === 'Legendary' && !animated ? wpPoster(key as string) : w.url;
+  return 'url(' + src + ') center/cover, ' + w.grad;
+}
+
+/** Info yang ditampilkan di panel "Info Rarity" (urut dari terbaik). */
+export const RARITY_INFO: Record<Rarity, { label: string; stars: number; desc: string }> = {
+  Legendary: { label: 'TERBAIK', stars: 4, desc: 'Banner profil bergerak (animasi) dan bingkai emas berkilau di komentar. Paling langka.' },
+  Epic:      { label: 'LANGKA',  stars: 3, desc: 'Adegan dramatis bergaya anime, bingkai ungu berkilau di komentar.' },
+  Rare:      { label: 'BAGUS',   stars: 2, desc: 'Ilustrasi berlapis dengan detail lebih banyak, bingkai biru bercahaya.' },
+  Normal:    { label: 'UMUM',    stars: 1, desc: 'Pemandangan sederhana tanpa efek tambahan. Paling mudah didapat.' },
+};
+
 const byRarity = (r: Rarity) => Object.keys(WALLPAPER_CATALOG).filter((k) => WALLPAPER_CATALOG[k].rarity === r);
 
 export function rollRarity(): Rarity {

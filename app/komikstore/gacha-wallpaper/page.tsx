@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Sparkles, Check, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Search, Sparkles, Check, RefreshCw, Info } from 'lucide-react';
 import { getFirebase } from '@/lib/firebase-client';
-import { WALLPAPER_CATALOG, RARITY_STYLE, RARITIES, RATES, COST_1, COST_10, rollMany, type Rarity } from '@/lib/wallpapers';
+import { WALLPAPER_CATALOG, RARITY_STYLE, RARITY_INFO, RARITIES, RATES, COST_1, COST_10, rollMany, wpBg, type Rarity } from '@/lib/wallpapers';
 import WallpaperBg from '@/components/WallpaperBg';
 import ProfileEffect from '@/components/ProfileEffect';
 import { Confetti } from '@/components/GiftEffect';
@@ -11,7 +11,8 @@ import type { EffectItem } from '@/lib/effects';
 
 const fmt = (n: number) => (n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n));
 const rank = (k: string) => RARITIES.indexOf(WALLPAPER_CATALOG[k].rarity);
-const bg = (k: string) => { const w = WALLPAPER_CATALOG[k]; return w.url ? 'url(' + w.url + ') center/cover' : w.grad; };
+// Urut dari rarity terbaik, untuk panel info
+const INFO_ORDER = [...RARITIES].reverse().map((r) => ({ r, keys: Object.keys(WALLPAPER_CATALOG).filter((k) => WALLPAPER_CATALOG[k].rarity === r) }));
 
 function Pill({ r }: { r: Rarity }) {
   return <span className="rounded-full bg-black/70 border border-white/15 px-3 py-1 text-xs font-black" style={{ color: RARITY_STYLE[r].color }}>{r}</span>;
@@ -24,7 +25,7 @@ const KFX = `
 @keyframes kgBlink{0%,100%{opacity:.35}50%{opacity:1}}
 @keyframes kgFlash{from{opacity:0}to{opacity:1}}
 @keyframes kgCard{0%{transform:scale(.2) translateY(30px) rotate(-8deg);opacity:0}100%{transform:scale(1) translateY(0) rotate(0);opacity:1}}
-@keyframes kgGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+@keyframes kgPulse{0%,100%{opacity:.25}50%{opacity:1}}
 `;
 
 const FX_ITEMS = Object.fromEntries(RARITIES.map((r) => [r, { nama: '', harga: 0, tier: 'Premium', kind: 'sparkle', color: RARITY_STYLE[r].color, color2: '#ffffff' }])) as Record<Rarity, EffectItem>;
@@ -41,6 +42,7 @@ export default function GachaWallpaperPage() {
   const [toast, setToast] = useState('');
   const [result, setResult] = useState<{ key: string; isNew: boolean }[] | null>(null);
   const [fx, setFx] = useState<Rarity | null>(null);
+  const [info, setInfo] = useState(false);
 
   const load = async (f: any, id: string, photo = '') => {
     try {
@@ -149,7 +151,7 @@ export default function GachaWallpaperPage() {
             </div>
 
             <div className="mx-4 mt-4 rounded-3xl border border-white/10 overflow-hidden relative h-60 flex flex-col items-center justify-center text-center px-5"
-              style={{ background: last ? bg(last.key) : 'radial-gradient(circle at 50% 40%,#2c3f8f,#0a0f1e 70%)' }}>
+              style={{ background: last ? wpBg(last.key, true) : 'radial-gradient(circle at 50% 40%,#2c3f8f,#0a0f1e 70%)' }}>
               <div className="absolute inset-0 bg-black/35" />
               <div className="relative">
                 <h2 className="text-3xl font-black drop-shadow">{last ? WALLPAPER_CATALOG[last.key].nama : 'Wallpaper Summon'}</h2>
@@ -158,9 +160,19 @@ export default function GachaWallpaperPage() {
                   : <><Sparkles className="w-14 h-14 mx-auto mt-3 text-sky-200" /><p className="mt-3 font-bold text-white/80">Wallpaper langka akan muncul di sini setelah summon.</p></>}
               </div>
             </div>
-            <p className="px-5 pt-2 text-center text-xs font-bold text-white/40">
-              {RARITIES.map((r) => r + ' ' + RATES[r] + '%').join(' · ')} · 10x dijamin minimal Rare
-            </p>
+            <button onClick={() => setInfo(true)} className="mx-4 mt-3 block w-[calc(100%-2rem)] rounded-2xl border border-white/10 bg-[#111a2e] p-3 text-left active:scale-95 transition-transform">
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-sky-300" />
+                <span className="text-sm font-black">Info rarity &amp; peluang</span>
+                <span className="ml-auto text-xs font-bold text-white/45">Lihat ›</span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[...RARITIES].reverse().map((r) => (
+                  <span key={r} className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-black" style={{ color: RARITY_STYLE[r].color }}>{r} {RATES[r]}%</span>
+                ))}
+                <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-black text-white/60">10x dijamin min. Rare</span>
+              </div>
+            </button>
 
             <div className="mx-4 mt-3 grid grid-cols-2 gap-3">
               <button onClick={() => summon(1)} disabled={busy}
@@ -214,7 +226,7 @@ export default function GachaWallpaperPage() {
                   <button key={k} onClick={() => !on && equip(k)} disabled={busy}
                     className={card + ' p-2.5 text-left active:scale-95 transition-transform'}
                     style={on ? { border: '2px solid #fcd34d' } : undefined}>
-                    <div className="relative h-28 rounded-2xl overflow-hidden" style={{ background: bg(k) }}>
+                    <div className="relative h-28 rounded-2xl overflow-hidden" style={{ background: wpBg(k) }}>
                       <span className="absolute left-2 top-2"><Pill r={w.rarity} /></span>
                       {on && <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-amber-300 px-3 py-1 text-xs font-black text-black">★ Aktif</span>}
                       {!on && <span className="absolute bottom-2 right-2 rounded-full bg-emerald-600/80 p-1"><Check className="w-3.5 h-3.5" /></span>}
@@ -230,7 +242,7 @@ export default function GachaWallpaperPage() {
 
       {fx && (
         <div className="fixed inset-0 z-[55] flex items-center justify-center overflow-hidden" style={{ background: 'radial-gradient(circle at 50% 45%,rgba(10,15,30,.75),#05070f 75%)', animation: 'kgFade .25s ease-out' }}>
-          <ProfileEffect item={FX_ITEMS[fx]} min={40} />
+          <ProfileEffect item={FX_ITEMS[fx]} min={24} lite />
           <div className="relative flex items-center justify-center">
             {[0, 1, 2].map((i) => (
               <span key={i} className="absolute rounded-full border-2" style={{ width: 140, height: 140, borderColor: fxc, animation: 'kgRing 1.4s ease-out ' + i * 0.45 + 's infinite' }} />
@@ -253,7 +265,10 @@ export default function GachaWallpaperPage() {
                 const st = RARITY_STYLE[w.rarity];
                 return (
                   <div key={i} className="relative rounded-xl overflow-hidden aspect-[3/4]"
-                    style={{ background: bg(it.key), border: '2px solid ' + st.border, boxShadow: st.glow, animation: 'kgCard .5s cubic-bezier(.2,1.4,.4,1) both ' + i * 0.09 + 's' + (w.rarity === 'Legendary' || w.rarity === 'Epic' ? ', kgGlow 1.6s ease-in-out ' + (0.6 + i * 0.09) + 's infinite' : '') }}>
+                    style={{ background: wpBg(it.key), border: '2px solid ' + st.border, boxShadow: st.glow, animation: 'kgCard .5s cubic-bezier(.2,1.4,.4,1) both ' + i * 0.09 + 's' }}>
+                    {(w.rarity === 'Legendary' || w.rarity === 'Epic') && (
+                      <span className="pointer-events-none absolute inset-0" style={{ boxShadow: 'inset 0 0 14px ' + st.color, animation: 'kgPulse 1.6s ease-in-out ' + (0.6 + i * 0.09) + 's infinite' }} />
+                    )}
                     {it.isNew && <span className="absolute left-0 top-0 bg-rose-500 px-1.5 text-[9px] font-black">BARU</span>}
                     <span className="absolute bottom-0 inset-x-0 bg-black/60 text-center text-[9px] font-black truncate px-0.5" style={{ color: st.color }}>{w.nama}</span>
                   </div>
@@ -261,6 +276,56 @@ export default function GachaWallpaperPage() {
               })}
             </div>
             <button onClick={() => setResult(null)} className="mt-5 w-full rounded-2xl bg-violet-500 py-3 font-black">Oke</button>
+          </div>
+        </div>
+      )}
+
+      {info && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={() => setInfo(false)}>
+          <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl bg-[#1a2238] p-5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-xl font-black">Info Rarity</p>
+            <p className="mt-1 text-center text-xs font-bold text-white/50">Makin tinggi rarity, makin langka dan makin bagus tampilannya.</p>
+            <div className="mt-4 space-y-3">
+              {INFO_ORDER.map(({ r, keys }) => {
+                const st = RARITY_STYLE[r];
+                const inf = RARITY_INFO[r];
+                const avg = Math.max(1, Math.round(100 / RATES[r]));
+                const have = keys.filter((k) => owned[k]).length;
+                return (
+                  <div key={r} className="rounded-2xl border bg-[#111a2e] p-3" style={{ borderColor: st.border, boxShadow: st.glow }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-black" style={{ color: st.color }}>{r}</span>
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-black text-black" style={{ background: st.color }}>{inf.label}</span>
+                      <span className="ml-auto text-sm font-black text-amber-300" aria-label={inf.stars + ' dari 4 bintang'}>
+                        {'★'.repeat(inf.stars)}<span className="text-white/20">{'★'.repeat(4 - inf.stars)}</span>
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                        <div className="h-full rounded-full" style={{ width: Math.max(RATES[r], 3) + '%', background: st.color }} />
+                      </div>
+                      <span className="text-sm font-black" style={{ color: st.color }}>{RATES[r]}%</span>
+                    </div>
+                    <p className="mt-2 text-[13px] font-bold text-white/70">{inf.desc}</p>
+                    <p className="mt-1 text-xs font-bold text-white/45">
+                      Rata-rata ±{avg}x summon (±{(avg * COST_1).toLocaleString('id-ID')} Crystal) · {keys.length} wallpaper · koleksimu {have}/{keys.length}
+                    </p>
+                    <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                      {keys.map((k) => (
+                        <div key={k} className="w-14 shrink-0">
+                          <div className="relative h-16 overflow-hidden rounded-lg" style={{ background: wpBg(k), border: '1px solid ' + st.border, opacity: owned[k] ? 1 : 0.5 }}>
+                            {owned[k] ? <span className="absolute bottom-0.5 right-0.5 rounded-full bg-emerald-600/90 p-0.5"><Check className="w-2.5 h-2.5" /></span> : null}
+                          </div>
+                          <p className="mt-0.5 truncate text-center text-[9px] font-black text-white/70">{WALLPAPER_CATALOG[k].nama}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-center text-xs font-bold text-white/45">Summon 10x dijamin ada minimal 1 Rare. Perkiraan Crystal dihitung dari peluang; hasil sebenarnya bisa lebih cepat atau lebih lama.</p>
+            <button onClick={() => setInfo(false)} className="mt-4 w-full rounded-2xl bg-violet-500 py-3 font-black">Oke</button>
           </div>
         </div>
       )}

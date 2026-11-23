@@ -18,7 +18,7 @@ function spawn(e: EffectItem, w: number, h: number, fresh: boolean): P {
   return p;
 }
 
-export default function ProfileEffect({ effectKey, item, min = 12, className = '' }: { effectKey?: string; item?: EffectItem; min?: number; className?: string }) {
+export default function ProfileEffect({ effectKey, item, min = 12, className = '', lite = false }: { effectKey?: string; item?: EffectItem; min?: number; className?: string; lite?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const e = item ?? (effectKey ? EFFECT_CATALOG[effectKey] : undefined);
 
@@ -34,7 +34,7 @@ export default function ProfileEffect({ effectKey, item, min = 12, className = '
       w = cv.clientWidth; h = cv.clientHeight;
       cv.width = w * dpr; cv.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const n = Math.max(min, Math.min(60, Math.round((w * h) / 9000)));
+      const n = Math.max(min, Math.min(lite ? 28 : 60, Math.round((w * h) / 9000)));
       ps = Array.from({ length: n }, () => spawn(e, w, h, true));
     };
     fit();
@@ -50,7 +50,7 @@ export default function ProfileEffect({ effectKey, item, min = 12, className = '
         ctx.fillStyle = p.c; ctx.strokeStyle = p.c;
         if (e.kind === 'sparkle' || e.kind === 'firefly') {
           const tw = 0.5 + 0.5 * Math.sin(t / (e.kind === 'firefly' ? 700 : 450) + p.ph);
-          ctx.globalAlpha = tw; ctx.shadowColor = p.c; ctx.shadowBlur = e.kind === 'firefly' ? 10 : 6;
+          ctx.globalAlpha = tw; ctx.shadowColor = p.c; ctx.shadowBlur = lite ? 0 : e.kind === 'firefly' ? 10 : 6;
           if (e.kind === 'sparkle') { // bintang 4 sudut
             const s = p.r * 2.2;
             ctx.beginPath(); ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x + s * 0.25, p.y - s * 0.25); ctx.lineTo(p.x + s, p.y);
@@ -67,7 +67,7 @@ export default function ProfileEffect({ effectKey, item, min = 12, className = '
           ctx.globalAlpha = p.a; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.vx * 3, p.y - p.vy * 3); ctx.stroke();
         } else { // snow / ember
           const fade = e.kind === 'ember' ? Math.max(0, Math.min(1, p.y / h)) : 0.9;
-          ctx.globalAlpha = fade; if (e.kind === 'ember') { ctx.shadowColor = p.c; ctx.shadowBlur = 6; }
+          ctx.globalAlpha = fade; if (e.kind === 'ember' && !lite) { ctx.shadowColor = p.c; ctx.shadowBlur = 6; }
           ctx.beginPath(); ctx.arc(p.x + Math.sin(t / 1000 + p.ph) * 4, p.y, p.r, 0, 6.28); ctx.fill(); ctx.shadowBlur = 0;
         }
         ctx.globalAlpha = 1;

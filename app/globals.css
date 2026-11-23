@@ -65,12 +65,16 @@ html, body {
 .badge-premium-anim { background: linear-gradient(90deg,#2563eb,#06b6d4,#2563eb); background-size: 200% 100%; color: #fff; border: none; animation: shimmerPremium 2.5s infinite linear; box-shadow: 0 0 8px rgba(59,130,246,0.5); }
 
 /* ── Wallpaper komentar (gacha) ───────────────────────────── */
-@keyframes wpShimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
-@keyframes wpPulse { 0%,100% { box-shadow: 0 0 14px rgba(251,191,36,.35); } 50% { box-shadow: 0 0 26px rgba(251,191,36,.8); } }
+/* Hanya transform/opacity yang dianimasikan (jalan di GPU, tidak menggambar ulang kartu) */
+@keyframes wpShimmer { from { transform: translateX(-120%); } to { transform: translateX(420%); } }
+@keyframes wpPulse { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
 .wp-shimmer {
-  position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.18) 50%, transparent 65%);
-  background-size: 250% 100%; animation: wpShimmer 3.2s linear infinite;
+  position: absolute; top: 0; bottom: 0; left: 0; width: 35%; z-index: 1; pointer-events: none;
+  background: linear-gradient(110deg, transparent, rgba(255,255,255,.18) 50%, transparent);
+  animation: wpShimmer 3.2s linear infinite; will-change: transform;
 }
-.wp-pulse { animation: wpPulse 2.4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .wp-shimmer, .wp-pulse { animation: none; } }
+.wp-pulse::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 0 22px rgba(251,191,36,.75); opacity: 0; animation: wpPulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .wp-shimmer, .wp-pulse::after { animation: none; } }
