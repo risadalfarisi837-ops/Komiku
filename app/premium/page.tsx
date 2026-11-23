@@ -23,6 +23,11 @@ const Crown = ({ size = 22, color = GOLD, filled = true }: { size?: number; colo
   </svg>
 );
 
+// Nomor WhatsApp admin (format internasional tanpa + / spasi / 0 di depan), contoh: '6281234567890'
+const ADMIN_WA = '6281315059849';
+const WA_READY = /^\d{9,15}$/.test(ADMIN_WA);
+const QRIS_NAME = 'Risyadh All Store';
+
 const K_ORDER = 'komiku-premium-order';
 const ORDER_TTL = 24 * 60 * 60 * 1000; // pesanan berlaku 24 jam
 const BASE_PRICE: Record<Plan, number> = { mingguan: 7000, bulanan: 25000 };
@@ -44,13 +49,15 @@ export default function PremiumPage() {
   const [payState, setPayState] = useState<'wait' | 'ok' | 'rejected' | 'expired'>('wait');
   const [qrMissing, setQrMissing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [payName, setPayName] = useState('');
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const u = await getUser();
+        const u: any = await getUser();
         if (!u) return;
+        if (alive) setPayName(u.displayName || '');
         const { db } = await getFirebase();
         const v = (await db.ref(`users/${u.uid}/role`).get()).val();
         const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
@@ -83,6 +90,7 @@ export default function PremiumPage() {
     try {
       const u: any = await getUser();
       if (!u) { setMsg('Masuk dulu lewat halaman Profil.'); setBusy(false); return; }
+      setPayName(u.displayName || '');
       const { db } = await getFirebase();
       const amount = BASE_PRICE[plan] + 100 + Math.floor(Math.random() * 900);
       const ref = db.ref('premiumOrders').push();
@@ -96,8 +104,18 @@ export default function PremiumPage() {
     setBusy(false);
   };
 
+  // Chat WhatsApp admin dengan ringkasan pesanan sudah terisi; bukti bayar dilampirkan user di chat
+  const waUrl = () => {
+    if (!pay || !WA_READY) return '';
+    const paket = PLANS.find((p) => p.id === pay.plan)?.nama || pay.plan;
+    const teks = `Halo, saya sudah bayar Komiku Premium.\n\nPaket: ${paket}\nNominal: Rp ${pay.amount.toLocaleString('id-ID')}\nNama: ${payName || 'User'}\nID pesanan: ${pay.orderId}\n\nBukti pembayaran saya kirim di chat ini.`;
+    return `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(teks)}`;
+  };
+  const bukaWa = () => { const url = waUrl(); if (url) window.open(url, '_blank'); };
+
   const sudahBayar = async () => {
     if (!pay) return;
+    bukaWa(); // dibuka sebelum proses async supaya tidak diblokir browser
     try {
       const { db } = await getFirebase();
       await db.ref(`premiumOrders/${pay.orderId}/claimed`).set(true);
@@ -241,20 +259,26 @@ export default function PremiumPage() {
                 <div style={{ color: MUTED, fontSize: 15, fontWeight: 800 }}>Bayar TEPAT sebesar</div>
                 <button onClick={salinNominal} style={{ background: 'none', border: 0, color: GOLD, fontSize: 36, fontWeight: 800, letterSpacing: -1.5, marginTop: 2 }}>Rp {pay.amount.toLocaleString('id-ID')}</button>
                 <div style={{ color: MUTED, fontSize: 13.5, fontWeight: 700, lineHeight: 1.4 }}>{copied ? 'Nominal disalin ✓' : 'Tap nominal untuk menyalin. 3 digit terakhir dipakai untuk mencocokkan pembayaranmu.'}</div>
-                <div style={{ background: '#fff', borderRadius: 20, padding: 12, margin: '14px auto 0', width: 250, minHeight: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ background: '#fff', borderRadius: 20, padding: 10, margin: '14px auto 0', width: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {qrMissing
                     ? <span style={{ color: '#333', fontWeight: 700, fontSize: 14 }}>Gambar QRIS belum dipasang (public/qris.png)</span>
                     // eslint-disable-next-line @next/next/no-img-element
                     : <img src="/qris.png" alt="QRIS" onError={() => setQrMissing(true)} style={{ width: '100%', objectFit: 'contain' }} />}
                 </div>
+                <div style={{ color: '#D6D4DE', fontSize: 15, fontWeight: 800, marginTop: 8 }}>QRIS · {QRIS_NAME}</div>
                 <div style={{ color: '#D6D4DE', fontSize: 14.5, fontWeight: 700, lineHeight: 1.5, marginTop: 12, textAlign: 'left' }}>
                   1. Scan QRIS dengan DANA atau e-wallet apa saja<br />
                   2. Isi nominal persis seperti di atas<br />
-                  3. Setelah bayar, tap “Saya sudah bayar”<br />
+                  {WA_READY
+                    ? <>3. Setelah bayar, tap “Saya sudah bayar”. WhatsApp admin terbuka, kirim screenshot bukti bayarnya<br /></>
+                    : <>3. Setelah bayar, tap “Saya sudah bayar”<br /></>}
                   Admin akan mengecek lalu mengaktifkan Premium. Layar ini berubah sendiri.
                 </div>
                 {pay.claimed
-                  ? <div style={{ marginTop: 16, color: '#6FD6B2', fontWeight: 800, fontSize: 16 }}>✓ Menunggu persetujuan admin</div>
+                  ? <>
+                      <div style={{ marginTop: 16, color: '#6FD6B2', fontWeight: 800, fontSize: 16 }}>✓ Menunggu persetujuan admin</div>
+                      {WA_READY && <button onClick={bukaWa} style={{ marginTop: 12, width: '100%', height: 48, borderRadius: 24, border: 0, background: '#25D366', color: '#0B2E17', fontSize: 17, fontWeight: 800 }}>Kirim bukti ke WhatsApp</button>}
+                    </>
                   : <button onClick={sudahBayar} style={{ marginTop: 16, width: '100%', height: 52, borderRadius: 26, border: 0, background: GOLD, color: '#2A2208', fontSize: 19, fontWeight: 800 }}>Saya sudah bayar</button>}
                 <button onClick={() => setPay(null)} style={{ marginTop: 10, width: '100%', height: 46, borderRadius: 23, border: 0, background: '#2A2931', color: '#fff', fontSize: 16, fontWeight: 800 }}>Tutup (pesanan tetap tersimpan)</button>
               </>
