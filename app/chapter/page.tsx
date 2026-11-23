@@ -10,6 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useHistory, useUserStats } from '@/lib/store';
 import { pushSeasonScore, addProfileExp } from '@/lib/leaderboard';
+import { useMissions } from '@/lib/missions';
 import { KomoFace, REACTIONS, ReactionKey } from '@/components/KomoReaction';
 import { getFirebase } from '@/lib/firebase-client';
 
@@ -351,6 +352,7 @@ function CommentPanel({ onClose, chapterUrl, chapterTitle }: { onClose: () => vo
                 waktu: Date.now(),
                 chapterTitle,
             });
+            useMissions.getState().addComment();
             setInputVal('');
         } catch (e: any) {
             setAlertMsg('Gagal kirim: ' + (e?.message || 'Unknown error'));
@@ -705,7 +707,7 @@ function ChapterContent() {
                         totalPages:    json.data.images?.length ?? 0,
                     });
                     addExp();
-                    if (recordChapter(url as string)) { pushSeasonScore(); addProfileExp(10); }
+                    if (recordChapter(url as string)) { pushSeasonScore(); addProfileExp(10); useMissions.getState().addRead(); }
                 } else {
                     setError(json.message || 'Gagal memuat chapter');
                 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, Shield, PawPrint, Mic, Fish, Smile, Info, Gift } from 'lucide-react';
+import { ArrowLeft, Sparkles, Shield, PawPrint, Mic, Fish, Smile, Info, Gift, Target } from 'lucide-react';
 import { getFirebase } from '@/lib/firebase-client';
 
 type Tile = {
@@ -20,6 +20,7 @@ type Tile = {
 
 const ICON = 'w-12 h-12';
 const MENU: Tile[] = [
+  { title: 'Misi', sub: 'Harian & mingguan', href: '/misi', from: '#065f46', to: '#10b981', border: '#6ee7b7', icon: <Target className={ICON} /> },
   { title: 'Pet', sub: 'Koleksi pet', href: '/komikstore/pet', from: '#fcd34d', to: '#f59e0b', border: '#fde68a', dark: true, icon: <PawPrint className={ICON} fill="#451a03" color="#451a03" /> },
   { title: 'Avatar Border', sub: 'Shop decoration', href: '/komikstore/avatar-border', from: '#4a044e', to: '#7e22ce', border: '#c084fc', icon: <Smile className={ICON} /> },
   { title: 'Profile Effects', sub: 'Efek profil', href: '/komikstore/profile-effects', from: '#7c2d12', to: '#dc2626', border: '#fb7185', icon: <Sparkles className={ICON} /> },

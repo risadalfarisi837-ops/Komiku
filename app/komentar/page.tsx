@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getFirebase } from '@/lib/leaderboard';
+import { useMissions } from '@/lib/missions';
 import { findLencana } from '@/lib/lencana';
 import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
@@ -112,6 +113,7 @@ function KomentarContent() {
         chapterTitle: [title, ch && `Ch. ${ch}`].filter(Boolean).join(' · '),
         ...(replyTo ? { parentId: replyTo.parentId || replyTo.id } : {}),
       });
+      useMissions.getState().addComment();
       setText(''); setReplyTo(null);
     } catch (e: any) { say('Gagal kirim: ' + (e?.message || 'coba lagi')); }
     finally { setBusy(false); }
