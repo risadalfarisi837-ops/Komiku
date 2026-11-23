@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirebase, getUser } from '@/lib/leaderboard';
+import { setPremiumCache } from '@/lib/premium';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 const GOLD = '#F5C84B';
 const GOLD_DIM = '#C9A23F';
@@ -12,9 +14,9 @@ const CARD = '#2A2931';
 const MUTED = '#8F8D9B';
 
 type Plan = 'bulanan' | 'tahunan';
-const PLANS: { id: Plan; nama: string; harga: string; per: string; label: string }[] = [
-  { id: 'bulanan', nama: 'Bulanan', harga: 'Rp 25.000', per: 'per bulan', label: 'Bulanan' },
-  { id: 'tahunan', nama: 'Tahunan', harga: 'Rp 250.000', per: 'per tahun', label: 'Tahunan' },
+const PLANS: { id: Plan; nama: string; harga: string; per: string; label: string; crystal: number }[] = [
+  { id: 'bulanan', nama: 'Bulanan', harga: 'Rp 25.000', per: 'per bulan', label: 'Bulanan', crystal: 500 },
+  { id: 'tahunan', nama: 'Tahunan', harga: 'Rp 250.000', per: 'per tahun', label: 'Tahunan', crystal: 6000 },
 ];
 
 const Crown = ({ size = 22, color = GOLD, filled = true }: { size?: number; color?: string; filled?: boolean }) => (
@@ -36,6 +38,9 @@ const FEATURES = [
   { text: 'Bebas iklan di seluruh aplikasi', icon: <path d="M6 6l12 12M18 6L6 18" /> },
   { text: 'Unduh satu volume sekaligus', icon: <><path d="M12 4v11M7 11l5 5 5-5" /><path d="M5 20h14" /></> },
   { text: 'Lencana Premium dan cincin profil emas', icon: <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" /> },
+  { text: 'Centang biru di profil dan komentarmu', badge: true },
+  { text: 'Poin musim bertambah 30%', icon: <><path d="M4 17l6-6 4 4 6-7" /><path d="M15 8h5v5" /></> },
+  { text: 'Dapat Crystal sesuai paket yang dibeli', icon: <><path d="M6 4h12l3 5-9 11L3 9l3-5z" /><path d="M3 9h18" /></> },
 ];
 
 export default function PremiumPage() {
@@ -63,6 +68,7 @@ export default function PremiumPage() {
         const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
         // aktif kalau role Premium dan (tanpa batas waktu atau belum lewat)
         const aktif = v === 'Developer' || (v === 'Komiku Premium' && (!pu || pu > Date.now()));
+        setPremiumCache(v === 'Komiku Premium' && (!pu || pu > Date.now()), pu);
         // lanjutkan pesanan yang masih menunggu
         try {
           const oid = localStorage.getItem(K_ORDER);
@@ -139,6 +145,7 @@ export default function PremiumPage() {
       const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
       setUntil(pu);
       const aktif = v === 'Developer' || (v === 'Komiku Premium' && (!pu || pu > Date.now()));
+      setPremiumCache(v === 'Komiku Premium' && (!pu || pu > Date.now()), pu);
       setIsPremium(aktif);
       setMsg(aktif ? 'Premium kamu aktif.' : 'Belum ada pembayaran yang disetujui.');
     } catch { setMsg('Gagal memeriksa status. Coba lagi.'); }
@@ -157,7 +164,7 @@ export default function PremiumPage() {
         if (o.status === 'approved') {
           const u: any = await getUser();
           const pu = u ? Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0 : 0;
-          setUntil(pu); setIsPremium(true); setPayState('ok');
+          setUntil(pu); setIsPremium(true); setPayState('ok'); setPremiumCache(true, pu);
           try { localStorage.removeItem(K_ORDER); } catch {}
         } else if (o.status === 'rejected') {
           setPayState('rejected');
@@ -190,7 +197,9 @@ export default function PremiumPage() {
         {FEATURES.map((f) => (
           <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <span style={{ width: 32, height: 32, borderRadius: '50%', background: '#3A2226', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 32px' }}>
-              <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">{f.icon}</svg>
+              {(f as any).badge
+                ? <VerifiedBadge size={22} />
+                : <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">{f.icon}</svg>}
             </span>
             <span style={{ fontSize: 21, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.2 }}>{f.text}</span>
           </div>
@@ -212,6 +221,7 @@ export default function PremiumPage() {
               <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: -0.5, color: MUTED }}>{p.nama}</div>
               <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: -1, marginTop: 2 }}>{p.harga}</div>
               <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.4, color: MUTED, marginTop: 2 }}>{p.per}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.4, color: GOLD, marginTop: 6 }}>+{p.crystal.toLocaleString('id-ID')} Crystal</div>
             </button>
           );
         })}

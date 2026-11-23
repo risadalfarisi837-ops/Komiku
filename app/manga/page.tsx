@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import WallpaperBg from '@/components/WallpaperBg';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import { isPremiumRole } from '@/lib/premium';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2, ChevronLeft, Heart, Send, ArrowLeft, Share2, MoreVertical, Bookmark, MessageSquare, Download, BookOpen, Search, ArrowUpDown, Star, X } from 'lucide-react';
@@ -108,20 +110,9 @@ function LevelBadge({ level }: { level: number }) {
 }
 
 // ─── Role Badge ───────────────────────────────────────────────────────────────
-function RoleBadge({ role, level }: { role: string; level: number }) {
-  const isDev     = role === 'Developer';
-  const isPremium = !isDev && (role === 'Wibu Premium' || level >= 50);
-  const label     = isDev ? '⚡ DEV' : isPremium ? 'Premium' : 'Member';
-  const cls       = isDev
-    ? 'bg-white/5 text-gray-400 border-white/20/30'
-    : isPremium
-    ? 'bg-white/5 text-gray-300 border-white/10'
-    : 'bg-white/5 text-gray-500 border-white/10';
-  return (
-    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${cls}`}>
-      {label}
-    </span>
-  );
+function RoleBadge({ role }: { role: string; level?: number }) {
+  if (role === 'Developer') return <span className="text-[10px] font-black px-2 py-0.5 rounded-full border bg-white/5 text-gray-400 border-white/20">⚡ DEV</span>;
+  return isPremiumRole(role) ? <VerifiedBadge size={15} /> : null;
 }
 
 // ─── Comment Item ─────────────────────────────────────────────────────────────
@@ -147,14 +138,9 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
         {/* Name + time */}
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <span className="text-[13px] font-bold text-white truncate max-w-[130px]">{c.nama}</span>
+          <RoleBadge role={c.role} />
           <span className="text-[11px] text-gray-500">• {timeAgo(c.waktu)}</span>
           {isMine && <span className="text-[10px] text-gray-400 font-bold ml-auto opacity-60">Tahan hapus</span>}
-        </div>
-        {/* Badges */}
-        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-          <LevelBadge level={c.level} />
-          <RoleBadge role={c.role} level={c.level} />
-          <span className="text-[10px] text-gray-600 font-mono">{getShortUid(c.uid)}</span>
         </div>
         {/* Text */}
         <p className="text-[13px] text-gray-200 leading-relaxed">{c.teks}</p>

@@ -1,5 +1,6 @@
 import { useUserStats } from './store';
 import { currentSeason } from './season';
+import { setPremiumCache } from './premium';
 
 declare global { interface Window { firebase: any; _fbReady: boolean; } }
 
@@ -74,6 +75,8 @@ export async function pushSeasonScore(): Promise<void> {
     let photo: string = user.photoURL || '';
     try {
       const prof = (await db.ref(`users/${user.uid}`).get()).val();
+      const pu = Number(prof?.premiumUntil) || 0;
+      setPremiumCache(prof?.role === 'Komiku Premium' && (!pu || pu > Date.now()), pu);
       if (prof?.displayName) name = prof.displayName;
       if (prof?.photoURL) photo = prof.photoURL;
     } catch {}

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { currentSeason, dayKey, isNight, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS } from './season';
+import { premiumMult } from './premium';
 
 // ─── XP / Level System ────────────────────────────────────────────────────────
 const EXP_PER_LEVEL = 200;
@@ -50,7 +51,7 @@ export const useUserStats = create<UserStatsStore>()(
           ...base, streak, lastDay: today,
           chapters: base.chapters + 1,
           night: base.night + (night ? 1 : 0),
-          points: base.points + POINTS_PER_CHAPTER + bonus + (night ? NIGHT_BONUS : 0),
+          points: base.points + Math.round((POINTS_PER_CHAPTER + bonus + (night ? NIGHT_BONUS : 0)) * premiumMult()),
           read: [...base.read, link].slice(-1500),
         } });
         return true;

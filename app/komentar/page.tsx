@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getFirebase } from '@/lib/leaderboard';
 import { findLencana } from '@/lib/lencana';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { LencanaIcon } from '@/components/LencanaBadge';
 import WallpaperBg from '@/components/WallpaperBg';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
@@ -152,6 +153,7 @@ function KomentarContent() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 28 }}>
             <span style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</span>
+            {(c.role === 'Komiku Premium' || c.role === 'Wibu Premium') && <VerifiedBadge size={small ? 17 : 20} />}
             {lk && <LencanaIcon l={lk} size={small ? 22 : 28} />}
             <span style={{ fontSize: 15, fontWeight: 800, color: MUTED, letterSpacing: -0.3 }}>· {fmtDate(c.waktu)}</span>
           </div>

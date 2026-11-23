@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, ShoppingBag } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore, ACTIVE_DAYS } from '@/lib/leaderboard';
 import { sendGifts, giftTitle, GiftType } from '@/lib/gifts';
@@ -210,7 +211,8 @@ type DevReset = typeof DEV_RESETS[number][0];
 type GType = 'koin' | 'level' | 'exp' | 'poin' | 'border' | 'wallpaper' | 'effect';
 const GIFT_TYPES: [GType, string][] = [['koin', 'Crystal'], ['level', 'Level up'], ['exp', 'EXP'], ['poin', 'Poin musim'], ['border', 'Border'], ['wallpaper', 'Wallpaper'], ['effect', 'Efek']];
 const GIFT_PRESETS: Record<GType, number[]> = { koin: [100, 500, 1000, 5000], level: [1, 3, 5, 10], exp: [100, 200, 1000, 5000], poin: [50, 100, 300, 700], border: [], wallpaper: [], effect: [] };
-const DEV_PLAN_DAYS: Record<string, { nama: string; days: number }> = { mingguan: { nama: 'Mingguan', days: 7 }, bulanan: { nama: 'Bulanan', days: 30 }, tahunan: { nama: 'Tahunan', days: 365 } };
+// crystal = bonus Crystal yang diterima user saat pesanan disetujui
+const DEV_PLAN_DAYS: Record<string, { nama: string; days: number; crystal: number }> = { mingguan: { nama: 'Mingguan', days: 7, crystal: 150 }, bulanan: { nama: 'Bulanan', days: 30, crystal: 500 }, tahunan: { nama: 'Tahunan', days: 365, crystal: 6000 } };
 const GIFT_UNIT: Record<GType, string> = { koin: 'Crystal', level: 'Level', exp: 'EXP', poin: 'Poin', border: 'Border', wallpaper: 'Wallpaper', effect: 'Efek' };
 const DEV_REASONS = ['Kompensasi', 'Server down', 'Hadiah event', 'Bonus spesial'];
 
@@ -337,17 +339,18 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       upd[`users/${o.uid}/premiumUntil`] = until;
       upd[`users/${o.uid}/premiumPlan`] = o.plan;
       if (u.role !== 'Developer') upd[`users/${o.uid}/role`] = 'Komiku Premium';
+      upd[`users/${o.uid}/koin`] = (Number(u.koin) || 0) + plan.crystal;
       upd[`premiumOrders/${o.id}/status`] = 'approved';
       upd[`premiumOrders/${o.id}/approvedAt`] = now;
       upd[`premiumOrders/${o.id}/until`] = until;
       const ikey = db.ref(`users/${o.uid}/inbox`).push().key;
       upd[`users/${o.uid}/inbox/${ikey}`] = {
         jenis: 'premium_ok', judul: 'Premium aktif!', waktu: now,
-        isi: `Pembayaran Rp ${Number(o.amount).toLocaleString('id-ID')} diterima. Premium ${plan.nama} aktif sampai ${new Date(until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}. Terima kasih sudah mendukung Komiku!`,
+        isi: `Pembayaran Rp ${Number(o.amount).toLocaleString('id-ID')} diterima. Premium ${plan.nama} aktif sampai ${new Date(until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}. Kamu juga dapat bonus ${plan.crystal.toLocaleString('id-ID')} Crystal. Terima kasih sudah mendukung Komiku!`,
       };
       await db.ref().update(upd);
       setOrders(prev => prev && prev.filter(x => x.id !== o.id));
-      showToast(`Premium ${o.name} aktif sampai ${new Date(until).toLocaleDateString('id-ID')}.`, 'success');
+      showToast(`Premium ${o.name} aktif sampai ${new Date(until).toLocaleDateString('id-ID')} (+${plan.crystal} Crystal).`, 'success');
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
@@ -1145,6 +1148,7 @@ export default function ProfilePage() {
 
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
           {userData?.displayName || user.displayName || 'User'}
+          {isPremium && !isDev && <span style={{ marginLeft: 8 }}><VerifiedBadge size={22} /></span>}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
