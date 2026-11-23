@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-const URI = 'mongodb+srv://akunrobloxkumedimemed_db_user:komiku123@komiku.e45tbfo.mongodb.net/?appName=Komiku';
+const URI = 'mongodb+srv://akunrobloxkumedimemed_db_user:komiku123@komiku.e45tbfo.mongodb.net/?appName=Komikita';
 
 function getHD(url) {
   if (!url) return url;

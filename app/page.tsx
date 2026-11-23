@@ -318,7 +318,7 @@ function PremiumCard() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: GOLD, fontSize: 14, fontWeight: 800 }}>
           <svg width={16} height={16} viewBox="0 0 24 24" fill={GOLD}><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" /></svg>
-          KOMIKU PREMIUM
+          KOMIKITA PREMIUM
         </div>
         <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -1, marginTop: 6, color: '#FBF3DC' }}>Baca tanpa iklan</div>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#B7AD8C', marginTop: 2, lineHeight: 1.3 }}>Plus unduh massal untuk baca offline</div>
@@ -523,7 +523,7 @@ export default function Home() {
             <Hero items={hero} />
             <ContinueReading />
 
-            <SectionTitle title="Rekomendasi" sub="Pilihan tim Komiku" action="Lihat semua" onAction={() => seeAll('Rekomendasi')} />
+            <SectionTitle title="Rekomendasi" sub="Pilihan tim Komikita" action="Lihat semua" onAction={() => seeAll('Rekomendasi')} />
             <div className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollSnapType: 'x mandatory', scrollPaddingLeft: 14, padding: '0 14px' }}>
               {recommended.map((m, i) => <BigCard key={i} item={m} />)}
             </div>
@@ -533,7 +533,7 @@ export default function Home() {
 
             <PremiumCard />
 
-            <SectionTitle title="Terpopuler sepanjang masa" sub="Paling banyak dibaca di Komiku" action="Lihat semua" onAction={() => seeAll('Popular')} />
+            <SectionTitle title="Terpopuler sepanjang masa" sub="Paling banyak dibaca di Komikita" action="Lihat semua" onAction={() => seeAll('Popular')} />
             <Ranked items={popular} />
 
             <GenreSection categories={categories} />

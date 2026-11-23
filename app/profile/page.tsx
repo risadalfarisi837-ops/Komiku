@@ -208,7 +208,7 @@ const DEV_MODES = [['add', 'Tambah'], ['sub', 'Kurangi'], ['set', 'Set jadi']] a
 type DevMode = typeof DEV_MODES[number][0];
 const DEV_PRESETS: Record<'koin' | 'level' | 'exp' | 'poin', number[]> = { koin: [100, 500, 1000, 5000, 10000], level: [1, 5, 10, 50], exp: [100, 200, 1000, 5000], poin: [100, 300, 700, 1500, 5000, 8000] };
 const DEV_UNIT: Record<'koin' | 'level' | 'exp' | 'poin', string> = { koin: 'Crystal', level: 'level', exp: 'EXP', poin: 'poin musim ini' };
-const DEV_ROLES = ['Member', 'Komiku Premium', 'Developer'];
+const DEV_ROLES = ['Member', 'Komikita Premium', 'Developer'];
 const DEV_RESETS = [['poin', 'Poin musim'], ['level', 'Level & EXP'], ['koin', 'Crystal'], ['hapus', 'Hapus data user']] as const;
 type DevReset = typeof DEV_RESETS[number][0];
 type GType = 'koin' | 'level' | 'exp' | 'poin' | 'border' | 'wallpaper' | 'effect';
@@ -247,7 +247,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [resetPick, setResetPick] = useState<DevReset>('poin');
   const [gVal, setGVal]     = useState('');
   const [gItemKey, setGItemKey] = useState('');
-  const [gSender, setGSender] = useState('Sistem Komiku');
+  const [gSender, setGSender] = useState('Sistem Komikita');
   const [gMsg, setGMsg]     = useState('Kompensasi');
   const [confirmGlobal, setConfirmGlobal] = useState(false);
 
@@ -336,12 +336,12 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     try {
       const u = (await db.ref('users/' + o.uid).get()).val() || {};
       const now = Date.now();
-      const from = u.role === 'Komiku Premium' && Number(u.premiumUntil) > now ? Number(u.premiumUntil) : now;
+      const from = u.role === 'Komikita Premium' && Number(u.premiumUntil) > now ? Number(u.premiumUntil) : now;
       const until = from + plan.days * 86400000;
       const upd: Record<string, any> = {};
       upd[`users/${o.uid}/premiumUntil`] = until;
       upd[`users/${o.uid}/premiumPlan`] = o.plan;
-      if (u.role !== 'Developer') upd[`users/${o.uid}/role`] = 'Komiku Premium';
+      if (u.role !== 'Developer') upd[`users/${o.uid}/role`] = 'Komikita Premium';
       upd[`users/${o.uid}/koin`] = (Number(u.koin) || 0) + plan.crystal;
       upd[`premiumOrders/${o.id}/status`] = 'approved';
       upd[`premiumOrders/${o.id}/approvedAt`] = now;
@@ -349,7 +349,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       const ikey = db.ref(`users/${o.uid}/inbox`).push().key;
       upd[`users/${o.uid}/inbox/${ikey}`] = {
         jenis: 'premium_ok', judul: 'Premium aktif!', waktu: now,
-        isi: `Pembayaran Rp ${Number(o.amount).toLocaleString('id-ID')} diterima. Premium ${plan.nama} aktif sampai ${new Date(until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}. Kamu juga dapat bonus ${plan.crystal.toLocaleString('id-ID')} Crystal. Terima kasih sudah mendukung Komiku!`,
+        isi: `Pembayaran Rp ${Number(o.amount).toLocaleString('id-ID')} diterima. Premium ${plan.nama} aktif sampai ${new Date(until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}. Kamu juga dapat bonus ${plan.crystal.toLocaleString('id-ID')} Crystal. Terima kasih sudah mendukung Komikita!`,
       };
       await db.ref().update(upd);
       setOrders(prev => prev && prev.filter(x => x.id !== o.id));
@@ -387,7 +387,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       const upd: Record<string, string> = {};
       snap.forEach((c: any) => {
         const v = c.val() || {};
-        if (v.role === 'Komiku Premium' && Number(v.premiumUntil) > 0 && Number(v.premiumUntil) < now) upd[`users/${c.key}/role`] = 'Member';
+        if (v.role === 'Komikita Premium' && Number(v.premiumUntil) > 0 && Number(v.premiumUntil) < now) upd[`users/${c.key}/role`] = 'Member';
       });
       const n = Object.keys(upd).length;
       if (n) await db.ref().update(upd);
@@ -534,8 +534,8 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       const uids: string[] = [];
       snap.forEach((c: any) => { uids.push(String(c.key)); });
       await sendGifts(db, uids, isItem
-        ? { type: gType, itemKey: gItemKey, itemName: nama, from: gSender || 'Sistem Komiku', message: gMsg }
-        : { type: gType, amount: val, itemName: nama, from: gSender || 'Sistem Komiku', message: gMsg });
+        ? { type: gType, itemKey: gItemKey, itemName: nama, from: gSender || 'Sistem Komikita', message: gMsg }
+        : { type: gType, amount: val, itemName: nama, from: gSender || 'Sistem Komikita', message: gMsg });
       showToast(`Terkirim ke ${uids.length} user. Mereka klaim lewat Notifikasi.`, 'success');
       setGift({ title: 'Gift terkirim!', sub: nama + ' ke ' + uids.length + ' user' });
       setGVal(''); setGItemKey('');
@@ -1080,7 +1080,7 @@ export default function ProfilePage() {
 
   const role         = userData?.role ?? 'Member';
   const isDev        = role === 'Developer';
-  const isPremium    = role === 'Komiku Premium';
+  const isPremium    = role === 'Komikita Premium';
   const level        = userData?.level ?? 1;
   const koin         = userData?.koin ?? 0;
   const freeRenameUsed = userData?.freeRenameUsed ?? false;
@@ -1111,7 +1111,7 @@ export default function ProfilePage() {
           </svg>
         </div>
         <div>
-          <h2 className="text-xl font-black text-white">Akses Akun Komiku</h2>
+          <h2 className="text-xl font-black text-white">Akses Akun Komikita</h2>
           <p className="text-gray-400 text-sm font-medium mt-2 leading-relaxed">Login untuk membuka fitur Level, ikut berdiskusi di kolom Komentar, dan menyimpan progress kamu.</p>
         </div>
         <button onClick={handleLogin} disabled={loadingLogin}
@@ -1214,7 +1214,7 @@ export default function ProfilePage() {
         <div style={{ margin: '16px 16px 0', background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 22, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0, color: GOLD }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>
-              <Crown size={16} fill={GOLD} color={GOLD} /> KOMIKU PREMIUM
+              <Crown size={16} fill={GOLD} color={GOLD} /> KOMIKITA PREMIUM
             </div>
             <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.9, lineHeight: 1.2, marginTop: 4 }}>Baca tanpa iklan</div>
             <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.4, marginTop: 2 }}>Plus unduh massal dan cincin profil emas.</div>
@@ -1238,7 +1238,7 @@ export default function ProfilePage() {
       <SectionLabel>Aplikasi</SectionLabel>
       <div style={{ margin: '0 16px', background: CARD, borderRadius: 18, overflow: 'hidden' }}>
         <MenuRow icon={<Target size={20} color={ICON} />} title="Misi" sub="Harian dan mingguan, hadiah Crystal" href="/misi" />
-        <MenuRow border icon={<ShoppingBag size={20} color={ICON} />} title="KomikStore" sub="Menu spesial Komiku" href="/komikstore" />
+        <MenuRow border icon={<ShoppingBag size={20} color={ICON} />} title="KomikStore" sub="Menu spesial Komikita" href="/komikstore" />
         <MenuRow border icon={<HexIcon size={21} />} title="Pengaturan" sub="Akun, data, dan notifikasi" href="/settings" />
         <MenuRow border icon={<Bug size={20} color={ICON} />} title="Laporkan bug" onClick={() => window.open('https://wa.me/6281315059849?text=Halo%2C%20saya%20mau%20lapor%20bug%20Komiku.%0A%0AHalaman%2Fmenu%3A%20%0AYang%20terjadi%3A%20%0AYang%20seharusnya%3A%20%0AHP%2Fbrowser%3A%20', '_blank')} />
       </div>

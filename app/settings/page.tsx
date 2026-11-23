@@ -168,7 +168,7 @@ export default function SettingsPage() {
     return () => { dead = true; if (unsub) unsub(); if (toastTimer.current) clearTimeout(toastTimer.current); };
   }, [readCache]);
 
-  const isPremium = role === 'Komiku Premium';
+  const isPremium = role === 'Komikita Premium';
   const isDev = role === 'Developer';
 
   const goBack = () => {
@@ -263,7 +263,7 @@ export default function SettingsPage() {
 
       say(`Diimpor: ${favNew.length} favorit baru, ${histAdded} riwayat baru.`);
     } catch (e: any) {
-      say(e?.message === 'besar' ? 'File terlalu besar.' : 'File bukan cadangan Komiku yang valid.');
+      say(e?.message === 'besar' ? 'File terlalu besar.' : 'File bukan cadangan Komikita yang valid.');
     }
   };
 
@@ -281,11 +281,11 @@ export default function SettingsPage() {
 
   const share = async () => {
     const url = window.location.origin;
-    const text = 'Baca komik manga, manhwa, manhua gratis dan lengkap di Komiku.';
+    const text = 'Baca komik manga, manhwa, manhua gratis dan lengkap di Komikita.';
     try {
-      if (navigator.share) { await navigator.share({ title: 'Komiku', text, url }); return; }
+      if (navigator.share) { await navigator.share({ title: 'Komikita', text, url }); return; }
       await navigator.clipboard.writeText(url);
-      say('Tautan Komiku disalin.');
+      say('Tautan Komikita disalin.');
     } catch (e: any) { if (e?.name !== 'AbortError') say('Tidak bisa membagikan.'); }
   };
 
@@ -332,7 +332,7 @@ export default function SettingsPage() {
         {/* Tampilan */}
         <Label>Tampilan</Label>
         <Group>
-          <Row icon={<Palette size={22} color={ICON} />} title="Tema" sub="Komiku · Gelap" />
+          <Row icon={<Palette size={22} color={ICON} />} title="Tema" sub="Komikita · Gelap" />
           <Row border icon={<Globe size={22} color={ICON} />} title="Bahasa" right="Indonesia" />
         </Group>
 
@@ -362,7 +362,7 @@ export default function SettingsPage() {
         <Label>Data</Label>
         <Group>
           <Row icon={<RefreshCw size={22} color={ICON} />} title="Cadangkan dan ekspor" sub="Simpan favorit dan riwayat ke file" chevron onClick={exportData} />
-          <Row border icon={<Upload size={22} color={ICON} />} title="Impor cadangan" sub="Gabungkan dari file cadangan Komiku" chevron onClick={() => fileRef.current?.click()} />
+          <Row border icon={<Upload size={22} color={ICON} />} title="Impor cadangan" sub="Gabungkan dari file cadangan Komikita" chevron onClick={() => fileRef.current?.click()} />
           <Row border icon={<Trash2 size={22} color={ICON} />} title="Hapus cache" right={mounted ? `${cacheKb} KB` : ''} onClick={clearCache} />
         </Group>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden
@@ -379,17 +379,17 @@ export default function SettingsPage() {
         )}
 
         {/* Dukung */}
-        <Label>Dukung Komiku</Label>
+        <Label>Dukung Komikita</Label>
         <Group>
-          <Row icon={<Share2 size={22} color={ICON} />} title="Bagikan Komiku" chevron onClick={share} />
+          <Row icon={<Share2 size={22} color={ICON} />} title="Bagikan Komikita" chevron onClick={share} />
           <Row border icon={<Bug size={22} color={ICON} />} title="Laporkan bug" chevron onClick={() => window.open('https://github.com/risadalfarisi837-ops/Komiku/issues/new', '_blank')} />
         </Group>
 
         {/* Tentang */}
         <Label>Tentang</Label>
         <Group>
-          <Row icon={<img src="/icon-192.png" alt="" style={{ width: 30, height: 30, borderRadius: 8 }} />} title="Versi Komiku" right={pkg.version} />
-          <Row border icon={<Info size={22} color={ICON} />} title="Tentang Komiku" chevron onClick={() => setAboutOpen(true)} />
+          <Row icon={<img src="/icon-192.png" alt="" style={{ width: 30, height: 30, borderRadius: 8 }} />} title="Versi Komikita" right={pkg.version} />
+          <Row border icon={<Info size={22} color={ICON} />} title="Tentang Komikita" chevron onClick={() => setAboutOpen(true)} />
         </Group>
 
         {user && (
@@ -409,9 +409,9 @@ export default function SettingsPage() {
         </div>
       </Dialog>
 
-      <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} title="Tentang Komiku">
+      <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} title="Tentang Komikita">
         <div style={dialogText}>
-          Komiku adalah aplikasi web untuk membaca komik manga, manhwa, dan manhua gratis dalam bahasa Indonesia. Data dan gambar komik berasal dari MangaDex.
+          Komikita adalah aplikasi web untuk membaca komik manga, manhwa, dan manhua gratis dalam bahasa Indonesia. Data dan gambar komik berasal dari MangaDex.
         </div>
         <button onClick={() => setAboutOpen(false)} style={{ ...dialogBtn, width: '100%', marginTop: 16, background: '#1F1E24', color: '#fff' }}>Tutup</button>
       </Dialog>

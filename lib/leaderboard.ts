@@ -76,7 +76,7 @@ export async function pushSeasonScore(): Promise<void> {
     try {
       const prof = (await db.ref(`users/${user.uid}`).get()).val();
       const pu = Number(prof?.premiumUntil) || 0;
-      setPremiumCache(prof?.role === 'Komiku Premium' && (!pu || pu > Date.now()), pu);
+      setPremiumCache(prof?.role === 'Komikita Premium' && (!pu || pu > Date.now()), pu);
       if (prof?.displayName) name = prof.displayName;
       if (prof?.photoURL) photo = prof.photoURL;
     } catch {}

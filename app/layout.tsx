@@ -7,7 +7,7 @@ import BottomNav from '@/components/BottomNav';
 import RegisterSW from '@/components/RegisterSW';
 
 export const metadata: Metadata = {
-  title: 'Komiku',
+  title: 'Komikita',
   description: 'Baca komik manga, manhwa, manhua gratis dan lengkap',
   manifest: '/manifest.json',
   themeColor: '#1B1A20',

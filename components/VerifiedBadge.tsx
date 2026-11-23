@@ -1,4 +1,4 @@
-// Centang biru untuk pengguna Komiku Premium
+// Centang biru untuk pengguna Komikita Premium
 export default function VerifiedBadge({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Premium" role="img" style={{ flex: '0 0 auto', display: 'inline-block', verticalAlign: 'middle' }}>

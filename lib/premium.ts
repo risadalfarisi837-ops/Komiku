@@ -23,4 +23,4 @@ export function isPremiumCached(): boolean {
 export const premiumMult = () => (isPremiumCached() ? PREMIUM_POINT_MULT : 1);
 
 // Role premium yang tampil sebagai centang biru
-export const isPremiumRole = (role?: string) => role === 'Komiku Premium' || role === 'Wibu Premium';
+export const isPremiumRole = (role?: string) => role === 'Komikita Premium' || role === 'Wibu Premium';

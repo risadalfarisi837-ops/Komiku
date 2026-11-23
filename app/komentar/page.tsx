@@ -143,7 +143,7 @@ function KomentarContent() {
 
   const Row = ({ c, small }: { c: C; small?: boolean }) => {
     const lk = findLencana(c.lencana);
-    const gold = c.role === 'Developer' || c.role === 'Wibu Premium' || c.role === 'Komiku Premium';
+    const gold = c.role === 'Developer' || c.role === 'Wibu Premium' || c.role === 'Komikita Premium';
     const likes = Object.keys(c.likes || {}).length;
     const liked = !!(me && c.likes?.[me.uid]);
     const hasWp = !!(c.activeWallpaper && WALLPAPER_CATALOG[c.activeWallpaper]);
@@ -158,7 +158,7 @@ function KomentarContent() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 28 }}>
             <a href={`/user?uid=${c.uid}`} style={{ color: 'inherit', textDecoration: 'none' }}><PremiumName premium={isPremiumRole(c.role)} dev={c.role === 'Developer'} style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</PremiumName></a>
-            {(c.role === 'Komiku Premium' || c.role === 'Wibu Premium') && <VerifiedBadge size={small ? 17 : 20} />}
+            {(c.role === 'Komikita Premium' || c.role === 'Wibu Premium') && <VerifiedBadge size={small ? 17 : 20} />}
             {c.role === 'Developer' && <DevBadge size={small ? 18 : 22} />}
             {lk && <LencanaIcon l={lk} size={small ? 22 : 28} />}
             <span style={{ fontSize: 15, fontWeight: 800, color: MUTED, letterSpacing: -0.3 }}>· {fmtDate(c.waktu)}</span>

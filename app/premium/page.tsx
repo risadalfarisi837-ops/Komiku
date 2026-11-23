@@ -67,8 +67,8 @@ export default function PremiumPage() {
         const v = (await db.ref(`users/${u.uid}/role`).get()).val();
         const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
         // aktif kalau role Premium dan (tanpa batas waktu atau belum lewat)
-        const aktif = v === 'Developer' || (v === 'Komiku Premium' && (!pu || pu > Date.now()));
-        setPremiumCache(v === 'Komiku Premium' && (!pu || pu > Date.now()), pu);
+        const aktif = v === 'Developer' || (v === 'Komikita Premium' && (!pu || pu > Date.now()));
+        setPremiumCache(v === 'Komikita Premium' && (!pu || pu > Date.now()), pu);
         // lanjutkan pesanan yang masih menunggu
         try {
           const oid = localStorage.getItem(K_ORDER);
@@ -114,7 +114,7 @@ export default function PremiumPage() {
   const waUrl = () => {
     if (!pay || !WA_READY) return '';
     const paket = PLANS.find((p) => p.id === pay.plan)?.nama || pay.plan;
-    const teks = `Halo, saya sudah bayar Komiku Premium.\n\nPaket: ${paket}\nNominal: Rp ${pay.amount.toLocaleString('id-ID')}\nNama: ${payName || 'User'}\nID pesanan: ${pay.orderId}\n\nBukti pembayaran saya kirim di chat ini.`;
+    const teks = `Halo, saya sudah bayar Komikita Premium.\n\nPaket: ${paket}\nNominal: Rp ${pay.amount.toLocaleString('id-ID')}\nNama: ${payName || 'User'}\nID pesanan: ${pay.orderId}\n\nBukti pembayaran saya kirim di chat ini.`;
     return `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(teks)}`;
   };
   const bukaWa = () => { const url = waUrl(); if (url) window.open(url, '_blank'); };
@@ -144,8 +144,8 @@ export default function PremiumPage() {
       const v = (await db.ref(`users/${u.uid}/role`).get()).val();
       const pu = Number((await db.ref(`users/${u.uid}/premiumUntil`).get()).val()) || 0;
       setUntil(pu);
-      const aktif = v === 'Developer' || (v === 'Komiku Premium' && (!pu || pu > Date.now()));
-      setPremiumCache(v === 'Komiku Premium' && (!pu || pu > Date.now()), pu);
+      const aktif = v === 'Developer' || (v === 'Komikita Premium' && (!pu || pu > Date.now()));
+      setPremiumCache(v === 'Komikita Premium' && (!pu || pu > Date.now()), pu);
       setIsPremium(aktif);
       setMsg(aktif ? 'Premium kamu aktif.' : 'Belum ada pembayaran yang disetujui.');
     } catch { setMsg('Gagal memeriksa status. Coba lagi.'); }
@@ -188,7 +188,7 @@ export default function PremiumPage() {
       {/* Kartu atas */}
       <div style={{ margin: '12px 14px 0', background: GOLD_BG, border: `1.5px solid ${GOLD_LINE}`, borderRadius: 22, padding: '22px 18px 20px' }}>
         <Crown size={26} />
-        <div style={{ fontSize: 31, fontWeight: 800, letterSpacing: -1.2, color: GOLD, marginTop: 8, lineHeight: 1.1 }}>Komiku Premium</div>
+        <div style={{ fontSize: 31, fontWeight: 800, letterSpacing: -1.2, color: GOLD, marginTop: 8, lineHeight: 1.1 }}>Komikita Premium</div>
         <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: -0.6, color: GOLD_DIM, marginTop: 6 }}>Baca tanpa gangguan.</div>
       </div>
 

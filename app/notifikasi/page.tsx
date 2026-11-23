@@ -202,7 +202,7 @@ export default function NotifikasiPage() {
     return () => { alive = false; };
   }, [mounted, favorites]);
 
-  // Rilis terbaru di Komiku (urut pembaruan). Yang belum pernah dilihat diberi tanda BARU.
+  // Rilis terbaru di Komikita (urut pembaruan). Yang belum pernah dilihat diberi tanda BARU.
   useEffect(() => {
     if (!mounted) return;
     let alive = true;
@@ -393,7 +393,7 @@ export default function NotifikasiPage() {
               </button>
             ))}
 
-            {releases.length > 0 && <div style={{ color: MUTED, fontSize: 14, fontWeight: 800, letterSpacing: 0.3, margin: '10px 2px 0' }}>RILIS TERBARU DI KOMIKU</div>}
+            {releases.length > 0 && <div style={{ color: MUTED, fontSize: 14, fontWeight: 800, letterSpacing: 0.3, margin: '10px 2px 0' }}>RILIS TERBARU DI KOMIKITA</div>}
             {releases.map((r) => (
               <button key={r.link} onClick={() => openRelease(r)} style={{ display: 'flex', gap: 12, alignItems: 'center', background: '#2A2931', border: 0, borderRadius: 16, padding: 10, textAlign: 'left', color: '#fff' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -414,7 +414,7 @@ export default function NotifikasiPage() {
 
       {tab === 'info' && (
         infos.length === 0 ? (
-          <Empty title="Belum ada info" sub="Pengumuman dari Komiku akan muncul di sini." />
+          <Empty title="Belum ada info" sub="Pengumuman dari Komikita akan muncul di sini." />
         ) : (
           <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {infos.map((i) => {
