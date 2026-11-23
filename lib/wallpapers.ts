@@ -11,6 +11,9 @@ export interface WallpaperItem {
 
 export const COST_1 = 100;
 export const COST_10 = 1000;
+// Wallpaper yang sudah dimiliki tidak bertambah lagi: duplikat jadi token (sesuai rarity), token ditukar di toko.
+export const TOKEN_DUP: Record<Rarity, number> = { Normal: 10, Rare: 30, Epic: 80, Legendary: 200 };
+export const TOKEN_PRICE: Record<Rarity, number> = { Normal: 60, Rare: 180, Epic: 480, Legendary: 1200 };
 export const RARITIES: Rarity[] = ['Normal', 'Rare', 'Epic', 'Legendary'];
 export const RATES: Record<Rarity, number> = { Normal: 70, Rare: 22, Epic: 7, Legendary: 1 }; // persen
 

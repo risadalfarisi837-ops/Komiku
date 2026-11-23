@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Sparkles, Check, RefreshCw, Info } from 'lucide-react';
+import { ArrowLeft, Search, Sparkles, Check, RefreshCw, Info, Coins, ShoppingBag } from 'lucide-react';
 import { getFirebase } from '@/lib/firebase-client';
-import { WALLPAPER_CATALOG, RARITY_STYLE, RARITY_INFO, RARITIES, RATES, COST_1, COST_10, rollMany, wpBg, type Rarity } from '@/lib/wallpapers';
+import { WALLPAPER_CATALOG, RARITY_STYLE, RARITY_INFO, RARITIES, RATES, COST_1, COST_10, TOKEN_DUP, TOKEN_PRICE, rollMany, wpBg, type Rarity } from '@/lib/wallpapers';
 import WallpaperBg from '@/components/WallpaperBg';
 import ProfileEffect from '@/components/ProfileEffect';
 import { Confetti } from '@/components/GiftEffect';
@@ -40,9 +40,11 @@ export default function GachaWallpaperPage() {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
-  const [result, setResult] = useState<{ key: string; isNew: boolean }[] | null>(null);
+  const [result, setResult] = useState<{ key: string; isNew: boolean; dup?: number }[] | null>(null);
   const [fx, setFx] = useState<Rarity | null>(null);
   const [info, setInfo] = useState(false);
+  const [shop, setShop] = useState(false);
+  const [gain, setGain] = useState(0);
 
   const load = async (f: any, id: string, photo = '') => {
     try {
@@ -71,6 +73,7 @@ export default function GachaWallpaperPage() {
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2200); };
   const ref = () => fb.db.ref('users/' + uid);
   const koin: number = d.koin || 0;
+  const token: number = d.token || 0;
   const owned: Record<string, number> = d.ownedWallpapers || {};
   const active: string = d.activeWallpaper || '';
 
@@ -86,17 +89,35 @@ export default function GachaWallpaperPage() {
       const picks = rollMany(n);
       const counts: Record<string, number> = {};
       picks.forEach((k) => { counts[k] = (counts[k] || 0) + 1; });
-      await Promise.all(Object.entries(counts).map(([k, c]) =>
-        ref().child('ownedWallpapers/' + k).transaction((cur: any) => (typeof cur === 'number' ? cur : 0) + c)
+      // satu wallpaper cuma boleh dimiliki sekali; kelebihannya jadi token
+      const wasOwned: Record<string, boolean> = {};
+      await Promise.all(Object.keys(counts).map((k) =>
+        ref().child('ownedWallpapers/' + k).transaction((cur: any) => {
+          if (typeof cur === 'number' && cur > 0) { wasOwned[k] = true; return cur; }
+          wasOwned[k] = false; return 1;
+        })
       ));
-      const items = picks.map((k) => ({ key: k, isNew: !owned[k] }));
-      // tandai "baru" hanya sekali per wallpaper dalam 1 sesi summon
-      const seen = new Set<string>();
-      items.forEach((it) => { if (it.isNew) { if (seen.has(it.key)) it.isNew = false; else seen.add(it.key); } });
+      const left: Record<string, number> = {};
+      Object.keys(counts).forEach((k) => { left[k] = counts[k]; });
+      let tokens = 0;
+      const items: { key: string; isNew: boolean; dup?: number }[] = picks.map((k) => {
+        const give = TOKEN_DUP[WALLPAPER_CATALOG[k].rarity];
+        const first = left[k] === counts[k];
+        left[k]--;
+        if (first && !wasOwned[k]) return { key: k, isNew: true };
+        tokens += give;
+        return { key: k, isNew: false, dup: give };
+      });
+      let newToken = token;
+      if (tokens > 0) {
+        const tr = await ref().child('token').transaction((cur: any) => (typeof cur === 'number' ? cur : 0) + tokens);
+        newToken = tr.snapshot.val();
+      }
+      setGain(tokens);
       setD((p: any) => {
         const nextOwned = { ...(p.ownedWallpapers || {}) };
-        Object.entries(counts).forEach(([k, c]) => { nextOwned[k] = (nextOwned[k] || 0) + c; });
-        return { ...p, koin: res.snapshot.val(), ownedWallpapers: nextOwned };
+        Object.keys(counts).forEach((k) => { nextOwned[k] = nextOwned[k] > 0 ? nextOwned[k] : 1; });
+        return { ...p, koin: res.snapshot.val(), ...(tokens > 0 ? { token: newToken } : {}), ownedWallpapers: nextOwned };
       });
       const sorted = items.sort((a, b) => rank(b.key) - rank(a.key));
       const best = WALLPAPER_CATALOG[sorted[0].key].rarity;
@@ -112,6 +133,48 @@ export default function GachaWallpaperPage() {
     try {
       await ref().update({ activeWallpaper: key });
       setD((p: any) => ({ ...p, activeWallpaper: key }));
+    } catch { say('Gagal, coba lagi'); }
+    setBusy(false);
+  };
+
+  const buy = async (key: string) => {
+    if (!fb || !uid || busy) return;
+    const w = WALLPAPER_CATALOG[key];
+    const price = TOKEN_PRICE[w.rarity];
+    if (owned[key]) { say('Sudah kamu miliki'); return; }
+    if (token < price) { say('Token kurang'); return; }
+    setBusy(true);
+    try {
+      const res = await ref().child('token').transaction((cur: any) => (typeof cur !== 'number' ? cur : cur >= price ? cur - price : undefined));
+      if (!res.committed) { say('Token kurang'); setBusy(false); return; }
+      await ref().child('ownedWallpapers/' + key).transaction((cur: any) => (typeof cur === 'number' && cur > 0 ? cur : 1));
+      setD((p: any) => ({ ...p, token: res.snapshot.val(), ownedWallpapers: { ...(p.ownedWallpapers || {}), [key]: 1 } }));
+      say(w.nama + ' didapat!');
+    } catch { say('Gagal, coba lagi'); }
+    setBusy(false);
+  };
+
+  // duplikat lama (dari sebelum aturan baru) ditukar jadi token
+  const oldDup = Object.keys(owned)
+    .filter((k) => WALLPAPER_CATALOG[k] && owned[k] > 1)
+    .reduce((a, k) => a + (owned[k] - 1) * TOKEN_DUP[WALLPAPER_CATALOG[k].rarity], 0);
+  const convertOld = async () => {
+    if (!fb || !uid || busy || !oldDup) return;
+    setBusy(true);
+    try {
+      let add = 0;
+      for (const k of Object.keys(owned)) {
+        if (!WALLPAPER_CATALOG[k]) continue;
+        let extra = 0;
+        await ref().child('ownedWallpapers/' + k).transaction((cur: any) => {
+          if (typeof cur === 'number' && cur > 1) { extra = cur - 1; return 1; }
+          extra = 0; return cur;
+        });
+        add += extra * TOKEN_DUP[WALLPAPER_CATALOG[k].rarity];
+      }
+      if (add > 0) await ref().child('token').transaction((cur: any) => (typeof cur === 'number' ? cur : 0) + add);
+      await load(fb, uid, d.photoURL);
+      say('+' + add + ' Token');
     } catch { say('Gagal, coba lagi'); }
     setBusy(false);
   };
@@ -148,7 +211,20 @@ export default function GachaWallpaperPage() {
                 <span className="text-4xl font-black">{koin.toLocaleString('id-ID')}</span>
               </div>
               <p className="mt-1 font-bold text-white/50">Crystal</p>
+              <div className="mt-3 flex items-center justify-center gap-2 border-t border-white/10 pt-3">
+                <Coins className="w-5 h-5 text-amber-300" />
+                <span className="text-2xl font-black text-amber-300">{token.toLocaleString('id-ID')}</span>
+                <span className="font-bold text-white/50">Token</span>
+              </div>
             </div>
+            <button onClick={() => setShop(true)} className="mx-4 mt-3 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-amber-300/30 bg-[#2a2112] p-3 text-left active:scale-95 transition-transform">
+              <ShoppingBag className="w-6 h-6 text-amber-300" />
+              <div className="min-w-0">
+                <p className="text-sm font-black text-amber-200">Toko Token</p>
+                <p className="text-xs font-bold text-white/50">Duplikat jadi token, tukar dengan wallpaper yang belum kamu punya</p>
+              </div>
+              <span className="ml-auto text-xs font-bold text-white/45">Buka ›</span>
+            </button>
 
             <div className="mx-4 mt-4 rounded-3xl border border-white/10 overflow-hidden relative h-60 flex flex-col items-center justify-center text-center px-5"
               style={{ background: last ? wpBg(last.key, true) : 'radial-gradient(circle at 50% 40%,#2c3f8f,#0a0f1e 70%)' }}>
@@ -270,12 +346,59 @@ export default function GachaWallpaperPage() {
                       <span className="pointer-events-none absolute inset-0" style={{ boxShadow: 'inset 0 0 14px ' + st.color, animation: 'kgPulse 1.6s ease-in-out ' + (0.6 + i * 0.09) + 's infinite' }} />
                     )}
                     {it.isNew && <span className="absolute left-0 top-0 bg-rose-500 px-1.5 text-[9px] font-black">BARU</span>}
+                    {it.dup ? <span className="absolute left-0 top-0 bg-amber-400 px-1.5 text-[9px] font-black text-black">+{it.dup} Token</span> : null}
                     <span className="absolute bottom-0 inset-x-0 bg-black/60 text-center text-[9px] font-black truncate px-0.5" style={{ color: st.color }}>{w.nama}</span>
                   </div>
                 );
               })}
             </div>
+            {gain > 0 && <p className="mt-4 text-center text-sm font-black text-amber-300">Duplikat jadi +{gain} Token</p>}
             <button onClick={() => setResult(null)} className="mt-5 w-full rounded-2xl bg-violet-500 py-3 font-black">Oke</button>
+          </div>
+        </div>
+      )}
+
+      {shop && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={() => setShop(false)}>
+          <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl bg-[#1a2238] p-5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-xl font-black">Toko Token</p>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <Coins className="w-5 h-5 text-amber-300" />
+              <span className="text-2xl font-black text-amber-300">{token.toLocaleString('id-ID')}</span>
+            </div>
+            <p className="mt-2 text-center text-xs font-bold text-white/50">
+              Dapat wallpaper yang sudah dimiliki? Otomatis jadi token: {RARITIES.map((r) => r + ' +' + TOKEN_DUP[r]).join(' · ')}.
+            </p>
+            {oldDup > 0 && (
+              <button onClick={convertOld} disabled={busy} className="mt-3 w-full rounded-2xl border border-amber-300/40 bg-[#2a2112] py-2.5 text-sm font-black text-amber-200 active:scale-95 disabled:opacity-60">
+                Tukar duplikat lama jadi +{oldDup} Token
+              </button>
+            )}
+            <div className="mt-4 space-y-4">
+              {INFO_ORDER.map(({ r, keys }) => (
+                <div key={r}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="font-black" style={{ color: RARITY_STYLE[r].color }}>{r}</span>
+                    <span className="ml-auto flex items-center gap-1 text-sm font-black text-amber-300"><Coins className="w-4 h-4" />{TOKEN_PRICE[r]}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {keys.map((k) => {
+                      const have = !!owned[k];
+                      return (
+                        <button key={k} onClick={() => !have && buy(k)} disabled={busy || have} className="text-left active:scale-95 transition-transform">
+                          <div className="relative h-20 overflow-hidden rounded-xl" style={{ background: wpBg(k), border: '1.5px solid ' + RARITY_STYLE[r].border, opacity: have ? 0.45 : 1 }}>
+                            {have ? <span className="absolute bottom-1 right-1 rounded-full bg-emerald-600/90 p-0.5"><Check className="w-3 h-3" /></span> : null}
+                          </div>
+                          <p className="mt-1 truncate text-center text-[11px] font-black text-white/80">{WALLPAPER_CATALOG[k].nama}</p>
+                          <p className="text-center text-[11px] font-black" style={{ color: have ? '#34d399' : token >= TOKEN_PRICE[r] ? '#fcd34d' : 'rgba(255,255,255,.35)' }}>{have ? 'Dimiliki' : TOKEN_PRICE[r] + ' Token'}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setShop(false)} className="mt-5 w-full rounded-2xl bg-violet-500 py-3 font-black">Tutup</button>
           </div>
         </div>
       )}
@@ -324,7 +447,7 @@ export default function GachaWallpaperPage() {
                 );
               })}
             </div>
-            <p className="mt-4 text-center text-xs font-bold text-white/45">Summon 10x dijamin ada minimal 1 Rare. Perkiraan Crystal dihitung dari peluang; hasil sebenarnya bisa lebih cepat atau lebih lama.</p>
+            <p className="mt-4 text-center text-xs font-bold text-white/45">Summon 10x dijamin ada minimal 1 Rare. Perkiraan Crystal dihitung dari peluang; hasil sebenarnya bisa lebih cepat atau lebih lama. Wallpaper yang sudah kamu punya tidak bertambah lagi: duplikatnya otomatis jadi token untuk ditukar di Toko Token.</p>
             <button onClick={() => setInfo(false)} className="mt-4 w-full rounded-2xl bg-violet-500 py-3 font-black">Oke</button>
           </div>
         </div>
