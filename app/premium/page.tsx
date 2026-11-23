@@ -11,10 +11,10 @@ const GOLD_LINE = '#8C6F1F';
 const CARD = '#2A2931';
 const MUTED = '#8F8D9B';
 
-type Plan = 'mingguan' | 'bulanan';
+type Plan = 'bulanan' | 'tahunan';
 const PLANS: { id: Plan; nama: string; harga: string; per: string; label: string }[] = [
-  { id: 'mingguan', nama: 'Mingguan', harga: 'Rp 7.000', per: 'per minggu', label: 'Mingguan' },
   { id: 'bulanan', nama: 'Bulanan', harga: 'Rp 25.000', per: 'per bulan', label: 'Bulanan' },
+  { id: 'tahunan', nama: 'Tahunan', harga: 'Rp 250.000', per: 'per tahun', label: 'Tahunan' },
 ];
 
 const Crown = ({ size = 22, color = GOLD, filled = true }: { size?: number; color?: string; filled?: boolean }) => (
@@ -30,7 +30,7 @@ const QRIS_NAME = 'Risyadh All Store';
 
 const K_ORDER = 'komiku-premium-order';
 const ORDER_TTL = 24 * 60 * 60 * 1000; // pesanan berlaku 24 jam
-const BASE_PRICE: Record<Plan, number> = { mingguan: 7000, bulanan: 25000 };
+const BASE_PRICE: Record<Plan, number> = { bulanan: 25000, tahunan: 250000 };
 
 const FEATURES = [
   { text: 'Bebas iklan di seluruh aplikasi', icon: <path d="M6 6l12 12M18 6L6 18" /> },
@@ -40,7 +40,7 @@ const FEATURES = [
 
 export default function PremiumPage() {
   const router = useRouter();
-  const [plan, setPlan] = useState<Plan>('bulanan');
+  const [plan, setPlan] = useState<Plan>('tahunan');
   const [isPremium, setIsPremium] = useState(false);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -203,7 +203,7 @@ export default function PremiumPage() {
           const on = plan === p.id;
           return (
             <button key={p.id} onClick={() => setPlan(p.id)} style={{ position: 'relative', flex: 1, textAlign: 'left', background: CARD, color: '#fff', borderRadius: 20, padding: '14px 16px 14px', border: on ? '2.5px solid #fff' : '1.5px solid rgba(255,255,255,.08)' }}>
-              {p.id === 'bulanan' && (
+              {p.id === 'tahunan' && (
                 <span style={{ position: 'absolute', top: -14, right: 6, background: GOLD_BG, border: `1.5px solid ${GOLD_LINE}`, color: GOLD, fontSize: 16, fontWeight: 800, letterSpacing: -0.4, padding: '2px 12px', borderRadius: 99 }}>Paling hemat</span>
               )}
               <span style={{ position: 'absolute', top: 14, right: 14, width: 22, height: 22, borderRadius: '50%', border: on ? '0' : `2px solid ${MUTED}`, background: on ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

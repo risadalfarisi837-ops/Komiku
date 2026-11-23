@@ -210,7 +210,7 @@ type DevReset = typeof DEV_RESETS[number][0];
 type GType = 'koin' | 'level' | 'exp' | 'poin' | 'border' | 'wallpaper' | 'effect';
 const GIFT_TYPES: [GType, string][] = [['koin', 'Crystal'], ['level', 'Level up'], ['exp', 'EXP'], ['poin', 'Poin musim'], ['border', 'Border'], ['wallpaper', 'Wallpaper'], ['effect', 'Efek']];
 const GIFT_PRESETS: Record<GType, number[]> = { koin: [100, 500, 1000, 5000], level: [1, 3, 5, 10], exp: [100, 200, 1000, 5000], poin: [50, 100, 300, 700], border: [], wallpaper: [], effect: [] };
-const DEV_PLAN_DAYS: Record<string, { nama: string; days: number }> = { mingguan: { nama: 'Mingguan', days: 7 }, bulanan: { nama: 'Bulanan', days: 30 } };
+const DEV_PLAN_DAYS: Record<string, { nama: string; days: number }> = { mingguan: { nama: 'Mingguan', days: 7 }, bulanan: { nama: 'Bulanan', days: 30 }, tahunan: { nama: 'Tahunan', days: 365 } };
 const GIFT_UNIT: Record<GType, string> = { koin: 'Crystal', level: 'Level', exp: 'EXP', poin: 'Poin', border: 'Border', wallpaper: 'Wallpaper', effect: 'Efek' };
 const DEV_REASONS = ['Kompensasi', 'Server down', 'Hadiah event', 'Bonus spesial'];
 
