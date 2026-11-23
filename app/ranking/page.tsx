@@ -4,7 +4,14 @@ import { useEffect, useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { useUserStats } from '@/lib/store';
 import { currentSeason, RANKS, rankFor, fmt, fmtC, targetsFor, POINTS_PER_CHAPTER, NIGHT_BONUS, DAILY_BONUS, Track } from '@/lib/season';
-import { fetchTop, pushSeasonScore, getUser, Row } from '@/lib/leaderboard';
+import { fetchTop, pushSeasonScore, getUser, getFirebase, Row } from '@/lib/leaderboard';
+import WallpaperBg from '@/components/WallpaperBg';
+import PremiumName from '@/components/PremiumName';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import DevBadge from '@/components/DevBadge';
+import { BORDER_CATALOG } from '@/components/BorderSheet';
+import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
+import { isPremiumRole } from '@/lib/premium';
 
 const CORAL = '#FF6B6B';
 const CARD = '#2A2931';
@@ -42,15 +49,40 @@ function TabEmblem({ t, on }: { t: Track; on: boolean }) {
   );
 }
 
-function Avatar({ name, photo, size = 40 }: { name: string; photo?: string; size?: number }) {
+function Avatar({ name, photo, size = 40, borderKey }: { name: string; photo?: string; size?: number; borderKey?: string }) {
   const bg = AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
-  if (photo) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={photo} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: `0 0 ${size}px` }} />;
-  }
+  const b: any = borderKey ? (BORDER_CATALOG as any)[borderKey] : null;
+  const hasB = !!(b && b.url);
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: bg, flex: `0 0 ${size}px`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.4, fontWeight: 500 }}>
-      {name.slice(0, 2).toUpperCase()}
+    <div style={{ position: 'relative', width: size, height: size, flex: `0 0 ${size}px`, margin: hasB ? 4 : 0 }}>
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo} alt="" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+      ) : (
+        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.4, fontWeight: 500 }}>
+          {name.slice(0, 2).toUpperCase()}
+        </div>
+      )}
+      {hasB && (
+        <div style={{ position: 'absolute', top: '50%', left: '50%', width: '130%', height: '130%', transform: 'translate(-50%,-50%)', backgroundImage: "url('" + b.url + "')", backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', pointerEvents: 'none', zIndex: 2 }} />
+      )}
+    </div>
+  );
+}
+
+type Extra = { displayName?: string; photoURL?: string; role?: string; premiumUntil?: number; activeBorder?: string; activeWallpaper?: string };
+const XF = ['displayName', 'photoURL', 'role', 'premiumUntil', 'activeBorder', 'activeWallpaper'];
+
+function NameLine({ name, ex, size = 18, prefix }: { name: string; ex?: Extra; size?: number; prefix?: string }) {
+  const pu = Number(ex?.premiumUntil) || 0;
+  const verified = isPremiumRole(ex?.role) && (!pu || pu > Date.now());
+  const dev = ex?.role === 'Developer';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+      {prefix && <span style={{ fontSize: size, fontWeight: 800, letterSpacing: -0.3, whiteSpace: 'nowrap' }}>{prefix}</span>}
+      <PremiumName premium={verified} dev={dev} style={{ fontSize: size, fontWeight: 800, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{name}</PremiumName>
+      {verified && <VerifiedBadge size={size - 1} />}
+      {dev && <DevBadge size={size} />}
     </div>
   );
 }
@@ -91,6 +123,25 @@ export default function RankingPage() {
   const [sheet, setSheet] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+  const [ex, setEx] = useState<Record<string, Extra>>({});
+
+  // Ambil role, border, wallpaper, nama, dan foto terbaru dari profil (users/<uid>/<field>)
+  const loadEx = async (uids: string[]) => {
+    const ids = Array.from(new Set(uids)).filter(Boolean);
+    if (!ids.length) return;
+    try {
+      const { db } = await getFirebase();
+      const out: Record<string, Extra> = {};
+      await Promise.all(ids.map(async (id) => {
+        const e: Record<string, any> = {};
+        await Promise.all(XF.map(async (f) => {
+          try { const v = (await db.ref('users/' + id + '/' + f).get()).val(); if (v !== null && v !== undefined) e[f] = v; } catch {}
+        }));
+        out[id] = e as Extra;
+      }));
+      setEx((prev) => ({ ...prev, ...out }));
+    } catch {}
+  };
 
   useEffect(() => {
     let alive = true;
@@ -102,6 +153,10 @@ export default function RankingPage() {
         if (u) await pushSeasonScore();   // sinkronkan poin lokal dulu
         const top = await fetchTop(season.id);
         if (alive) setRows(top);
+        if (alive) {
+          const first = [...(u ? [u.uid] : []), ...top.slice(0, 25).map((r) => r.uid)];
+          loadEx(first).then(() => { if (alive) loadEx(top.slice(25).map((r) => r.uid)); });
+        }
       } catch (e: any) {
         if (alive) setError(e?.message || 'Gagal memuat peringkat');
       } finally {
@@ -121,6 +176,8 @@ export default function RankingPage() {
   const list = tab === 'Semua' ? rows : rows.filter((r) => rankFor(r.points).rank.track === tab);
   const myIndex = me ? rows.findIndex((r) => r.uid === me.uid) : -1;
   const myRank = myIndex >= 0 ? String(myIndex + 1) : me && pts > 0 ? '100+' : '–';
+  const meEx = me ? ex[me.uid] : undefined;
+  const meName = meEx?.displayName || me?.displayName || 'Pembaca';
 
   return (
     <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh', paddingBottom: 170 }}>
@@ -199,38 +256,45 @@ export default function RankingPage() {
         </div>
       ) : (
         <div>
-          {list.map((r, i) => (
-            <Link key={r.uid} href={`/user?uid=${r.uid}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', color: 'inherit', textDecoration: 'none' }}>
-              <span style={{ width: 30, textAlign: 'center', fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: i < 3 ? CORAL : '#fff' }}>{i + 1}</span>
-              <Avatar name={r.name} photo={r.photo} />
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                <RankPill points={r.points} />
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(r.points)}</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
-              </div>
-            </Link>
-          ))}
+          {list.map((r, i) => {
+            const e = ex[r.uid];
+            const nm = e?.displayName || r.name;
+            const hasWp = !!(e?.activeWallpaper && WALLPAPER_CATALOG[e.activeWallpaper]);
+            return (
+              <WallpaperBg key={r.uid} wpKey={e?.activeWallpaper} style={hasWp ? { margin: '6px 12px', borderRadius: 18, border: '1px solid' } : undefined}>
+                <Link href={`/user?uid=${r.uid}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: hasWp ? '12px' : '13px 16px', color: 'inherit', textDecoration: 'none' }}>
+                  <span style={{ width: 30, textAlign: 'center', fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: i < 3 ? CORAL : '#fff' }}>{i + 1}</span>
+                  <Avatar name={nm} photo={e?.photoURL || r.photo} borderKey={e?.activeBorder} />
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <NameLine name={nm} ex={e} />
+                    <RankPill points={r.points} />
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(r.points)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
+                  </div>
+                </Link>
+              </WallpaperBg>
+            );
+          })}
         </div>
       )}
 
       {/* Posisi kamu (menempel di atas navbar) */}
       <div style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: 'min(100%, 448px)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))', padding: '8px 16px', background: '#1B1A20', borderTop: '1px solid rgba(255,255,255,.12)', zIndex: 40 }}>
         {me ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '8px 12px' }}>
+          <WallpaperBg wpKey={meEx?.activeWallpaper} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '8px 12px' }}>
             <span style={{ minWidth: 46, textAlign: 'center', fontSize: myRank.length > 3 ? 20 : 22, fontWeight: 800, letterSpacing: -0.5 }}>{myRank}</span>
-            <Avatar name={me.displayName || 'Kamu'} photo={me.photoURL} size={36} />
+            <Avatar name={meName} photo={meEx?.photoURL || me.photoURL} size={36} borderKey={meEx?.activeBorder} />
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Kamu · {me.displayName || 'Pembaca'}</div>
+              <NameLine name={meName} ex={meEx} size={17} prefix="Kamu · " />
               <RankPill points={pts} />
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(pts)}</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
             </div>
-          </div>
+          </WallpaperBg>
         ) : (
           !loading && (
             <Link href="/profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '10px 14px', fontSize: 16, fontWeight: 800 }}>
