@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import WallpaperBg from '@/components/WallpaperBg';
+import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { isPremiumRole } from '@/lib/premium';
@@ -253,7 +254,7 @@ function LevelBadge({ level }: { level: number }) {
 
 // ─── Role Badge ───────────────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string; level?: number }) {
-  if (role === 'Developer') return <span className="text-[10px] font-black px-2 py-0.5 rounded-full border bg-white/5 text-gray-400 border-white/20">⚡ DEV</span>;
+  if (role === 'Developer') return <DevBadge size={16} />;
   return isPremiumRole(role) ? <VerifiedBadge size={15} /> : null;
 }
 
@@ -274,7 +275,7 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
             <div className="flex-1 min-w-0">
                 {/* Name + time */}
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <PremiumName premium={isPremiumRole(c.role)} className="text-[13px] font-bold text-white truncate max-w-[130px]">{c.nama}</PremiumName>
+                    <PremiumName premium={isPremiumRole(c.role)} dev={c.role === 'Developer'} className="text-[13px] font-bold text-white truncate max-w-[130px]">{c.nama}</PremiumName>
                     <RoleBadge role={c.role} />
                     <span className="text-[11px] text-gray-500">• {timeAgo(c.waktu)}</span>
                     {isMine && <span className="text-[10px] text-gray-400 font-bold ml-auto opacity-60">Tahan hapus</span>}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, ShoppingBag } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore, ACTIVE_DAYS } from '@/lib/leaderboard';
@@ -1148,14 +1149,18 @@ export default function ProfilePage() {
         <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => void 0} />
 
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
-          <PremiumName premium={isPremium && !isDev}>{userData?.displayName || user.displayName || 'User'}</PremiumName>
+          <PremiumName premium={isPremium && !isDev} dev={isDev}>{userData?.displayName || user.displayName || 'User'}</PremiumName>
           {isPremium && !isDev && <span style={{ marginLeft: 8 }}><VerifiedBadge size={22} /></span>}
+          {isDev && <span style={{ marginLeft: 8 }}><DevBadge size={26} /></span>}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
             <Emblem t={rank.track} fill={rank.bg} size={18} />{rank.name}
           </span>
+          {isDev && (
+            <span style={{ background: 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)', color: '#0b0b14', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>DEVELOPER</span>
+          )}
           {isPremium && !isDev && (
             <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>PREMIUM</span>
           )}

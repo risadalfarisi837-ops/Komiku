@@ -8,6 +8,7 @@ import { useFavorites, useHistory } from '@/lib/store';
 import { WALLPAPER_CATALOG, RARITY_STYLE } from '@/lib/wallpapers';
 import { BORDER_CATALOG } from '@/components/BorderSheet';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
 import { isPremiumRole } from '@/lib/premium';
 
@@ -141,6 +142,7 @@ function UserContent() {
   const bannerBg = wp ? (wp.url ? 'url(' + wp.url + ') center/cover' : wp.grad) : 'linear-gradient(160deg,#1c2133,#0b0c10)';
   const pu = Number(prof.premiumUntil) || 0;
   const verified = isPremiumRole(prof.role) && (!pu || pu > Date.now());
+  const dev = prof.role === 'Developer';
   const joined = Number(prof.joinedAt) || 0;
   const months = joined ? Math.max(0, Math.floor((Date.now() - joined) / (30.44 * 86400000))) : null;
   const minutes = Number(prof.menitMenonton) || 0;
@@ -176,16 +178,17 @@ function UserContent() {
 
       <div style={{ textAlign: 'center', padding: '12px 16px 0' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <PremiumName premium={verified} style={{ fontSize: 34, fontWeight: 800, letterSpacing: -1.2, wordBreak: 'break-word' }}>{name}</PremiumName>
+          <PremiumName premium={verified} dev={dev} style={{ fontSize: 34, fontWeight: 800, letterSpacing: -1.2, wordBreak: 'break-word' }}>{name}</PremiumName>
           <span style={{ fontSize: 26, fontWeight: 800, color: MUTED }}>{shortUid}</span>
           {verified && <VerifiedBadge size={32} />}
+          {dev && <DevBadge size={36} />}
         </div>
         <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 10 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 22px', borderRadius: 99, background: tier.color + '33', color: tier.color, fontSize: 28, fontWeight: 800, letterSpacing: -0.8 }}>
             <span style={{ fontSize: 24 }}>{tier.icon}</span>Lvl. {level}
           </span>
           {prof.role && prof.role !== 'Member' && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '10px 20px', borderRadius: 99, background: '#1a2236', color: '#cbd5f0', fontSize: 22, fontWeight: 800 }}>{prof.role}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '10px 20px', borderRadius: 99, background: dev ? 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)' : '#1a2236', color: dev ? '#0b0b14' : '#cbd5f0', fontSize: 22, fontWeight: 800 }}>{dev ? 'DEVELOPER' : prof.role}</span>
           )}
         </div>
       </div>
@@ -217,7 +220,7 @@ function UserContent() {
             <div key={c.id} style={{ padding: '18px 0 20px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Avatar src={prof.photoURL} size={44} />
-                <PremiumName premium={verified} style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.7 }}>{name}</PremiumName>
+                <PremiumName premium={verified} dev={dev} style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.7 }}>{name}</PremiumName>
                 <span style={{ marginLeft: 'auto', color: MUTED, fontSize: 18, fontWeight: 700 }}>• {c.waktu ? timeAgo(c.waktu) : ''}</span>
               </div>
               {c.chapterTitle ? <div style={{ marginTop: 12, color: '#cdd6ee', fontSize: 20, fontWeight: 800, letterSpacing: -0.4 }}>{c.chapterTitle}</div> : null}

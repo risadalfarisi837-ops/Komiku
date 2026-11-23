@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getFirebase } from '@/lib/leaderboard';
 import { findLencana } from '@/lib/lencana';
+import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
 import { isPremiumRole } from '@/lib/premium';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -154,8 +155,9 @@ function KomentarContent() {
         <a href={`/user?uid=${c.uid}`} aria-label="Lihat profil" style={{ display: 'inline-flex', flex: '0 0 auto', alignSelf: 'flex-start' }}><Avatar src={c.foto} size={small ? 32 : 42} gold={gold} /></a>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 28 }}>
-            <PremiumName premium={isPremiumRole(c.role)} style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</PremiumName>
+            <PremiumName premium={isPremiumRole(c.role)} dev={c.role === 'Developer'} style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</PremiumName>
             {(c.role === 'Komiku Premium' || c.role === 'Wibu Premium') && <VerifiedBadge size={small ? 17 : 20} />}
+            {c.role === 'Developer' && <DevBadge size={small ? 18 : 22} />}
             {lk && <LencanaIcon l={lk} size={small ? 22 : 28} />}
             <span style={{ fontSize: 15, fontWeight: 800, color: MUTED, letterSpacing: -0.3 }}>· {fmtDate(c.waktu)}</span>
           </div>
