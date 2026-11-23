@@ -11,6 +11,7 @@ import { currentSeason, RANKS, rankFor, fmt, fmtC, TARGETS, Track } from '@/lib/
 import { pushSeasonScore, ACTIVE_DAYS } from '@/lib/leaderboard';
 import { sendGifts, giftTitle, GiftType } from '@/lib/gifts';
 import ProfileEffect from '@/components/ProfileEffect';
+import ProfileBg from '@/components/ProfileBg';
 import GiftEffect from '@/components/GiftEffect';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
@@ -1134,7 +1135,8 @@ export default function ProfilePage() {
     <div style={{ background: '#1B1A20', color: '#fff', minHeight: '100vh', paddingBottom: 130 }}>
 
       {/* Header */}
-      <div style={{ position: 'relative', padding: '24px 16px 0', textAlign: 'center', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', isolation: 'isolate', padding: userData?.activeBackground ? '24px 16px 22px' : '24px 16px 0', textAlign: 'center', overflow: 'hidden' }}>
+        <ProfileBg k={userData?.activeBackground} fade />
         {activeEffect && <ProfileEffect effectKey={activeEffect} />}
         <div style={{ position: 'absolute', top: 14, right: 10, display: 'flex', gap: 2 }}>
           <Link href="/notifikasi" aria-label="Notifikasi" style={{ position: 'relative', padding: 8, color: '#fff', display: 'flex' }}>
