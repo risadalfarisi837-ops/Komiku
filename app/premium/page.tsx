@@ -15,8 +15,8 @@ const MUTED = '#8F8D9B';
 
 type Plan = 'bulanan' | 'tahunan';
 const PLANS: { id: Plan; nama: string; harga: string; per: string; label: string; crystal: number }[] = [
-  { id: 'bulanan', nama: 'Bulanan', harga: 'Rp 25.000', per: 'per bulan', label: 'Bulanan', crystal: 500 },
-  { id: 'tahunan', nama: 'Tahunan', harga: 'Rp 250.000', per: 'per tahun', label: 'Tahunan', crystal: 6000 },
+  { id: 'bulanan', nama: 'Bulanan', harga: 'Rp 5.000', per: 'per bulan', label: 'Bulanan', crystal: 500 },
+  { id: 'tahunan', nama: 'Tahunan', harga: 'Rp 30.000', per: 'per tahun', label: 'Tahunan', crystal: 6000 },
 ];
 
 const Crown = ({ size = 22, color = GOLD, filled = true }: { size?: number; color?: string; filled?: boolean }) => (
@@ -32,7 +32,7 @@ const QRIS_NAME = 'Risyadh All Store';
 
 const K_ORDER = 'komiku-premium-order';
 const ORDER_TTL = 24 * 60 * 60 * 1000; // pesanan berlaku 24 jam
-const BASE_PRICE: Record<Plan, number> = { bulanan: 25000, tahunan: 250000 };
+const BASE_PRICE: Record<Plan, number> = { bulanan: 5000, tahunan: 30000 };
 
 const FEATURES = [
   { text: 'Bebas iklan di seluruh aplikasi', icon: <path d="M6 6l12 12M18 6L6 18" /> },
