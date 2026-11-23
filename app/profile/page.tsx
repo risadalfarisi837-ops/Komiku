@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, ShoppingBag } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import PremiumName from '@/components/PremiumName';
 import { currentSeason, RANKS, rankFor, fmt, TARGETS, Track } from '@/lib/season';
 import { pushSeasonScore, ACTIVE_DAYS } from '@/lib/leaderboard';
 import { sendGifts, giftTitle, GiftType } from '@/lib/gifts';
@@ -1147,7 +1148,7 @@ export default function ProfilePage() {
         <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => void 0} />
 
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
-          {userData?.displayName || user.displayName || 'User'}
+          <PremiumName premium={isPremium && !isDev}>{userData?.displayName || user.displayName || 'User'}</PremiumName>
           {isPremium && !isDev && <span style={{ marginLeft: 8 }}><VerifiedBadge size={22} /></span>}
         </div>
 
