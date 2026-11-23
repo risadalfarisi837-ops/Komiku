@@ -406,7 +406,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     if (act !== 'koin' && act !== 'level' && act !== 'exp' && act !== 'poin') return;
     const n = parseInt(amount);
     if (isNaN(n) || n < 0) { showToast('Isi angka yang benar.', 'error'); return; }
-    if (mode === 'add') {
+    if ((mode as string) === 'add') {
       if (n <= 0) { showToast('Isi angka lebih dari 0.', 'error'); return; }
       sendToTarget({ type: act as GiftType, amount: n, itemName: giftTitle(act as GiftType, n) });
       return;
