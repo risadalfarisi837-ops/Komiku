@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { PawPrint, Trophy } from 'lucide-react';
 import { getFirebase } from '@/lib/leaderboard';
 import { useFavorites, useHistory } from '@/lib/store';
 import { WALLPAPER_CATALOG, RARITY_STYLE, wpBg } from '@/lib/wallpapers';
@@ -120,8 +121,8 @@ function UserContent() {
     <div style={{ position: 'fixed', inset: 0, overflowY: 'auto', background: '#121212', color: '#fff', zIndex: 300 }}>{children}</div>
   );
   const BackBtn = () => (
-    <button onClick={back} aria-label="Kembali" style={{ position: 'absolute', left: 12, top: 'max(14px, env(safe-area-inset-top))', background: 'rgba(0,0,0,.35)', border: 0, borderRadius: 99, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-      <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 5l-7 7 7 7" /></svg>
+    <button onClick={back} aria-label="Kembali" style={{ position: 'absolute', left: 10, top: 'max(12px, env(safe-area-inset-top))', background: 'rgba(0,0,0,.3)', border: 0, borderRadius: 99, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
+      <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 5l-7 7 7 7" /></svg>
     </button>
   );
 
@@ -151,49 +152,49 @@ function UserContent() {
 
   const stat = (val: any, label: string) => (
     <div style={{ textAlign: 'center', flex: 1 }}>
-      <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: -1.5, lineHeight: 1.1 }}>{val}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: MUTED, letterSpacing: -0.6 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.1 }}>{val}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: MUTED, marginTop: 2 }}>{label}</div>
     </div>
   );
 
   const private_ = (txt: string) => (
-    <div style={{ textAlign: 'center', color: MUTED, fontWeight: 700, fontSize: 17, padding: '60px 30px' }}>{txt}</div>
+    <div style={{ textAlign: 'center', color: MUTED, fontWeight: 700, fontSize: 15, padding: '48px 30px' }}>{txt}</div>
   );
 
   return (
     <Wrap>
-      <div style={{ position: 'relative', height: 260, background: bannerBg }}>
+      <div style={{ position: 'relative', height: 250, background: bannerBg }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.05) 40%,rgba(18,18,18,.9))' }} />
         <BackBtn />
         {wp && rs && (
-          <span style={{ position: 'absolute', right: 16, top: 'max(22px, env(safe-area-inset-top))', padding: '5px 14px', borderRadius: 99, background: 'rgba(30,30,34,.75)', color: rs.color, fontWeight: 800, fontSize: 17, border: '1px solid ' + rs.border, zIndex: 5 }}>{wp.rarity}</span>
+          <span style={{ position: 'absolute', right: 14, top: 'max(16px, env(safe-area-inset-top))', padding: '3px 11px', borderRadius: 99, background: 'rgba(30,30,34,.75)', color: rs.color, fontWeight: 800, fontSize: 13, border: '1px solid ' + rs.border, zIndex: 5 }}>{wp.rarity}</span>
         )}
       </div>
 
-      <div style={{ marginTop: -78, display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 6 }}>
-        <div style={{ padding: 6, borderRadius: '50%', background: '#121212' }}>
-          <Avatar src={prof.photoURL} size={140} borderKey={prof.activeBorder} />
+      <div style={{ marginTop: -114, display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 6 }}>
+        <div style={{ borderRadius: '50%', boxShadow: '0 4px 18px rgba(0,0,0,.45)' }}>
+          <Avatar src={prof.photoURL} size={108} borderKey={prof.activeBorder} />
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', padding: '12px 16px 0' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <PremiumName premium={verified} dev={dev} style={{ fontSize: 34, fontWeight: 800, letterSpacing: -1.2, wordBreak: 'break-word' }}>{name}</PremiumName>
-          <span style={{ fontSize: 26, fontWeight: 800, color: MUTED }}>{shortUid}</span>
-          {verified && <VerifiedBadge size={32} />}
-          {dev && <DevBadge size={36} />}
+      <div style={{ textAlign: 'center', padding: '18px 16px 0' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <PremiumName premium={verified} dev={dev} style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.8, wordBreak: 'break-word' }}>{name}</PremiumName>
+          <span style={{ fontSize: 17, fontWeight: 800, color: MUTED }}>{shortUid}</span>
+          {verified && <VerifiedBadge size={22} />}
+          {dev && <DevBadge size={26} />}
         </div>
-        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 10 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 22px', borderRadius: 99, background: tier.color + '33', color: tier.color, fontSize: 28, fontWeight: 800, letterSpacing: -0.8 }}>
-            <span style={{ fontSize: 24 }}>{tier.icon}</span>Lvl. {level}
+        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 8 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 99, background: tier.color + '33', color: tier.color, fontSize: 18, fontWeight: 800, letterSpacing: -0.4 }}>
+            <span style={{ fontSize: 16 }}>{tier.icon}</span>Lvl {level.toLocaleString('id-ID')}
           </span>
           {prof.role && prof.role !== 'Member' && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '10px 20px', borderRadius: 99, background: dev ? 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)' : '#1a2236', color: dev ? '#0b0b14' : '#cbd5f0', fontSize: 22, fontWeight: 800 }}>{dev ? 'DEVELOPER' : prof.role}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 13px', borderRadius: 99, background: dev ? 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)' : '#1a2236', color: dev ? '#0b0b14' : '#cbd5f0', fontSize: 14, fontWeight: 800 }}>{dev ? 'DEVELOPER' : prof.role}</span>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', padding: '26px 8px 6px' }}>
+      <div style={{ display: 'flex', padding: '18px 8px 4px' }}>
         {stat(months === null ? '–' : months, 'bulan')}
         {stat(comments.length, 'komentar')}
         {stat(isMe ? history.length : '–', 'riwayat')}
@@ -201,30 +202,32 @@ function UserContent() {
       </div>
 
       {isMe && (
-        <div style={{ display: 'flex', gap: 12, padding: '14px 14px 4px' }}>
-          <Link href="/komikstore/pet" style={{ flex: 1, textAlign: 'center', padding: '16px 0', borderRadius: 99, border: '2px solid #2a3350', background: '#161b2b', color: '#fff', fontSize: 24, fontWeight: 800, letterSpacing: -0.7 }}>🐾 Peliharaan</Link>
-          <Link href="/ranking" style={{ flex: 1, textAlign: 'center', padding: '16px 0', borderRadius: 99, border: '2px solid #2f3a7a', background: '#161a33', color: '#fff', fontSize: 24, fontWeight: 800, letterSpacing: -0.7 }}>🏆 Peringkat</Link>
+        <div style={{ display: 'flex', gap: 10, padding: '12px 14px 2px' }}>
+          <Link href="/komikstore/pet" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 0', borderRadius: 99, border: '1.5px solid #2a3350', background: '#161b2b', color: '#fff', fontSize: 17, fontWeight: 800 }}><PawPrint size={18} /> Peliharaan</Link>
+          <Link href="/ranking" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 0', borderRadius: 99, border: '1.5px solid #2f3a7a', background: '#161a33', color: '#fff', fontSize: 17, fontWeight: 800 }}><Trophy size={18} color="#fbbf24" /> Peringkat</Link>
         </div>
       )}
 
-      <div style={{ display: 'flex', marginTop: 18, borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+      <div style={{ display: 'flex', marginTop: 12, borderBottom: '1px solid rgba(255,255,255,.08)' }}>
         {(['komentar', 'favorit', 'riwayat'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, background: 'none', border: 0, padding: '18px 0 14px', color: tab === t ? '#fff' : MUTED, fontSize: 28, fontWeight: 800, letterSpacing: -0.9, borderBottom: tab === t ? '4px solid ' + BLUE : '4px solid transparent', textTransform: 'capitalize' }}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, background: 'none', border: 0, padding: '12px 0 0', color: tab === t ? '#fff' : MUTED, fontSize: 18, fontWeight: 800, textTransform: 'capitalize' }}>
+            <span style={{ display: 'inline-block', padding: '0 2px 9px', borderBottom: '3px solid ' + (tab === t ? BLUE : 'transparent') }}>{t}</span>
+          </button>
         ))}
       </div>
 
-      <div style={{ padding: '4px 14px 60px' }}>
+      <div style={{ padding: '2px 14px 60px' }}>
         {tab === 'komentar' && (comments.length === 0
           ? private_('Belum ada komentar.')
           : comments.map((c: UserComment) => (
-            <div key={c.id} style={{ padding: '18px 0 20px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Avatar src={prof.photoURL} size={44} />
-                <PremiumName premium={verified} dev={dev} style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.7 }}>{name}</PremiumName>
-                <span style={{ marginLeft: 'auto', color: MUTED, fontSize: 18, fontWeight: 700 }}>• {c.waktu ? timeAgo(c.waktu) : ''}</span>
+            <div key={c.id} style={{ padding: '14px 0 16px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Avatar src={prof.photoURL} size={34} />
+                <PremiumName premium={verified} dev={dev} style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3 }}>{name}</PremiumName>
+                <span style={{ marginLeft: 'auto', color: MUTED, fontSize: 13, fontWeight: 700 }}>• {c.waktu ? timeAgo(c.waktu) : ''}</span>
               </div>
-              {c.chapterTitle ? <div style={{ marginTop: 12, color: '#cdd6ee', fontSize: 20, fontWeight: 800, letterSpacing: -0.4 }}>{c.chapterTitle}</div> : null}
-              <div style={{ marginTop: 8, fontSize: 24, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.35, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{c.teks}</div>
+              {c.chapterTitle ? <div style={{ marginTop: 8, color: '#cdd6ee', fontSize: 14, fontWeight: 800 }}>{c.chapterTitle}</div> : null}
+              <div style={{ marginTop: 6, fontSize: 16, fontWeight: 600, lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{c.teks}</div>
             </div>
           )))}
 
@@ -233,10 +236,10 @@ function UserContent() {
           : favorites.length === 0
             ? private_('Belum ada favorit.')
             : favorites.map((f: any) => (
-              <Link key={f.link} href={'/manga?url=' + encodeURIComponent(f.link)} style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <Link key={f.link} href={'/manga?url=' + encodeURIComponent(f.link)} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.thumb} alt="" referrerPolicy="no-referrer" style={{ width: 62, height: 84, borderRadius: 10, objectFit: 'cover', background: '#1a1d24' }} />
-                <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>{f.title}</span>
+                <img src={f.thumb} alt="" referrerPolicy="no-referrer" style={{ width: 48, height: 66, borderRadius: 8, objectFit: 'cover', background: '#1a1d24' }} />
+                <span style={{ fontSize: 16, fontWeight: 800 }}>{f.title}</span>
               </Link>
             )))}
 
@@ -245,12 +248,12 @@ function UserContent() {
           : history.length === 0
             ? private_('Belum ada riwayat.')
             : history.slice(0, 60).map((h: any) => (
-              <Link key={h.chapterLink} href={'/chapter?url=' + encodeURIComponent(h.chapterLink) + '&thumb=' + encodeURIComponent(h.mangaThumb || '') + '&mangaTitle=' + encodeURIComponent(h.mangaTitle || '')} style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <Link key={h.chapterLink} href={'/chapter?url=' + encodeURIComponent(h.chapterLink) + '&thumb=' + encodeURIComponent(h.mangaThumb || '') + '&mangaTitle=' + encodeURIComponent(h.mangaTitle || '')} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={h.mangaThumb} alt="" referrerPolicy="no-referrer" style={{ width: 62, height: 84, borderRadius: 10, objectFit: 'cover', background: '#1a1d24' }} />
+                <img src={h.mangaThumb} alt="" referrerPolicy="no-referrer" style={{ width: 48, height: 66, borderRadius: 8, objectFit: 'cover', background: '#1a1d24' }} />
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>{h.mangaTitle}</span>
-                  <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: MUTED, marginTop: 4 }}>Ch. {h.chapterNumber} · {h.totalPages ? Math.round((h.pageRead / h.totalPages) * 100) : 0}%</span>
+                  <span style={{ display: 'block', fontSize: 16, fontWeight: 800 }}>{h.mangaTitle}</span>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: MUTED, marginTop: 3 }}>Ch. {h.chapterNumber} · {h.totalPages ? Math.round((h.pageRead / h.totalPages) * 100) : 0}%</span>
                 </span>
               </Link>
             )))}
