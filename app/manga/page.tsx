@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import WallpaperBg from '@/components/WallpaperBg';
+import PremiumName from '@/components/PremiumName';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { isPremiumRole } from '@/lib/premium';
 import Image from 'next/image';
@@ -133,11 +134,11 @@ function CommentItem({ c, currentUid, onDelete }: { c: CommentData; currentUid: 
       onTouchStart={start} onTouchEnd={stop} onTouchMove={stop}
       className="flex gap-3 p-3 rounded-2xl border border-white/5 bg-[#1B1A20]/60 mb-3 select-none"
     >
-      <AvatarWithBorder src={c.foto} size={38} borderKey={c.activeBorder} />
+      <a href={`/user?uid=${c.uid}`} aria-label="Lihat profil" onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', flex: '0 0 auto' }}><AvatarWithBorder src={c.foto} size={38} borderKey={c.activeBorder} /></a>
       <div className="flex-1 min-w-0">
         {/* Name + time */}
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-[13px] font-bold text-white truncate max-w-[130px]">{c.nama}</span>
+          <PremiumName premium={isPremiumRole(c.role)} className="text-[13px] font-bold text-white truncate max-w-[130px]">{c.nama}</PremiumName>
           <RoleBadge role={c.role} />
           <span className="text-[11px] text-gray-500">• {timeAgo(c.waktu)}</span>
           {isMine && <span className="text-[10px] text-gray-400 font-bold ml-auto opacity-60">Tahan hapus</span>}

@@ -4,6 +4,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getFirebase } from '@/lib/leaderboard';
 import { findLencana } from '@/lib/lencana';
+import PremiumName from '@/components/PremiumName';
+import { isPremiumRole } from '@/lib/premium';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { LencanaIcon } from '@/components/LencanaBadge';
 import WallpaperBg from '@/components/WallpaperBg';
@@ -149,10 +151,10 @@ function KomentarContent() {
           ? { display: 'flex', gap: 14, padding: small ? 12 : 14, marginTop: small ? 10 : 14, borderRadius: 18, border: '1px solid' }
           : { display: 'flex', gap: 14, padding: small ? '10px 0 0' : '16px 0 0' }}
       >
-        <Avatar src={c.foto} size={small ? 32 : 42} gold={gold} />
+        <a href={`/user?uid=${c.uid}`} aria-label="Lihat profil" style={{ display: 'inline-flex', flex: '0 0 auto', alignSelf: 'flex-start' }}><Avatar src={c.foto} size={small ? 32 : 42} gold={gold} /></a>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 28 }}>
-            <span style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</span>
+            <PremiumName premium={isPremiumRole(c.role)} style={{ fontSize: small ? 16 : 18, fontWeight: 800, letterSpacing: -0.5, wordBreak: 'break-word' }}>{c.nama}</PremiumName>
             {(c.role === 'Komiku Premium' || c.role === 'Wibu Premium') && <VerifiedBadge size={small ? 17 : 20} />}
             {lk && <LencanaIcon l={lk} size={small ? 22 : 28} />}
             <span style={{ fontSize: 15, fontWeight: 800, color: MUTED, letterSpacing: -0.3 }}>· {fmtDate(c.waktu)}</span>
