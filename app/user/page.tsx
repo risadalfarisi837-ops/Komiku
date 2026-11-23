@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PawPrint, Trophy } from 'lucide-react';
+import { findLencana, TRACK_COLOR } from '@/lib/lencana';
+import { RANKS } from '@/lib/season';
 import { getFirebase } from '@/lib/leaderboard';
 import { useFavorites, useHistory } from '@/lib/store';
 import { WALLPAPER_CATALOG, RARITY_STYLE, wpBg } from '@/lib/wallpapers';
@@ -28,7 +30,7 @@ const TIERS = [
 ];
 const tierOf = (lv: number) => TIERS.find((t) => lv >= t.min && lv <= t.max) || TIERS[0];
 
-const FIELDS = ['displayName', 'photoURL', 'level', 'role', 'joinedAt', 'menitMenonton', 'activeBorder', 'activeWallpaper', 'premiumUntil'];
+const FIELDS = ['displayName', 'photoURL', 'level', 'role', 'joinedAt', 'menitMenonton', 'activeBorder', 'activeWallpaper', 'premiumUntil', 'lencana'];
 
 function timeAgo(ts: number) {
   const m = Math.floor((Date.now() - ts) / 60000);
@@ -42,6 +44,14 @@ function timeAgo(ts: number) {
 }
 
 interface UserComment { id: string; teks: string; waktu: number; chapterTitle?: string; kind: string }
+
+function Shield({ color, size = 20 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="rgba(255,255,255,.55)" strokeWidth={1.4} strokeLinejoin="round">
+      <path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6l8-3z" />
+    </svg>
+  );
+}
 
 function Avatar({ src, size, borderKey }: { src?: string; size: number; borderKey?: string }) {
   const b: any = borderKey ? (BORDER_CATALOG as any)[borderKey] : null;
@@ -149,6 +159,8 @@ function UserContent() {
   const minutes = Number(prof.menitMenonton) || 0;
   const shortUid = '#' + uid.substring(0, 6).toUpperCase();
   const name = prof.displayName || 'User';
+  const lk = findLencana(prof.lencana);
+  const lkBg = (lk && ((RANKS as any[]).find((r) => r.name === lk.name)?.bg || TRACK_COLOR[lk.track])) || '#334155';
 
   const stat = (val: any, label: string) => (
     <div style={{ textAlign: 'center', flex: 1 }}>
@@ -185,9 +197,11 @@ function UserContent() {
           {dev && <DevBadge size={26} />}
         </div>
         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 8 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 99, background: tier.color + '33', color: tier.color, fontSize: 18, fontWeight: 800, letterSpacing: -0.4 }}>
-            <span style={{ fontSize: 16 }}>{tier.icon}</span>Lvl {level.toLocaleString('id-ID')}
-          </span>
+          {lk && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 14px 3px 5px', borderRadius: 99, background: lkBg, fontSize: 16, fontWeight: 800, letterSpacing: -0.3 }}>
+              <Shield color={lkBg} size={20} />{lk.name}
+            </span>
+          )}
           {prof.role && prof.role !== 'Member' && (
             <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 13px', borderRadius: 99, background: dev ? 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)' : '#1a2236', color: dev ? '#0b0b14' : '#cbd5f0', fontSize: 14, fontWeight: 800 }}>{dev ? 'DEVELOPER' : prof.role}</span>
           )}
