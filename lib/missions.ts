@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { dayKey, isNight } from './season';
+import { isPremiumCached } from './premium';
+import { getFirebase } from './firebase-client';
+
+// Premium: tiap komentar langsung +1 Token, tanpa batas harian
+function grantPremiumToken() {
+  getFirebase().then(({ auth, db }: any) => {
+    const u = auth.currentUser;
+    if (u) db.ref('users/' + u.uid + '/token').transaction((cur: any) => (Number(cur) || 0) + 1);
+  }).catch(() => {});
+}
 
 // ─── Misi harian & mingguan ──────────────────────────────────────────────────
 export interface Mission {
@@ -76,6 +86,7 @@ export const useMissions = create<MissionStore>()(
         set(rolled(get()));
         const s = get();
         set({ d: { ...s.d, comment: s.d.comment + 1 }, w: { ...s.w, comment: s.w.comment + 1 } });
+        if (isPremiumCached()) grantPremiumToken();
       },
       markClaimed: (m) => {
         set(rolled(get()));

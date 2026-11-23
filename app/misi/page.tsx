@@ -148,7 +148,7 @@ export default function MisiPage() {
       {section('d', 'Misi harian')}
       {section('w', 'Misi mingguan')}
 
-      <p className="px-6 pt-6 text-sm font-bold text-white/35">Progres baca dihitung dari chapter baru di perangkat ini. Login untuk mengklaim hadiah.</p>
+      <p className="px-6 pt-6 text-sm font-bold text-white/35">Progres baca dihitung dari chapter baru di perangkat ini. Login untuk mengklaim hadiah. Pengguna Premium dapat +1 Token di setiap komentar, tanpa batas.</p>
 
       {toast && (
         <div className="fixed bottom-10 inset-x-0 z-[60] flex justify-center pointer-events-none">
