@@ -10,6 +10,7 @@ import {
 import { useFavorites, useHistory } from '@/lib/store';
 import type { FavoriteItem, HistoryItem } from '@/lib/store';
 import { useSettings } from '@/lib/settings';
+import { numericId } from '@/lib/utils';
 import { getFirebase, loginWithGoogle } from '@/lib/firebase-client';
 import pkg from '@/package.json';
 
@@ -195,7 +196,7 @@ export default function SettingsPage() {
 
   const copyUid = async () => {
     if (!user) return;
-    try { await navigator.clipboard.writeText('#' + user.uid.substring(0, 6).toUpperCase()); say('ID akun disalin.'); }
+    try { await navigator.clipboard.writeText(numericId(user.uid)); say('ID akun disalin.'); }
     catch { say('Tidak bisa menyalin ID.'); }
   };
 
@@ -325,7 +326,7 @@ export default function SettingsPage() {
               sub={loggingIn ? 'Membuka Google...' : 'Masuk dengan Google'}
             />
           )}
-          {user && <Row border icon={<Hash size={22} color={ICON} />} title="ID akun" right={<span style={{ fontFamily: 'monospace', letterSpacing: 2 }}>{'#' + user.uid.substring(0, 6).toUpperCase()}</span>} onClick={copyUid} />}
+          {user && <Row border icon={<Hash size={22} color={ICON} />} title="ID akun" right={<span style={{ fontFamily: 'monospace', letterSpacing: 2 }}>{numericId(user.uid)}</span>} onClick={copyUid} />}
           {!isPremium && <Row border icon={<Crown size={22} color={ICON} />} title="Jadi Premium" sub="Bebas iklan, unduh massal" chevron onClick={() => say('Fitur Premium segera hadir.')} />}
         </Group>
 
