@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PawPrint, Trophy } from 'lucide-react';
 import { findLencana, TRACK_COLOR } from '@/lib/lencana';
+import { numericId } from '@/lib/utils';
 import { RANKS } from '@/lib/season';
 import { getFirebase } from '@/lib/leaderboard';
 import { useFavorites, useHistory } from '@/lib/store';
@@ -157,7 +158,7 @@ function UserContent() {
   const joined = Number(prof.joinedAt) || 0;
   const months = joined ? Math.max(0, Math.floor((Date.now() - joined) / (30.44 * 86400000))) : null;
   const minutes = Number(prof.menitMenonton) || 0;
-  const shortUid = '#' + uid.substring(0, 6).toUpperCase();
+  const shortUid = numericId(uid);
   const name = prof.displayName || 'User';
   const lk = findLencana(prof.lencana);
   const lkBg = (lk && ((RANKS as any[]).find((r) => r.name === lk.name)?.bg || TRACK_COLOR[lk.track])) || '#334155';

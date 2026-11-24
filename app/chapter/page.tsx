@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import WallpaperBg from '@/components/WallpaperBg';
+import { numericId } from '@/lib/utils';
 import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -172,7 +173,7 @@ function timeAgo(ts: number) {
     if (h < 24) return `${h}j lalu`;
     return `${Math.floor(h / 24)}h lalu`;
 }
-function getShortUid(uid: string) { return '#' + uid.substring(0, 6).toUpperCase(); }
+function getShortUid(uid: string) { return numericId(uid); }
 
 // ── Comment panel (Firebase realtime) ─────────────────────────────────────
 interface CommentData {

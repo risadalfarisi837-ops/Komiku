@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { X, Check, Bell, Pencil, Crown, Gift, Bug, ChevronRight, BookOpen, Flame, Moon, Lock, ShoppingBag, Target } from 'lucide-react';
 import { useFavorites, useHistory, useUserStats } from '@/lib/store';
+import { numericId } from '@/lib/utils';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import DevBadge from '@/components/DevBadge';
 import PremiumName from '@/components/PremiumName';
@@ -550,7 +551,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const chip = (on: boolean): React.CSSProperties => ({ border: 0, borderRadius: 99, padding: '9px 14px', fontSize: 14, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', background: on ? '#0E8A6A' : '#1F1E24', color: on ? '#fff' : '#B5B3C0' });
 
   const ql = q.trim().replace('#', '').toLowerCase();
-  const matches = (users || []).filter(u => !ql || u.name.toLowerCase().includes(ql) || u.uid.toLowerCase().startsWith(ql)).slice(0, 6);
+  const matches = (users || []).filter(u => !ql || u.name.toLowerCase().includes(ql) || u.uid.toLowerCase().startsWith(ql) || numericId(u.uid).includes(ql.replace(/^#/, ''))).slice(0, 6);
   const cnt = (o: any) => Object.keys(o || {}).length;
   const numAct = act === 'koin' || act === 'level' || act === 'exp' || act === 'poin';
   const modeLabel = DEV_MODES.find(m => m[0] === mode)![1];
@@ -584,7 +585,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           <div>
             <label style={LABEL}>1 · Pilih user</label>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input style={FIELD} value={q} onChange={e => setQ(e.target.value)} placeholder={loadingUsers ? 'Memuat user...' : 'Cari nama atau UID'} />
+              <input style={FIELD} value={q} onChange={e => setQ(e.target.value)} placeholder={loadingUsers ? 'Memuat user...' : 'Cari nama atau ID'} />
               <button onClick={() => { const me = (users || []).find(u => u.uid === uid); if (me) pick(me); }} style={{ ...chip(false), borderRadius: 14, padding: '0 16px' }}>Saya</button>
             </div>
 
@@ -812,7 +813,7 @@ const MAROON = '#4A2A33';
 const GOLD = '#F2C14E';
 const ICON = '#C8C6D2';
 
-function getShortUid(uid: string) { return '#' + uid.substring(0, 6).toUpperCase(); }
+function getShortUid(uid: string) { return numericId(uid); }
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const uuidOf = (l: string) => (l || '').match(UUID_RE)?.[0].toLowerCase() || l;
 const numOf = (v: string) => { const m = String(v || '').match(/\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; };
