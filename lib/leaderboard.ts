@@ -119,10 +119,14 @@ export async function addProfileExp(amount: number): Promise<void> {
     const user = await getUser();
     if (!user) return;
     const { db } = await getFirebase();
-    await db.ref(`users/${user.uid}`).transaction((cur: any) => {
-      if (cur === null) return cur; // data belum terbaca, Firebase akan mengulang dengan data asli
-      const exp = (Number(cur.exp) || 0) + amount;
-      return { ...cur, exp, level: Math.floor(exp / EXP_PER_LEVEL) + 1 };
-    });
+    const base = db.ref(`users/${user.uid}`);
+    // Hanya menyentuh anak exp dan level. Jangan menulis seluruh node users/<uid>: itu sempat
+    // mengosongkan premiumUntil sesaat di perangkat dan memicu animasi "Premium aktif!" berulang.
+    const [lv, ex] = await Promise.all([base.child('level').get(), base.child('exp').get()]);
+    const lvl = Number(lv.val()) || 1;
+    const rawExp = ex.val();
+    const curExp = rawExp !== null && Number.isFinite(Number(rawExp)) ? Number(rawExp) : (lvl - 1) * EXP_PER_LEVEL;
+    const exp = curExp + amount;
+    await base.update({ exp, level: Math.floor(exp / EXP_PER_LEVEL) + 1 });
   } catch {}
 }

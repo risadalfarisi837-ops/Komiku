@@ -798,7 +798,7 @@ function ChapterContent() {
         setNavigating(true);
         const thumb = encodeURIComponent(thumbParam || chapter?.mangaThumb || '');
         const title = encodeURIComponent(mangaTitleParam || chapter?.mangaTitle || '');
-        router.push(`/chapter?url=${encodeURIComponent(targetUrl)}&thumb=${thumb}&mangaTitle=${title}`);
+        router.replace(`/chapter?url=${encodeURIComponent(targetUrl)}&thumb=${thumb}&mangaTitle=${title}`);
     }, [chapter, thumbParam, mangaTitleParam, router]);
 
     const goToMangaDetail = useCallback(() => {

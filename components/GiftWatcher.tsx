@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import GiftEffect from '@/components/GiftEffect';
+import GiftVisual from '@/components/GiftVisual';
 import { getFirebase } from '@/lib/firebase-client';
 import { giftTitle, GIFT_TYPE_LABEL } from '@/lib/gifts';
 
@@ -10,7 +11,7 @@ import { giftTitle, GIFT_TYPE_LABEL } from '@/lib/gifts';
 //  2. Premium baru saja aktif (setelah pesanan disetujui atau diberikan Developer).
 // Yang sudah pernah diputar dicatat di perangkat supaya tidak muncul dua kali.
 
-type Fx = { id: number; title: string; sub?: string; duration: number };
+type Fx = { id: number; title: string; sub?: string; duration: number; visual?: ReactNode };
 
 const giftSeenKey = (uid: string) => `komiku-gift-seen:${uid}`;
 const premSeenKey = (uid: string) => `komiku-prem-seen:${uid}`;
@@ -58,18 +59,19 @@ export default function GiftWatcher() {
             unclaimed
               .filter((g) => !seen!.includes(g.id))
               .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
-              .forEach((g) => { const d = describeGift(g); push({ title: d.title, sub: d.sub, duration: 3800 }); });
+              .forEach((g) => { const d = describeGift(g); push({ title: d.title, sub: d.sub, duration: 3800, visual: <GiftVisual type={g.type} itemKey={g.itemKey} photo={u.photoURL || ''} /> }); });
           };
 
           const onPremium = (snap: any) => {
             const val = Number(snap.val()) || 0;
             let prev: number | null = null;
             try { const raw = localStorage.getItem(premSeenKey(uid)); prev = raw === null ? null : Number(raw); } catch {}
-            try { localStorage.setItem(premSeenKey(uid), String(val)); } catch {}
+            // simpan nilai tertinggi: nilai sesaat 0 (saat data pengguna ditulis ulang) tidak boleh menurunkan catatan
+            try { localStorage.setItem(premSeenKey(uid), String(Math.max(prev ?? 0, val))); } catch {}
             if (prev === null) return; // pertama kali: hanya catat
             if (val > prev && val > Date.now()) {
               const until = new Date(val).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-              push({ title: 'Premium aktif!', sub: `Aktif sampai ${until}. Terima kasih sudah mendukung Komiku!`, duration: 4500 });
+              push({ title: 'Premium aktif!', sub: `Aktif sampai ${until}. Terima kasih sudah mendukung Komiku!`, duration: 4500, visual: <GiftVisual type="premium" /> });
             }
           };
 
@@ -95,6 +97,7 @@ export default function GiftWatcher() {
       title={fx?.title}
       sub={fx?.sub}
       duration={fx?.duration}
+      visual={fx?.visual}
       onDone={() => setQueue((q) => q.slice(1))}
     />
   );

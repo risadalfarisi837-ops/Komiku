@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Gift } from 'lucide-react';
 
@@ -62,7 +62,7 @@ const CSS = `
 `;
 
 /** Efek saat gift terkirim: kotak jatuh, goyang, terbuka, confetti meledak. Ketuk layar untuk menutup. */
-export default function GiftEffect({ show, onDone, title = 'Gift terkirim!', sub, duration = 3000 }: { show: boolean; onDone: () => void; title?: string; sub?: string; duration?: number }) {
+export default function GiftEffect({ show, onDone, title = 'Gift terkirim!', sub, duration = 3000, visual }: { show: boolean; onDone: () => void; title?: string; sub?: string; duration?: number; visual?: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [burst, setBurst] = useState(false);
   const done = useRef(onDone);
@@ -96,15 +96,22 @@ export default function GiftEffect({ show, onDone, title = 'Gift terkirim!', sub
       {[0, 1].map(i => (
         <span key={i} className="absolute rounded-full border-2 border-amber-300 opacity-0" style={{ width: 120, height: 120, animation: 'gfRing 1.2s ease-out ' + (1.1 + i * 0.25) + 's' }} />
       ))}
-      <div
-        className="relative w-28 h-28 rounded-3xl flex items-center justify-center"
-        style={{
-          background: 'linear-gradient(135deg,#f472b6,#a855f7)',
-          boxShadow: '0 10px 40px rgba(168,85,247,.6)',
-          animation: 'gfDrop .6s cubic-bezier(.3,1.5,.5,1) both, gfShake .5s ease-in-out .6s, gfOpen .4s ease-in 1.1s forwards',
-        }}
-      >
-        <Gift className="w-14 h-14 text-white" />
+      <div className={'relative flex items-center justify-center ' + (visual ? 'w-48 h-48' : 'w-28 h-28')}>
+        <div
+          className="relative w-28 h-28 rounded-3xl flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg,#f472b6,#a855f7)',
+            boxShadow: '0 10px 40px rgba(168,85,247,.6)',
+            animation: 'gfDrop .6s cubic-bezier(.3,1.5,.5,1) both, gfShake .5s ease-in-out .6s, gfOpen .4s ease-in 1.1s forwards',
+          }}
+        >
+          <Gift className="w-14 h-14 text-white" />
+        </div>
+        {visual && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0" style={{ animation: 'gfPop .55s cubic-bezier(.2,1.4,.4,1) 1.15s both' }}>
+            {visual}
+          </div>
+        )}
       </div>
       <p className="relative mt-8 text-3xl font-black text-white drop-shadow-lg text-center px-6 opacity-0" style={{ animation: 'gfPop .5s cubic-bezier(.2,1.4,.4,1) 1.2s both' }}>{title}</p>
       {sub && <p className="relative mt-2 text-lg font-bold text-amber-200 text-center px-8 opacity-0" style={{ animation: 'gfPop .5s cubic-bezier(.2,1.4,.4,1) 1.4s both' }}>{sub}</p>}

@@ -11,6 +11,7 @@ import { WALLPAPER_CATALOG, RARITY_STYLE, wpBg } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
 import ProfileEffect from '@/components/ProfileEffect';
 import GiftEffect from '@/components/GiftEffect';
+import GiftVisual from '@/components/GiftVisual';
 
 const CORAL = '#FF6B6B';
 const MUTED = '#8F8D9B';
@@ -171,7 +172,7 @@ export default function NotifikasiPage() {
   const [photo, setPhoto] = useState('');
   const [claiming, setClaiming] = useState('');
   const [giftErr, setGiftErr] = useState('');
-  const [fx, setFx] = useState<{ title: string; sub?: string } | null>(null);
+  const [fx, setFx] = useState<{ title: string; sub?: string; visual?: React.ReactNode } | null>(null);
   const [releases, setReleases] = useState<Release[]>([]);
 
   useEffect(() => { setMounted(true); setReadInfo(readJSON<string[]>(K_INFO, [])); }, []);
@@ -284,7 +285,7 @@ export default function NotifikasiPage() {
       const { db } = await getFirebase();
       const ok = await claimGift(db, uid, g);
       setGifts((prev) => prev.map((x) => (x.id === g.id ? { ...x, claimed: true } : x)));
-      if (ok) setFx({ title: 'Hadiah diterima!', sub: g.itemName });
+      if (ok) setFx({ title: 'Hadiah diterima!', sub: g.itemName, visual: <GiftVisual type={g.type} itemKey={g.itemKey} /> });
     } catch (e: any) { setGiftErr('Gagal mengklaim: ' + (e?.message || 'coba lagi')); }
     setClaiming('');
   };
@@ -474,7 +475,7 @@ export default function NotifikasiPage() {
         )
       )}
 
-      <GiftEffect show={!!fx} onDone={() => setFx(null)} title={fx?.title} sub={fx?.sub} />
+      <GiftEffect show={!!fx} onDone={() => setFx(null)} title={fx?.title} sub={fx?.sub} visual={fx?.visual} />
 
       {tab === 'komentar' && <Empty title="Belum ada balasan" sub="Balasan di komentarmu akan muncul di sini." />}
     </div>

@@ -14,6 +14,7 @@ import { sendGifts, giftTitle, GiftType } from '@/lib/gifts';
 import ProfileEffect from '@/components/ProfileEffect';
 import ProfileBg from '@/components/ProfileBg';
 import GiftEffect from '@/components/GiftEffect';
+import GiftVisual from '@/components/GiftVisual';
 import { WALLPAPER_CATALOG } from '@/lib/wallpapers';
 import { EFFECT_CATALOG } from '@/lib/effects';
 
@@ -227,7 +228,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
   const [tab, setTab]       = useState<'user'|'global'|'bayar'>('user');
   const [orders, setOrders]     = useState<any[] | null>(null);
   const [saving, setSaving] = useState(false);
-  const [gift, setGift]     = useState<{ title: string; sub?: string } | null>(null);
+  const [gift, setGift]     = useState<{ title: string; sub?: string; visual?: React.ReactNode } | null>(null);
   const [toast, setToast]   = useState<{msg:string; type:'success'|'error'}|null>(null);
 
   // Tab: User
@@ -313,7 +314,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       const total = Number(res.snapshot.val()?.points) || 0;
       if (target.uid === uid) await pushSeasonScore(); // sinkronkan ke tampilan lokal
       showToast(`Poin ${target.name} sekarang ${fmt(total)}.`, 'success');
-      if (mode === 'add') setGift({ title: 'Gift terkirim!', sub: '+' + n + ' poin untuk ' + target.name });
+      if (mode === 'add') setGift({ title: 'Gift terkirim!', sub: '+' + n + ' poin untuk ' + target.name, visual: <GiftVisual type="poin" /> });
     } catch (e: any) { showToast('Gagal: ' + e.message + ' (cek aturan database leaderboard)', 'error'); }
     setSaving(false);
   };
@@ -404,7 +405,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     try {
       await sendGifts(db, [target.uid], { ...g, from: gSender || 'Developer', message: gMsg });
       showToast('Hadiah terkirim ke notifikasi ' + target.name + '.', 'success');
-      setGift({ title: 'Gift terkirim!', sub: g.itemName + ' untuk ' + target.name });
+      setGift({ title: 'Gift terkirim!', sub: g.itemName + ' untuk ' + target.name, visual: <GiftVisual type={g.type} itemKey={g.itemKey} /> });
     } catch (e: any) { showToast('Gagal: ' + e.message, 'error'); }
     setSaving(false);
   };
@@ -565,7 +566,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
   return (
     <Sheet open={open} onClose={onClose} title="Panel Developer">
-      <GiftEffect show={!!gift} title={gift?.title} sub={gift?.sub} onDone={() => setGift(null)} />
+      <GiftEffect show={!!gift} title={gift?.title} sub={gift?.sub} visual={gift?.visual} onDone={() => setGift(null)} />
       {toast && (
         <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 14, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6A0' : '#FF7A7A' }}>
           {toast.msg}
