@@ -5,6 +5,7 @@ import { Home, Compass, Search, User } from 'lucide-react';
 
 import BottomNav from '@/components/BottomNav';
 import RegisterSW from '@/components/RegisterSW';
+import PageScale from '@/components/PageScale';
 
 export const metadata: Metadata = {
   title: 'Komikita',
@@ -28,7 +29,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <div className="w-full max-w-md bg-[#1B1A20] relative shadow-sm overflow-x-hidden flex flex-col">
           
           <main className="w-full relative pb-28">
-            {children}
+            <PageScale>{children}</PageScale>
           </main>
 
           <BottomNav />
