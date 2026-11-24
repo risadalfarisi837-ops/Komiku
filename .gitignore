@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# production
+build/
+
+# env & rahasia — JANGAN pernah commit file ini
+.env
+.env*.local
+.env.production
+*.pem
+*serviceAccount*.json
+*service-account*.json
+
+# misc
+.DS_Store
+*.log
+.vercel

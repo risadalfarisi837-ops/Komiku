@@ -2,6 +2,15 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Tidak mengirim source map asli ke publik: kode di browser tetap bisa dibaca (itu wajar untuk web),
+  // tapi tidak ada peta yang memudahkan orang membaca ulang file/baris kode sumber aslinya.
+  productionBrowserSourceMaps: false,
+  // Buang semua console.log dari kode produksi (console.error/warn tetap ada untuk error asli).
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  // Sembunyikan header "X-Powered-By: Next.js" supaya tidak membocorkan info framework.
+  poweredByHeader: false,
   eslint: {
     ignoreDuringBuilds: true,
   },
