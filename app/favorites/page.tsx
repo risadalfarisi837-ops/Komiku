@@ -147,8 +147,8 @@ export default function LeaderboardPage() {
       <div style={{ position: 'sticky', top: 0, zIndex: 40, background: '#0a0a0f' }}>
         <div style={{ padding: '18px 16px 10px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>Leaderboard</h1>
-            <p style={{ fontSize: 12, color: '#6b7280', margin: '3px 0 0', fontWeight: 600 }}>
+            <h1 style={{ fontSize: 25, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>Leaderboard</h1>
+            <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0', fontWeight: 600 }}>
               {activeTrack.key === 'all' ? 'All Tracks · 8-Week Ranking by Track' : `${activeTrack.line1} ${activeTrack.line2} · 8-Week Ranking`}
             </p>
           </div>
@@ -169,7 +169,7 @@ export default function LeaderboardPage() {
                 borderBottom: isActive ? `3px solid ${t.color}` : '3px solid transparent',
                 borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                 color: isActive ? t.color : '#6b7280',
-                fontWeight: 800, fontSize: 12, cursor: 'pointer',
+                fontWeight: 800, fontSize: 11, cursor: 'pointer',
                 lineHeight: 1.3, textAlign: 'center' as const,
                 transition: 'all 0.18s', fontFamily: "'Outfit', sans-serif",
               }}>
@@ -185,16 +185,16 @@ export default function LeaderboardPage() {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: 16 }}>
             <Loader2 size={40} color="#4b5563" className="animate-spin" />
-            <p style={{ color: '#6b7280', fontSize: 14 }}>Memuat leaderboard...</p>
+            <p style={{ color: '#6b7280', fontSize: 13 }}>Memuat leaderboard...</p>
           </div>
         ) : error ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 32px', gap: 16, textAlign: 'center' }}>
-            <p style={{ color: '#9ca3af', fontSize: 14 }}>{error}</p>
-            <button onClick={load} style={{ padding: '10px 24px', background: '#2A2931', color: '#fff', fontWeight: 800, fontSize: 14, borderRadius: 99, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>Coba Lagi</button>
+            <p style={{ color: '#9ca3af', fontSize: 13 }}>{error}</p>
+            <button onClick={load} style={{ padding: '10px 24px', background: '#2A2931', color: '#fff', fontWeight: 800, fontSize: 13, borderRadius: 99, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>Coba Lagi</button>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: 12 }}>
-            <p style={{ color: '#6b7280', fontSize: 14 }}>Belum ada player di track ini</p>
+            <p style={{ color: '#6b7280', fontSize: 13 }}>Belum ada player di track ini</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -228,7 +228,7 @@ export default function LeaderboardPage() {
 
 
                     <div style={{ minWidth: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, lineHeight: 1, color: rankNum===1?'#ef4444':rankNum===2?'#a855f7':rankNum===3?'#f1c40f':'#4b5563' }}>#{rankNum}</span>
+                      <span style={{ fontSize: 20, fontWeight: 900, lineHeight: 1, color: rankNum===1?'#ef4444':rankNum===2?'#a855f7':rankNum===3?'#f1c40f':'#4b5563' }}>#{rankNum}</span>
                     </div>
 
                     {/* Avatar border warna rank tier */}
@@ -238,11 +238,11 @@ export default function LeaderboardPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Nama + Kamu badge */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 19, fontWeight: 900, color: '#fff', letterSpacing: -0.4, lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: -0.4, lineHeight: 1.1 }}>
                           {u.displayName}
                         </span>
                         {isMe && (
-                          <span style={{ fontSize: 11, background: 'rgba(241,196,15,0.15)', color: '#f1c40f', border: '1px solid rgba(241,196,15,0.4)', borderRadius: 99, padding: '2px 10px', fontWeight: 800, flexShrink: 0 }}>
+                          <span style={{ fontSize: 10, background: 'rgba(241,196,15,0.15)', color: '#f1c40f', border: '1px solid rgba(241,196,15,0.4)', borderRadius: 99, padding: '2px 10px', fontWeight: 800, flexShrink: 0 }}>
                             Kamu
                           </span>
                         )}
@@ -252,7 +252,7 @@ export default function LeaderboardPage() {
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         {/* Track badge — kotak rounded kecil */}
                         <span style={{
-                          fontSize: 12, fontWeight: 800,
+                          fontSize: 11, fontWeight: 800,
                           color: trackObj.color,
                           background: trackObj.bg,
                           border: `1px solid ${trackObj.border}`,
@@ -263,7 +263,7 @@ export default function LeaderboardPage() {
 
                         {/* Title badge — pill dengan icon */}
                         <span style={{
-                          fontSize: 12, fontWeight: 700,
+                          fontSize: 11, fontWeight: 700,
                           color: '#d1d5db',
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.13)',

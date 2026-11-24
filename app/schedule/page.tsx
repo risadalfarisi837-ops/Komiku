@@ -312,7 +312,7 @@ export default function BrowsePage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') setSearchQuery(search); }}
-            style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: '#fff', fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}
+            style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: '#fff', fontSize: 15, fontWeight: 800, letterSpacing: -0.5 }}
           />
           {search && (
             <button onClick={() => { setSearch(''); setSearchQuery(''); }} aria-label="Hapus"><X className="w-4 h-4 text-gray-500" /></button>
@@ -327,19 +327,19 @@ export default function BrowsePage() {
       {/* Tab tipe */}
       <div style={{ display: 'flex', margin: '0 14px', padding: 5, borderRadius: 99, background: '#25242B', border: '1px solid rgba(255,255,255,.06)' }}>
         {tabs.map(t => (
-          <button key={t} onClick={() => pickTab(t)} style={{ flex: 1, padding: '10px 0', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5, border: 0, background: activeTab === t ? '#18171C' : 'transparent', color: activeTab === t ? '#fff' : MUTED }}>{t}</button>
+          <button key={t} onClick={() => pickTab(t)} style={{ flex: 1, padding: '10px 0', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.5, border: 0, background: activeTab === t ? '#18171C' : 'transparent', color: activeTab === t ? '#fff' : MUTED }}>{t}</button>
         ))}
       </div>
 
       {/* Filter + chip genre */}
       <div className="no-scrollbar" style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '16px 14px 4px' }}>
-        <button onClick={openSheet} style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.4, color: '#fff', background: 'transparent', border: '1px solid rgba(255,255,255,.14)' }}>
+        <button onClick={openSheet} style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.4, color: '#fff', background: 'transparent', border: '1px solid rgba(255,255,255,.14)' }}>
           <SlidersHorizontal className="w-4 h-4" />Filter
         </button>
         {GENRES.map(g => {
           const on = appliedGenre === g;
           return (
-            <button key={g} onClick={() => pickGenre(g)} style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.4, background: on ? '#F3F2F7' : 'transparent', color: on ? '#1B1A20' : '#fff', border: on ? '1px solid #F3F2F7' : '1px solid rgba(255,255,255,.14)' }}>
+            <button key={g} onClick={() => pickGenre(g)} style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.4, background: on ? '#F3F2F7' : 'transparent', color: on ? '#1B1A20' : '#fff', border: on ? '1px solid #F3F2F7' : '1px solid rgba(255,255,255,.14)' }}>
               {on && <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#1B1A20" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 10 18 20 6" /></svg>}
               {g}
             </button>
@@ -349,8 +349,8 @@ export default function BrowsePage() {
 
       {/* Label tipe + urutan */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 14px 18px' }}>
-        <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>{appliedFormat || 'Semua tipe'}</span>
-        <button onClick={() => setSort(v => (v === 'update' ? 'popular' : 'update'))} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 0, color: CORAL, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
+        <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: -0.5 }}>{appliedFormat || 'Semua tipe'}</span>
+        <button onClick={() => setSort(v => (v === 'update' ? 'popular' : 'update'))} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 0, color: CORAL, fontSize: 15, fontWeight: 800, letterSpacing: -0.5 }}>
           <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={CORAL} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 20V5M4 9l4-4 4 4" /><path d="M16 4v15M12 15l4 4 4-4" /></svg>
           {SORT_LABEL[sort]}
         </button>
@@ -380,12 +380,12 @@ export default function BrowsePage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.thumb} alt={item.title} loading="lazy" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
                       <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
-                        <span style={{ background: 'rgba(20,19,24,.82)', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}>{label}</span>
-                        {isFresh(item.time) && <span style={{ background: CORAL, color: '#fff', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}>BARU</span>}
+                        <span style={{ background: 'rgba(20,19,24,.82)', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}>{label}</span>
+                        {isFresh(item.time) && <span style={{ background: CORAL, color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 7 }}>BARU</span>}
                       </div>
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.5, marginTop: 8, ...clamp2 }}>{item.title}</div>
-                    {ch && <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: 2 }}>{ch}</div>}
+                    <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.5, marginTop: 8, ...clamp2 }}>{item.title}</div>
+                    {ch && <div style={{ fontSize: 13, fontWeight: 800, color: MUTED, marginTop: 2 }}>{ch}</div>}
                   </Link>
                 );
               })}

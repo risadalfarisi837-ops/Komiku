@@ -90,7 +90,7 @@ function NameLine({ name, ex, size = 18, prefix }: { name: string; ex?: Extra; s
 function RankPill({ points }: { points: number }) {
   const { rank } = rankFor(points);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 12px 3px 5px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.3, alignSelf: 'flex-start' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 12px 3px 5px', borderRadius: 99, fontSize: 14, fontWeight: 800, letterSpacing: -0.3, alignSelf: 'flex-start' }}>
       <Shield color={rank.bg} size={17} />{rank.name}
     </span>
   );
@@ -100,9 +100,9 @@ function MiniStat({ icon, label, value, target, unit }: { icon: ReactNode; label
   const pct = Math.min(100, (value / target) * 100);
   return (
     <div style={{ flex: 1, minWidth: 0, background: '#1F1E24', borderRadius: 14, padding: '12px 12px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: MUTED, fontSize: 15, fontWeight: 800 }}>{icon}{label}</div>
-      <div style={{ marginTop: 8, fontSize: 22, fontWeight: 800, letterSpacing: -0.8 }}>
-        {fmt(value)}<span style={{ fontSize: 14, color: MUTED, letterSpacing: -0.2 }}>/ {fmt(target)}{unit ? ` ${unit}` : ''}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: MUTED, fontSize: 14, fontWeight: 800 }}>{icon}{label}</div>
+      <div style={{ marginTop: 8, fontSize: 20, fontWeight: 800, letterSpacing: -0.8 }}>
+        {fmt(value)}<span style={{ fontSize: 13, color: MUTED, letterSpacing: -0.2 }}>/ {fmt(target)}{unit ? ` ${unit}` : ''}</span>
       </div>
       <div style={{ height: 4, borderRadius: 2, background: MAROON, marginTop: 10 }}>
         <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: GREEN }} />
@@ -186,8 +186,8 @@ export default function RankingPage() {
       {/* Judul musim */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px 16px 12px' }}>
         <div>
-          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1, lineHeight: 1.1 }}>Season {season.id}</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: MUTED, letterSpacing: -0.3, marginTop: 2 }}>{season.label} · {season.daysLeft} hari lagi</div>
+          <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -1, lineHeight: 1.1 }}>Season {season.id}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: MUTED, letterSpacing: -0.3, marginTop: 2 }}>{season.label} · {season.daysLeft} hari lagi</div>
         </div>
         <div style={{ display: 'flex', gap: 6, paddingTop: 0 }}>
           <button onClick={() => { window.location.assign('/ranking/lencana'); }} aria-label="Daftar lencana" style={{ background: 'none', border: 0, padding: 8 }}>
@@ -206,14 +206,14 @@ export default function RankingPage() {
             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x={5} y={11} width={14} height={9} rx={2} /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.8, color: MUTED, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.8, color: MUTED, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {next ? `LENCANA BERIKUTNYA · ${next.track.toUpperCase()}` : 'LENCANA TERTINGGI'}
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.6, lineHeight: 1.15 }}>{next ? next.name : rankFor(pts).rank.name}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.6, lineHeight: 1.15 }}>{next ? next.name : rankFor(pts).rank.name}</div>
           </div>
           {next && (
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.8 }}>
-              {fmtC(pts)}<span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}>/ {fmt(next.min)}</span>
+            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.8 }}>
+              {fmtC(pts)}<span style={{ fontSize: 14, color: MUTED, letterSpacing: -0.3 }}>/ {fmt(next.min)}</span>
             </div>
           )}
         </div>
@@ -228,12 +228,12 @@ export default function RankingPage() {
       </div>
 
       {/* Papan peringkat */}
-      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1, padding: '22px 16px 10px' }}>Papan peringkat</div>
+      <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -1, padding: '22px 16px 10px' }}>Papan peringkat</div>
       <div className="no-scrollbar" style={{ display: 'flex', overflowX: 'auto', gap: 12, padding: '0 22px', borderBottom: '1px solid rgba(255,255,255,.12)' }}>
         {TABS.map((t) => {
           const on = tab === t;
           return (
-            <button key={t} onClick={() => setTab(t)} style={{ flex: '0 0 auto', padding: '12px 4px 0', background: 'none', border: 0, color: on ? '#fff' : MUTED, fontSize: 20, fontWeight: 800, letterSpacing: -0.6 }}>
+            <button key={t} onClick={() => setTab(t)} style={{ flex: '0 0 auto', padding: '12px 4px 0', background: 'none', border: 0, color: on ? '#fff' : MUTED, fontSize: 18, fontWeight: 800, letterSpacing: -0.6 }}>
               <span style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, padding: '0 3px 12px' }}>
                 {t !== 'Semua' && <TabEmblem t={t} on={on} />}{t}
                 {on && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: '3px 3px 0 0', background: CORAL }} />}
@@ -248,7 +248,7 @@ export default function RankingPage() {
       ) : error ? (
         <div style={{ padding: '40px 20px', textAlign: 'center', color: MUTED, fontWeight: 700, lineHeight: 1.4 }}>
           Peringkat belum bisa dimuat.
-          <div style={{ fontSize: 12.5, marginTop: 8, opacity: 0.8 }}>{error}</div>
+          <div style={{ fontSize: 11.5, marginTop: 8, opacity: 0.8 }}>{error}</div>
         </div>
       ) : list.length === 0 ? (
         <div style={{ padding: '50px 20px', textAlign: 'center', color: MUTED, fontWeight: 700, lineHeight: 1.4 }}>
@@ -263,15 +263,15 @@ export default function RankingPage() {
             return (
               <WallpaperBg key={r.uid} wpKey={e?.activeWallpaper} noGlow style={hasWp ? { margin: '6px 12px', borderRadius: 18, border: '1px solid' } : undefined}>
                 <Link href={`/user?uid=${r.uid}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: hasWp ? '12px' : '13px 16px', color: 'inherit', textDecoration: 'none' }}>
-                  <span style={{ width: 30, textAlign: 'center', fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: i < 3 ? CORAL : '#fff' }}>{i + 1}</span>
+                  <span style={{ width: 30, textAlign: 'center', fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: i < 3 ? CORAL : '#fff' }}>{i + 1}</span>
                   <Avatar name={nm} photo={e?.photoURL || r.photo} borderKey={e?.activeBorder} />
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <NameLine name={nm} ex={e} />
                     <RankPill points={r.points} />
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(r.points)}</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(r.points)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
                   </div>
                 </Link>
               </WallpaperBg>
@@ -291,13 +291,13 @@ export default function RankingPage() {
               <RankPill points={pts} />
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(pts)}</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
+              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.5 }}>{fmtC(pts)}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: MUTED, marginTop: -1 }}>poin</div>
             </div>
           </WallpaperBg>
         ) : (
           !loading && (
-            <Link href="/profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '10px 14px', fontSize: 16, fontWeight: 800 }}>
+            <Link href="/profile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '10px 14px', fontSize: 14, fontWeight: 800 }}>
               <span>Masuk untuk ikut peringkat</span>
               <span style={{ background: CORAL, padding: '8px 18px', borderRadius: 99 }}>Masuk</span>
             </Link>
@@ -311,19 +311,19 @@ export default function RankingPage() {
           <div onClick={() => setSheet(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.6)' }} />
           <div style={{ position: 'relative', background: '#16151A', borderRadius: '28px 28px 0 0', maxHeight: '82vh', overflowY: 'auto', padding: '14px 20px 28px', width: 'min(100%, 448px)', margin: '0 auto' }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.2)', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -1 }}>Cara dapat poin</div>
-            <div style={{ color: '#D6D4DE', fontWeight: 700, fontSize: 15, lineHeight: 1.6, marginTop: 8 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -1 }}>Cara dapat poin</div>
+            <div style={{ color: '#D6D4DE', fontWeight: 700, fontSize: 14, lineHeight: 1.6, marginTop: 8 }}>
               • {POINTS_PER_CHAPTER} poin tiap chapter baru dibaca<br />
               • +{DAILY_BONUS} poin untuk chapter pertama tiap hari<br />
               • +{NIGHT_BONUS} poin kalau baca jam 22.00–04.59<br />
               • Chapter yang sama hanya dihitung sekali per musim<br />
               • Poin direset tiap musim (2 bulan)
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -1, margin: '22px 0 10px' }}>Daftar lencana</div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -1, margin: '22px 0 10px' }}>Daftar lencana</div>
             {RANKS.map((r) => (
               <div key={r.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: r.bg, padding: '4px 12px 4px 6px', borderRadius: 99, fontSize: 15, fontWeight: 800 }}><Shield color={r.bg} />{r.name}</span>
-                <span style={{ color: MUTED, fontWeight: 800, fontSize: 15 }}>{r.track} · {fmt(r.min)} poin</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: r.bg, padding: '4px 12px 4px 6px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}><Shield color={r.bg} />{r.name}</span>
+                <span style={{ color: MUTED, fontWeight: 800, fontSize: 14 }}>{r.track} · {fmt(r.min)} poin</span>
               </div>
             ))}
           </div>

@@ -106,8 +106,8 @@ function Header({ onSearch }: { onSearch: () => void }) {
   }, []);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '14px 14px 12px' }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, background: '#26252C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800 }}>K</div>
-      <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.5, marginLeft: 8, flex: 1 }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: '#26252C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800 }}>K</div>
+      <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: -1.5, marginLeft: 8, flex: 1 }}>
         Komi<span style={{ color: ACCENT }}>kita</span>
       </div>
       <button onClick={onSearch} aria-label="Cari" style={{ background: 'none', border: 0, color: '#fff', padding: 8 }}>
@@ -149,13 +149,13 @@ function Hero({ items }: { items: any[] }) {
             <img src={m.thumb} alt={m.title} referrerPolicy="no-referrer" style={{ position: 'absolute', right: 14, top: 14, bottom: -20, width: '36%', objectFit: 'cover', borderRadius: 18, transform: 'rotate(6deg)', boxShadow: '0 6px 24px rgba(0,0,0,.6)' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(20,19,24,.92) 45%, transparent 75%)' }} />
             <div style={{ position: 'absolute', left: 18, top: 16, bottom: 16, width: '60%', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ letterSpacing: 0.3 }}>{typeLabel(m).toUpperCase()}</span>
                 {rating && <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ color: '#FBBF24' }}>★</span>{rating}</span>}
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, letterSpacing: -1, marginTop: 4, ...clamp(2) }}>{m.title}</div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35, marginTop: 6, color: '#E8E6EF', ...clamp(2) }}>{desc}</div>
-              <Link href={`/manga?url=${encodeURIComponent(m.link)}`} style={{ marginTop: 'auto', alignSelf: 'flex-start', background: ACCENT, color: '#fff', fontWeight: 800, fontSize: 15, padding: '10px 22px', borderRadius: 99 }}>
+              <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.2, letterSpacing: -1, marginTop: 4, ...clamp(2) }}>{m.title}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.35, marginTop: 6, color: '#E8E6EF', ...clamp(2) }}>{desc}</div>
+              <Link href={`/manga?url=${encodeURIComponent(m.link)}`} style={{ marginTop: 'auto', alignSelf: 'flex-start', background: ACCENT, color: '#fff', fontWeight: 800, fontSize: 14, padding: '10px 22px', borderRadius: 99 }}>
                 Baca sekarang
               </Link>
             </div>
@@ -169,7 +169,7 @@ function Hero({ items }: { items: any[] }) {
 // ─── Judul section: judul besar + link koral ─────────────────────────────────
 function SectionTitle({ title, sub, action, onAction, href }: { title: string; sub?: string; action: string; onAction?: () => void; href?: string }) {
   const inner = (
-    <span style={{ color: ACCENT, fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', gap: 2 }}>
+    <span style={{ color: ACCENT, fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', gap: 2 }}>
       {action}
       <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
     </span>
@@ -177,8 +177,8 @@ function SectionTitle({ title, sub, action, onAction, href }: { title: string; s
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '30px 14px 14px' }}>
       <div style={{ minWidth: 0, flex: 1, paddingRight: 12 }}>
-        <div style={{ ...ell, fontSize: 24, fontWeight: 800, letterSpacing: -1 }}>{title}</div>
-        {sub && <div style={{ ...ell, fontSize: 16, fontWeight: 800, color: MUTED, letterSpacing: -0.5, marginTop: 2 }}>{sub}</div>}
+        <div style={{ ...ell, fontSize: 22, fontWeight: 800, letterSpacing: -1 }}>{title}</div>
+        {sub && <div style={{ ...ell, fontSize: 14, fontWeight: 800, color: MUTED, letterSpacing: -0.5, marginTop: 2 }}>{sub}</div>}
       </div>
       {href ? <Link href={href}>{inner}</Link> : <button onClick={onAction} style={{ background: 'none', border: 0 }}>{inner}</button>}
     </div>
@@ -207,9 +207,9 @@ function ContinueReading() {
             <Link key={i} href={`/chapter?url=${encodeURIComponent(h.chapterLink)}&thumb=${encodeURIComponent(h.mangaThumb||'')}&mangaTitle=${encodeURIComponent(h.mangaTitle||'')}`} style={{ flex: '0 0 82%', maxWidth: 330, display: 'flex', gap: 14, background: CARD, borderRadius: 22, padding: 12 }}>
               <img src={h.mangaThumb} alt="" referrerPolicy="no-referrer" style={{ width: 62, height: 84, borderRadius: 10, objectFit: 'cover', background: '#222' }} />
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.7, ...clamp(2) }}>{h.mangaTitle}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.7, ...clamp(2) }}>{h.mangaTitle}</div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>Ch. {ch} <span style={{ color: MUTED }}>· {pct}%</span></div>
+                  <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>Ch. {ch} <span style={{ color: MUTED }}>· {pct}%</span></div>
                   <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,.08)' }}>
                     <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: ACCENT }} />
                   </div>
@@ -230,9 +230,9 @@ const BigCard = memo(function BigCard({ item }: { item: any }) {
     <Link href={`/manga?url=${encodeURIComponent(item.link)}`} style={{ flex: '0 0 86%', maxWidth: 360, scrollSnapAlign: 'start' }}>
       <div style={{ position: 'relative', height: 215, borderRadius: 28, overflow: 'hidden', background: CARD }}>
         <img src={item.thumb} alt={item.title} loading="lazy" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
-        <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(20,19,24,.8)', fontSize: 14, fontWeight: 800, padding: '4px 10px', borderRadius: 8 }}>{typeLabel(item)}</span>
+        <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(20,19,24,.8)', fontSize: 13, fontWeight: 800, padding: '4px 10px', borderRadius: 8 }}>{typeLabel(item)}</span>
       </div>
-      <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.6, margin: '10px 4px 0', ...clamp(1) }}>{item.title}</div>
+      <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: -0.6, margin: '10px 4px 0', ...clamp(1) }}>{item.title}</div>
     </Link>
   );
 });
@@ -290,8 +290,8 @@ const LatestList = memo(function LatestList({ items }: { items: any[] }) {
             </div>
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, ...clamp(2) }}>{m.title}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, fontSize: 14, fontWeight: 800 }}>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, ...clamp(2) }}>{m.title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, fontSize: 13, fontWeight: 800 }}>
                   <span><span style={{ color: '#FBBF24' }}>★</span> {ratingId(m, true)}</span>
                   {views && <span style={{ color: MUTED, display: 'flex', alignItems: 'center', gap: 4 }}><Eye /> {views}</span>}
                   {isFresh(m.time) && <NewBadge />}
@@ -299,8 +299,8 @@ const LatestList = memo(function LatestList({ items }: { items: any[] }) {
               </div>
               {ch && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: CARD, borderRadius: 14, padding: '10px 14px', marginTop: 8 }}>
-                  <span style={{ fontSize: 16, fontWeight: 800 }}>{ch}</span>
-                  {m.time && <span style={{ fontSize: 12.5, fontWeight: 700, color: MUTED }}>{m.time}</span>}
+                  <span style={{ fontSize: 14, fontWeight: 800 }}>{ch}</span>
+                  {m.time && <span style={{ fontSize: 11.5, fontWeight: 700, color: MUTED }}>{m.time}</span>}
                 </div>
               )}
             </div>
@@ -316,14 +316,14 @@ function PremiumCard() {
   return (
     <div style={{ margin: '30px 14px 0', padding: '18px 18px', borderRadius: 22, border: '1.5px solid #5E4E1C', background: '#272212', display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: GOLD, fontSize: 14, fontWeight: 800 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: GOLD, fontSize: 13, fontWeight: 800 }}>
           <svg width={16} height={16} viewBox="0 0 24 24" fill={GOLD}><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" /></svg>
           KOMIKITA PREMIUM
         </div>
-        <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: -1, marginTop: 6, color: '#FBF3DC' }}>Baca tanpa iklan</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#B7AD8C', marginTop: 2, lineHeight: 1.3 }}>Plus unduh massal untuk baca offline</div>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -1, marginTop: 6, color: '#FBF3DC' }}>Baca tanpa iklan</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#B7AD8C', marginTop: 2, lineHeight: 1.3 }}>Plus unduh massal untuk baca offline</div>
       </div>
-      <Link href="/profile" style={{ background: GOLD, color: '#2A2208', fontWeight: 800, fontSize: 15, padding: '12px 18px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+      <Link href="/profile" style={{ background: GOLD, color: '#2A2208', fontWeight: 800, fontSize: 14, padding: '12px 18px', borderRadius: 99, whiteSpace: 'nowrap' }}>
         Coba sekarang
       </Link>
     </div>
@@ -343,13 +343,13 @@ const Ranked = memo(function Ranked({ items }: { items: any[] }) {
             const views = fmtViews(m.views);
             return (
               <Link key={ri} href={mangaHref(m)} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <span style={{ width: 40, textAlign: 'center', fontSize: 46, fontWeight: 800, letterSpacing: -2, color: n <= 3 ? ACCENT : '#6B6976' }}>{n}</span>
+                <span style={{ width: 40, textAlign: 'center', fontSize: 41, fontWeight: 800, letterSpacing: -2, color: n <= 3 ? ACCENT : '#6B6976' }}>{n}</span>
                 <div style={{ position: 'relative', flex: '0 0 62px', height: 92, borderRadius: 10, overflow: 'hidden', background: CARD }}>
                   <Cover src={m.thumb} alt={m.title} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.2, ...clamp(2) }}>{m.title}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontSize: 14, fontWeight: 800 }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.2, ...clamp(2) }}>{m.title}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontSize: 13, fontWeight: 800 }}>
                     <span><span style={{ color: '#FBBF24' }}>★</span> {ratingId(m, true)}</span>
                     {views && <span style={{ color: MUTED, display: 'flex', alignItems: 'center', gap: 4 }}><Eye /> {views}</span>}
                   </div>
@@ -375,8 +375,8 @@ const PosterCard = memo(function PosterCard({ m, w }: { m: any; w: string }) {
           {isFresh(m.time) && <NewBadge />}
         </div>
       </div>
-      <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.5, marginTop: 8, ...clamp(2) }}>{m.title}</div>
-      {ch && <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, marginTop: 2 }}>{ch}</div>}
+      <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: -0.5, marginTop: 8, ...clamp(2) }}>{m.title}</div>
+      {ch && <div style={{ fontSize: 13, fontWeight: 800, color: MUTED, marginTop: 2 }}>{ch}</div>}
     </Link>
   );
 });
@@ -392,7 +392,7 @@ function GenreSection({ categories }: { categories: { category: string; items: a
         {categories.map((c, i) => {
           const on = i === sel;
           return (
-            <button key={c.category} onClick={() => setSel(i)} style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.4, background: on ? '#F3F2F7' : 'transparent', color: on ? '#1B1A20' : '#fff', border: on ? '1px solid #F3F2F7' : '1px solid rgba(255,255,255,.14)' }}>
+            <button key={c.category} onClick={() => setSel(i)} style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.4, background: on ? '#F3F2F7' : 'transparent', color: on ? '#1B1A20' : '#fff', border: on ? '1px solid #F3F2F7' : '1px solid rgba(255,255,255,.14)' }}>
               {on && <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#1B1A20" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 10 18 20 6" /></svg>}
               {c.category}
             </button>
@@ -415,7 +415,7 @@ function OriginSection({ all }: { all: any[] }) {
       <SectionTitle title="Berdasarkan asal" action="Lihat semua" href="/search" />
       <div style={{ margin: '0 14px 16px', display: 'inline-flex', padding: 5, borderRadius: 99, background: '#25242B', border: '1px solid rgba(255,255,255,.06)' }}>
         {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 26px', borderRadius: 99, fontSize: 18, fontWeight: 800, letterSpacing: -0.5, background: tab === t ? '#18171C' : 'transparent', color: tab === t ? '#fff' : MUTED, border: 0 }}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 26px', borderRadius: 99, fontSize: 16, fontWeight: 800, letterSpacing: -0.5, background: tab === t ? '#18171C' : 'transparent', color: tab === t ? '#fff' : MUTED, border: 0 }}>{t}</button>
         ))}
       </div>
       {list.length ? (

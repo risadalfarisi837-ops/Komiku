@@ -543,11 +543,11 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     setSaving(false);
   };
 
-  const FIELD: React.CSSProperties = { width: '100%', boxSizing: 'border-box', background: '#1F1E24', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: '13px 14px', color: '#fff', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', outline: 'none' };
-  const LABEL: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 800, color: '#8F8D9B', letterSpacing: -0.2, textTransform: 'uppercase', margin: '0 0 6px 2px' };
-  const BTN: React.CSSProperties = { width: '100%', border: 0, borderRadius: 16, padding: '14px 0', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
+  const FIELD: React.CSSProperties = { width: '100%', boxSizing: 'border-box', background: '#1F1E24', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: '13px 14px', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', outline: 'none' };
+  const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 800, color: '#8F8D9B', letterSpacing: -0.2, textTransform: 'uppercase', margin: '0 0 6px 2px' };
+  const BTN: React.CSSProperties = { width: '100%', border: 0, borderRadius: 16, padding: '14px 0', fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
   const ROW: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap' };
-  const chip = (on: boolean): React.CSSProperties => ({ border: 0, borderRadius: 99, padding: '9px 14px', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', background: on ? '#0E8A6A' : '#1F1E24', color: on ? '#fff' : '#B5B3C0' });
+  const chip = (on: boolean): React.CSSProperties => ({ border: 0, borderRadius: 99, padding: '9px 14px', fontSize: 14, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap', background: on ? '#0E8A6A' : '#1F1E24', color: on ? '#fff' : '#B5B3C0' });
 
   const ql = q.trim().replace('#', '').toLowerCase();
   const matches = (users || []).filter(u => !ql || u.name.toLowerCase().includes(ql) || u.uid.toLowerCase().startsWith(ql)).slice(0, 6);
@@ -566,7 +566,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
     <Sheet open={open} onClose={onClose} title="Panel Developer">
       <GiftEffect show={!!gift} title={gift?.title} sub={gift?.sub} onDone={() => setGift(null)} />
       {toast && (
-        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 15, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6A0' : '#FF7A7A' }}>
+        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 14, textAlign: 'center', fontSize: 14, fontWeight: 800, background: toast.type === 'success' ? 'rgba(14,138,106,.18)' : 'rgba(255,92,92,.12)', color: toast.type === 'success' ? '#3FD6A0' : '#FF7A7A' }}>
           {toast.msg}
         </div>
       )}
@@ -574,7 +574,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
       {/* Tab */}
       <div style={{ display: 'flex', gap: 4, background: '#1F1E24', borderRadius: 14, padding: 4, marginBottom: 14 }}>
         {([['user', 'Kelola user'], ['global', 'Hadiah semua'], ['bayar', 'Pembayaran']] as const).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ flex: 1, border: 0, borderRadius: 11, padding: '10px 0', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', background: tab === k ? '#2A2931' : 'transparent', color: tab === k ? '#fff' : '#8F8D9B' }}>{l}</button>
+          <button key={k} onClick={() => setTab(k)} style={{ flex: 1, border: 0, borderRadius: 11, padding: '10px 0', fontSize: 14, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer', background: tab === k ? '#2A2931' : 'transparent', color: tab === k ? '#fff' : '#8F8D9B' }}>{l}</button>
         ))}
       </div>
 
@@ -590,13 +590,13 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
             {q && (
               <div style={{ marginTop: 8, background: '#1F1E24', borderRadius: 14, overflow: 'hidden' }}>
-                {matches.length === 0 && <div style={{ padding: 14, fontSize: 15, fontWeight: 700, color: '#8F8D9B' }}>{loadingUsers ? 'Memuat...' : 'User tidak ditemukan.'}</div>}
+                {matches.length === 0 && <div style={{ padding: 14, fontSize: 14, fontWeight: 700, color: '#8F8D9B' }}>{loadingUsers ? 'Memuat...' : 'User tidak ditemukan.'}</div>}
                 {matches.map(u => (
                   <button key={u.uid} onClick={() => pick(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, borderTop: '1px solid rgba(255,255,255,.06)', background: 'none', color: '#fff', padding: '10px 12px', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
                     <Avatar src={u.photo} size={34} />
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 16, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
-                      <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#8F8D9B' }}>{getShortUid(u.uid)} · Lv {u.level} · {u.role}</span>
+                      <span style={{ display: 'block', fontSize: 14, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
+                      <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8F8D9B' }}>{getShortUid(u.uid)} · Lv {u.level} · {u.role}</span>
                     </span>
                   </button>
                 ))}
@@ -608,19 +608,19 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Avatar src={tData.photoURL || target.photo} size={40} />
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 17, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tData.displayName || target.name}{target.uid === uid ? ' (kamu)' : ''}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B', fontFamily: 'monospace', letterSpacing: 1 }}>{getShortUid(target.uid)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tData.displayName || target.name}{target.uid === uid ? ' (kamu)' : ''}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#8F8D9B', fontFamily: 'monospace', letterSpacing: 1 }}>{getShortUid(target.uid)}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', marginTop: 10, textAlign: 'center' }}>
                   {[['Crystal', (Number(tData.koin) || 0).toLocaleString('id-ID')], ['Level', String(Number(tData.level) || 1)], ['EXP', (Number(tData.exp) || 0).toLocaleString('id-ID')], ['Role', tData.role || 'Member']].map(([l, v], i) => (
                     <div key={l} style={{ flex: 1, minWidth: 0, borderLeft: i ? '1px solid rgba(255,255,255,.08)' : 'none' }}>
-                      <div style={{ fontSize: 15, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>{v}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#8F8D9B' }}>{l}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>{v}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#8F8D9B' }}>{l}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.5 }}>
                   Punya: {cnt(tData.ownedBorders)} border · {cnt(tData.ownedWallpapers)} wallpaper · {cnt(tData.ownedEffects)} effect<br />
                   Dipakai: {tData.activeBorder ? nameOf('border', tData.activeBorder) || tData.activeBorder : '–'} · {tData.activeWallpaper ? nameOf('wallpaper', tData.activeWallpaper) || tData.activeWallpaper : '–'} · {tData.activeEffect ? nameOf('effect', tData.activeEffect) || tData.activeEffect : '–'}
                 </div>
@@ -715,12 +715,12 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
             return (
               <div key={o.id} style={{ background: '#1F1E24', borderRadius: 18, padding: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ fontSize: 17, fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name || 'User'}</div>
-                  {o.claimed && <span style={{ background: 'rgba(111,214,178,.15)', color: '#6FD6B2', fontSize: 12.5, fontWeight: 800, padding: '3px 10px', borderRadius: 99, whiteSpace: 'nowrap' }}>Sudah bayar ✓</span>}
+                  <div style={{ fontSize: 15, fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name || 'User'}</div>
+                  {o.claimed && <span style={{ background: 'rgba(111,214,178,.15)', color: '#6FD6B2', fontSize: 11.5, fontWeight: 800, padding: '3px 10px', borderRadius: 99, whiteSpace: 'nowrap' }}>Sudah bayar ✓</span>}
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: '#F5C84B', marginTop: 4 }}>Rp {Number(o.amount).toLocaleString('id-ID')}</div>
-                <div style={{ color: '#8F8D9B', fontSize: 14, fontWeight: 700, marginTop: 2 }}>{DEV_PLAN_DAYS[o.plan]?.nama || o.plan} · {mnt < 60 ? `${mnt} menit lalu` : `${Math.floor(mnt / 60)} jam lalu`}</div>
-                {kembar && <div style={{ color: '#FF7A7A', fontSize: 13.5, fontWeight: 800, marginTop: 6 }}>Ada pesanan lain dengan nominal sama. Cocokkan dengan nama pengirim di DANA.</div>}
+                <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: -1, color: '#F5C84B', marginTop: 4 }}>Rp {Number(o.amount).toLocaleString('id-ID')}</div>
+                <div style={{ color: '#8F8D9B', fontSize: 13, fontWeight: 700, marginTop: 2 }}>{DEV_PLAN_DAYS[o.plan]?.nama || o.plan} · {mnt < 60 ? `${mnt} menit lalu` : `${Math.floor(mnt / 60)} jam lalu`}</div>
+                {kembar && <div style={{ color: '#FF7A7A', fontSize: 12.5, fontWeight: 800, marginTop: 6 }}>Ada pesanan lain dengan nominal sama. Cocokkan dengan nama pengirim di DANA.</div>}
                 <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                   <button onClick={() => approveOrder(o)} disabled={saving} style={{ ...BTN, flex: 1, width: 'auto', background: '#0E8A6A', color: '#fff', opacity: saving ? 0.5 : 1 }}>Setujui</button>
                   <button onClick={() => rejectOrder(o)} disabled={saving} style={{ ...BTN, flex: 1, width: 'auto', background: 'rgba(255,92,92,.12)', color: '#FF7A7A', opacity: saving ? 0.5 : 1 }}>Tolak</button>
@@ -730,7 +730,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
           })}
           <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 14, marginTop: 6 }}>
             <label style={LABEL}>Perawatan Premium</label>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, marginBottom: 10 }}>Turunkan semua Premium yang masa aktifnya sudah habis jadi Member. Premium dari Panel Developer tanpa batas waktu tidak ikut diturunkan.</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, marginBottom: 10 }}>Turunkan semua Premium yang masa aktifnya sudah habis jadi Member. Premium dari Panel Developer tanpa batas waktu tidak ikut diturunkan.</div>
             <button onClick={sweepPremium} disabled={saving} style={{ ...BTN, background: '#1F1E24', color: '#fff', opacity: saving ? 0.5 : 1 }}>Turunkan Premium yang habis</button>
           </div>
         </div>
@@ -738,7 +738,7 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
       {tab === 'global' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4 }}>Hadiah ini dikirim ke semua user sekaligus dan tidak bisa dibatalkan.</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4 }}>Hadiah ini dikirim ke semua user sekaligus dan tidak bisa dibatalkan.</div>
           <div>
             <label style={LABEL}>Jenis hadiah</label>
             <div style={ROW}>
@@ -780,10 +780,10 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
             </button>
           ) : (
             <div style={{ background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 18, padding: 14, marginTop: 4 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: GOLD, letterSpacing: -0.4 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: GOLD, letterSpacing: -0.4 }}>
                 {isItemGift ? `Kirim ${DEV_ITEMS[gType as ItemCat].items.find(i => i.key === gItemKey)?.nama || ''} ke SEMUA user?` : `Kirim +${gVal} ${GIFT_UNIT[gType]} ke SEMUA user?`}
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{gMsg}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: GOLD, opacity: 0.8, marginTop: 2 }}>{gMsg}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 <button onClick={() => setConfirmGlobal(false)} style={{ ...BTN, flex: 1, width: 'auto', background: '#2A2931', color: '#fff' }}>Batal</button>
                 <button onClick={sendGlobal} style={{ ...BTN, flex: 1, width: 'auto', background: GOLD, color: '#2E2615' }}>Ya, kirim</button>
@@ -793,9 +793,9 @@ function DevPanel({ open, onClose, uid, db, userData, onUpdate }: {
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 14, marginTop: 6 }}>
             <label style={LABEL}>Perawatan peringkat</label>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, marginBottom: 10 }}>Hapus akun yang tidak aktif lebih dari {ACTIVE_DAYS} hari dari peringkat musim ini.</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, marginBottom: 10 }}>Hapus akun yang tidak aktif lebih dari {ACTIVE_DAYS} hari dari peringkat musim ini.</div>
             <button onClick={cleanBoard} disabled={saving} style={{ ...BTN, background: '#1F1E24', color: '#fff', opacity: saving ? 0.5 : 1 }}>Bersihkan akun tidak aktif</button>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, margin: '14px 0 10px' }}>Masukkan semua akun lama yang punya EXP ke peringkat musim ini (poin awal = EXP). Akun yang sudah ada di peringkat dilewati.</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#8F8D9B', lineHeight: 1.4, margin: '14px 0 10px' }}>Masukkan semua akun lama yang punya EXP ke peringkat musim ini (poin awal = EXP). Akun yang sudah ada di peringkat dilewati.</div>
             <button onClick={seedBoard} disabled={saving} style={{ ...BTN, background: '#0E8A6A', color: '#fff', opacity: saving ? 0.5 : 1 }}>{saving ? 'Memproses...' : 'Isi peringkat dari akun lama'}</button>
           </div>
         </div>
@@ -844,9 +844,9 @@ function MiniStat({ icon, label, value, target, unit }: { icon: React.ReactNode;
   const pct = Math.min(100, (value / target) * 100);
   return (
     <div style={{ flex: 1, minWidth: 0, background: '#1F1E24', borderRadius: 14, padding: '12px 12px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: MUTED, fontSize: 15, fontWeight: 800 }}>{icon}{label}</div>
-      <div style={{ marginTop: 8, fontSize: 22, fontWeight: 800, letterSpacing: -0.8 }}>
-        {fmt(value)}<span style={{ fontSize: 14, color: MUTED, letterSpacing: -0.2 }}>/ {fmt(target)}{unit ? ` ${unit}` : ''}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: MUTED, fontSize: 14, fontWeight: 800 }}>{icon}{label}</div>
+      <div style={{ marginTop: 8, fontSize: 20, fontWeight: 800, letterSpacing: -0.8 }}>
+        {fmt(value)}<span style={{ fontSize: 13, color: MUTED, letterSpacing: -0.2 }}>/ {fmt(target)}{unit ? ` ${unit}` : ''}</span>
       </div>
       <div style={{ height: 4, borderRadius: 2, background: MAROON, marginTop: 10 }}>
         <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: GREEN }} />
@@ -871,10 +871,10 @@ function MenuRow({ icon, title, sub, right, onClick, href, border }: {
     <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 18px', minHeight: 57, borderTop: border ? '1px solid rgba(255,255,255,.08)' : 'none' }}>
       <span style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, color: '#fff' }}>{title}</div>
-        {sub && <div style={{ fontSize: 17, fontWeight: 700, color: MUTED, letterSpacing: -0.5, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>}
+        <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.15, color: '#fff' }}>{title}</div>
+        {sub && <div style={{ fontSize: 15, fontWeight: 700, color: MUTED, letterSpacing: -0.5, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>}
       </div>
-      {right && <span style={{ fontSize: 20, fontWeight: 800, color: MUTED, letterSpacing: -0.6 }}>{right}</span>}
+      {right && <span style={{ fontSize: 18, fontWeight: 800, color: MUTED, letterSpacing: -0.6 }}>{right}</span>}
       <ChevronRight size={20} color={MUTED} style={{ flexShrink: 0 }} />
     </div>
   );
@@ -887,7 +887,7 @@ function MenuRow({ icon, title, sub, right, onClick, href, border }: {
 }
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ fontSize: 16, fontWeight: 800, color: '#B5B3C0', letterSpacing: -0.3, margin: '26px 16px 10px', textTransform: 'uppercase' }}>{children}</div>
+  <div style={{ fontSize: 14, fontWeight: 800, color: '#B5B3C0', letterSpacing: -0.3, margin: '26px 16px 10px', textTransform: 'uppercase' }}>{children}</div>
 );
 
 function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
@@ -896,7 +896,7 @@ function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () 
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.65)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background: CARD, borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', padding: '12px 16px 36px', border: '1px solid rgba(255,255,255,.06)' }}>
         <div style={{ width: 40, height: 4, background: '#444', borderRadius: 2, margin: '0 auto 14px' }} />
-        <div style={{ fontSize: 18, fontWeight: 800, textAlign: 'center', marginBottom: 12, letterSpacing: -0.5 }}>{title}</div>
+        <div style={{ fontSize: 16, fontWeight: 800, textAlign: 'center', marginBottom: 12, letterSpacing: -0.5 }}>{title}</div>
         {children}
       </div>
     </div>
@@ -1150,21 +1150,21 @@ export default function ProfilePage() {
 
         <AvatarWithBorder src={photoURL} size={72} borderKey={activeBorder || undefined} onClick={() => void 0} />
 
-        <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
+        <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.15, marginTop: 22 }}>
           <PremiumName premium={isPremium && !isDev} dev={isDev}>{userData?.displayName || user.displayName || 'User'}</PremiumName>
           {isPremium && !isDev && <span style={{ marginLeft: 8 }}><VerifiedBadge size={22} /></span>}
           {isDev && <span style={{ marginLeft: 8 }}><DevBadge size={26} /></span>}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: rank.bg, padding: '3px 14px 3px 5px', borderRadius: 99, fontSize: 15, fontWeight: 800, letterSpacing: -0.5 }}>
             <Emblem t={rank.track} fill={rank.bg} size={18} />{rank.name}
           </span>
           {isDev && (
-            <span style={{ background: 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)', color: '#0b0b14', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>DEVELOPER</span>
+            <span style={{ background: 'linear-gradient(90deg,#22d3ee,#818cf8,#e879f9)', color: '#0b0b14', padding: '3px 12px', borderRadius: 99, fontSize: 13, fontWeight: 800 }}>DEVELOPER</span>
           )}
           {isPremium && !isDev && (
-            <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 14, fontWeight: 800 }}>PREMIUM</span>
+            <span style={{ background: GOLD, color: '#2E2615', padding: '3px 12px', borderRadius: 99, fontSize: 13, fontWeight: 800 }}>PREMIUM</span>
           )}
         </div>
       </div>
@@ -1177,8 +1177,8 @@ export default function ProfilePage() {
           { v: fmtC(pts), l: 'Poin' },
         ].map((x, i) => (
           <div key={x.l} style={{ flex: 1, textAlign: 'center', borderLeft: i ? '1px solid rgba(255,255,255,.08)' : 'none', margin: '2px 0', minWidth: 0 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.2 }}>{x.v}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, letterSpacing: -0.4, whiteSpace: 'nowrap', padding: '0 4px' }}>{x.l}</div>
+            <div style={{ fontSize: 25, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1.2 }}>{x.v}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: MUTED, letterSpacing: -0.4, whiteSpace: 'nowrap', padding: '0 4px' }}>{x.l}</div>
           </div>
         ))}
       </div>
@@ -1188,15 +1188,15 @@ export default function ProfilePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {next ? <LockedEmblem size={46} /> : <Emblem t={rank.track} fill={rank.bg} size={46} />}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: MUTED, letterSpacing: -0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: MUTED, letterSpacing: -0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }}>
               Musim {season.id} · {next ? 'Lencana berikutnya' : 'Lencana tertinggi'}
             </div>
-            <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {next ? next.name : rank.name}
             </div>
           </div>
-          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -1, whiteSpace: 'nowrap' }}>
-            {fmtC(pts)}{next && <span style={{ fontSize: 16, color: MUTED, letterSpacing: -0.3 }}> / {fmt(next.min)}</span>}
+          <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -1, whiteSpace: 'nowrap' }}>
+            {fmtC(pts)}{next && <span style={{ fontSize: 14, color: MUTED, letterSpacing: -0.3 }}> / {fmt(next.min)}</span>}
           </div>
         </div>
         <div style={{ height: 8, borderRadius: 4, background: MAROON, marginTop: 14 }}>
@@ -1213,13 +1213,13 @@ export default function ProfilePage() {
       {!isPremium && (
         <div style={{ margin: '16px 16px 0', background: '#2E2615', border: '1.5px solid #7A6322', borderRadius: 22, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0, color: GOLD }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 800, letterSpacing: -0.2 }}>
               <Crown size={16} fill={GOLD} color={GOLD} /> KOMIKITA PREMIUM
             </div>
-            <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.9, lineHeight: 1.2, marginTop: 4 }}>Baca tanpa iklan</div>
-            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.4, marginTop: 2 }}>Plus unduh massal dan cincin profil emas.</div>
+            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: -0.9, lineHeight: 1.2, marginTop: 4 }}>Baca tanpa iklan</div>
+            <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.4, marginTop: 2 }}>Plus unduh massal dan cincin profil emas.</div>
           </div>
-          <button onClick={() => { window.location.assign("/premium"); }} style={{ background: GOLD, color: '#2E2615', border: 0, borderRadius: 99, padding: '0 22px', height: 38, fontSize: 19, fontWeight: 800, letterSpacing: -0.5, flexShrink: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={() => { window.location.assign("/premium"); }} style={{ background: GOLD, color: '#2E2615', border: 0, borderRadius: 99, padding: '0 22px', height: 38, fontSize: 17, fontWeight: 800, letterSpacing: -0.5, flexShrink: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
             Upgrade
           </button>
         </div>
@@ -1259,10 +1259,10 @@ export default function ProfilePage() {
               <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#1F1E24', borderRadius: 16, padding: '10px 14px', border: current ? '1px solid rgba(255,255,255,.3)' : '1px solid transparent', opacity: open ? 1 : 0.6 }}>
                 <Emblem t={r.track} fill={open ? r.bg : '#3A3940'} size={30} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5 }}>{r.name}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: MUTED }}>{fmt(r.min)} poin</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: -0.5 }}>{r.name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: MUTED }}>{fmt(r.min)} poin</div>
                 </div>
-                {current ? <span style={{ fontSize: 13, fontWeight: 800, background: 'rgba(255,255,255,.1)', padding: '3px 10px', borderRadius: 99 }}>Dipakai</span> : !open && <Lock size={16} color={MUTED} />}
+                {current ? <span style={{ fontSize: 12, fontWeight: 800, background: 'rgba(255,255,255,.1)', padding: '3px 10px', borderRadius: 99 }}>Dipakai</span> : !open && <Lock size={16} color={MUTED} />}
               </div>
             );
           })}
