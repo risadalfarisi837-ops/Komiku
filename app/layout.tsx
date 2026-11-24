@@ -6,6 +6,7 @@ import { Home, Compass, Search, User } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import RegisterSW from '@/components/RegisterSW';
 import PageScale from '@/components/PageScale';
+import GiftWatcher from '@/components/GiftWatcher';
 
 export const metadata: Metadata = {
   title: 'Komikita',
@@ -34,6 +35,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 
           <BottomNav />
           <RegisterSW />
+          <GiftWatcher />
         </div>
       </body>
     </html>
