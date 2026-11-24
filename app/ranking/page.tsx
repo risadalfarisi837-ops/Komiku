@@ -261,7 +261,7 @@ export default function RankingPage() {
             const nm = e?.displayName || r.name;
             const hasWp = !!(e?.activeWallpaper && WALLPAPER_CATALOG[e.activeWallpaper]);
             return (
-              <WallpaperBg key={r.uid} wpKey={e?.activeWallpaper} style={hasWp ? { margin: '6px 12px', borderRadius: 18, border: '1px solid' } : undefined}>
+              <WallpaperBg key={r.uid} wpKey={e?.activeWallpaper} noGlow style={hasWp ? { margin: '6px 12px', borderRadius: 18, border: '1px solid' } : undefined}>
                 <Link href={`/user?uid=${r.uid}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: hasWp ? '12px' : '13px 16px', color: 'inherit', textDecoration: 'none' }}>
                   <span style={{ width: 30, textAlign: 'center', fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: i < 3 ? CORAL : '#fff' }}>{i + 1}</span>
                   <Avatar name={nm} photo={e?.photoURL || r.photo} borderKey={e?.activeBorder} />
@@ -283,7 +283,7 @@ export default function RankingPage() {
       {/* Posisi kamu (menempel di atas navbar) */}
       <div style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', width: 'min(100%, 448px)', bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))', padding: '8px 16px', background: '#1B1A20', borderTop: '1px solid rgba(255,255,255,.12)', zIndex: 40 }}>
         {me ? (
-          <WallpaperBg wpKey={meEx?.activeWallpaper} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '8px 12px' }}>
+          <WallpaperBg wpKey={meEx?.activeWallpaper} noGlow style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#1B1A20', border: `2px solid ${CORAL}`, borderRadius: 16, padding: '8px 12px' }}>
             <span style={{ minWidth: 46, textAlign: 'center', fontSize: myRank.length > 3 ? 20 : 22, fontWeight: 800, letterSpacing: -0.5 }}>{myRank}</span>
             <Avatar name={meName} photo={meEx?.photoURL || me.photoURL} size={36} borderKey={meEx?.activeBorder} />
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
